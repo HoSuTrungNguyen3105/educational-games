@@ -5,9 +5,11 @@
  * Cơ chế:
  *   · Mở game  → GET /api/users/me/games/offline:<id> (trò chơi `gameState`),
  *     merge các key localStorage của game vào máy hiện tại TRƯỚC khi iframe chạy.
- *   · Trong game → mọi write localStorage của game được ghi nhận (patch
- *     Storage.prototype — iframe cùng origin dùng chung prototype với host),
- *     rồi đẩy snapshot lên API theo debounce + khi rời trang + khi có mạng lại.
+ *   · Trong game → mọi write localStorage của game được ghi nhận: game chạy
+ *     trong iframe srcdoc (realm riêng) nên được chèn một đoạn script patch
+ *     Storage.prototype ngay trong iframe, báo key về host qua postMessage
+ *     (STORAGE_BRIDGE ở OfflineGamePage). Host gọi noteGameStorageKey rồi đẩy
+ *     snapshot lên API theo debounce + khi rời trang + khi có mạng lại.
  *   · Mất mạng → snapshot giữ trong hàng đợi localStorage, tự gửi lại sau.
  *
  * Merge mỗi key (không có mốc thời gian đáng tin thì THà giữ local cũ để
@@ -85,7 +87,9 @@ function installCapture() {
   patchInstalled = true;
   const origSet = Storage.prototype.setItem;
   const origDel = Storage.prototype.removeItem;
-  // Game chạy trong iframe cùng origin nên patch prototype bắt được mọi write.
+  // Chỉ bắt được write của CHÍNH trang host. Game nằm trong iframe srcdoc là
+  // một realm riêng (mỗi realm có Storage.prototype riêng), nên game báo key
+  // qua postMessage — xem STORAGE_BRIDGE ở OfflineGamePage + noteGameStorageKey.
   Storage.prototype.setItem = function (k, v) {
     origSet.call(this, k, v);
     noteWrite(String(k));
@@ -94,6 +98,15 @@ function installCapture() {
     origDel.call(this, k);
     noteWrite(String(k));
   };
+}
+
+/**
+ * Game trong iframe báo vừa ghi/xoá một key localStorage (đã patch
+ * Storage.prototype ngay trong realm của iframe). Ghi nhận y như write của
+ * host để snapshot tự đẩy lên API.
+ */
+export function noteGameStorageKey(key) {
+  noteWrite(String(key || ""));
 }
 
 function noteWrite(key) {

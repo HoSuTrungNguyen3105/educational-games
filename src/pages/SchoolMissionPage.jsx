@@ -97,8 +97,8 @@ function withTimeout(promise, ms) {
  * Game nhập vai trường học — tải School_mission.html, nhúng script/CSS, tiêm
  * config + tên tài khoản + tiến độ đã lưu trên API.
  *
- * Nhân vật của bé là tạo hình của chính game (màu áo + mũ mua trong Cửa hàng),
- * không dùng avatar SVG trong hồ sơ nữa.
+ * Nhân vật chính dùng ảnh mascot chung public/edu_character.png ở cả 2D lẫn
+ * 3D (2D: vẽ ảnh + nhún khi đi; 3D: sprite billboard có bóng đổ).
  *
  * Game gửi `{ type: "school-save", data }` mỗi khi state đổi. Trang này ghi
  * vào hàng đợi (localStorage) rồi gửi API; mất mạng thì giữ lại và tự gửi khi
@@ -193,6 +193,11 @@ export default function SchoolMissionPage() {
     }
 
     const initTag = `<script>window.__SCHOOL_INIT__=${safeJson(boot)};</script>`;
+    // Nhân vật chính là ảnh public/edu_character.png → game tham chiếu bằng
+    // đường dẫn TƯƠNG ĐỐI. Trong iframe srcdoc, <base> bảo đảm ảnh luôn trỏ
+    // về public/ dù route có thay đổi.
+    const baseTag = `<base href="${import.meta.env.BASE_URL || "/"}">`;
+    out = out.replace(/<head[^>]*>/i, (tag) => `${tag}${baseTag}`);
     out = out.replace(
       /<script\s+src=["']js\/core\.js["']\s*><\/script>/i,
       (tag) => `${initTag}\n${tag}`

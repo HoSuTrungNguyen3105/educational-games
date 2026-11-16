@@ -562,8 +562,61 @@ function startW3() {
         }
         return kid;
     }
+    /* Nhân vật chính dùng ảnh mascot chung (public/edu_character.png).
+
+       Ảnh gốc là 2D nên ở chế độ 3D được dựng thành sprite billboard: luôn
+       quay mặt về phía camera nhưng vẫn đứng/đi trong không gian 3D, có bóng
+       đổ dưới chân và nhún nhẹ khi bước — đúng cảm giác nhân vật 3D mà không
+       phải nặn model từ hình phẳng. Ảnh được thu vào canvas 256×256 (kích
+       thước luỹ thừa 2) để hợp mọi GPU; tải xong tự cập nhật texture. */
+    let avatarTex = null;
+    function avatarTexture() {
+        if (avatarTex) return avatarTex;
+        const cv = document.createElement("canvas");
+        cv.width = cv.height = 256;
+        const cx = cv.getContext("2d");
+        avatarTex = new THREE.CanvasTexture(cv);
+        avatarTex.anisotropy = 4;
+        const img = new Image();
+        img.onload = () => {
+            const h = 256, w = Math.round(h * img.naturalWidth / Math.max(1, img.naturalHeight));
+            cx.clearRect(0, 0, 256, 256);
+            cx.drawImage(img, (256 - w) / 2, 0, w, h);
+            avatarTex.needsUpdate = true;
+        };
+        img.src = "edu_character.png";
+        return avatarTex;
+    }
+    function makePlayerAvatar(name) {
+        const root = new THREE.Group();
+        const body = new THREE.Group(); root.add(body);
+        const H = 1.5;
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: avatarTexture(), transparent: true, depthWrite: false
+        }));
+        sp.scale.set(H, H, 1);
+        sp.position.y = H / 2 + .02;
+        body.add(sp);
+        const sh = new THREE.Mesh(
+            new THREE.CircleGeometry(.36, 20),
+            new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .22, depthWrite: false })
+        );
+        sh.rotation.x = -Math.PI / 2; sh.position.y = .015; root.add(sh);
+        const kid = { root, body, face: 0, isAvatar: true };
+        if (name) {
+            const n = sign(name, "#ffffff", 46, 256, 88, .62);
+            n.position.set(0, H + .42, 0); root.add(n);
+        }
+        return kid;
+    }
     function pose(kid, t, mv) {
         const a = Math.min(1, .2 + mv), s = Math.sin(t);
+        if (kid.isAvatar) {
+            // Sprite tự quay về camera; chỉ nhún + lắc nhẹ cho có sức sống.
+            kid.body.position.y = Math.abs(s) * .07 * a;
+            kid.body.rotation.z = s * .05 * a;
+            return;
+        }
         kid.legL.rotation.x = s * a; kid.legR.rotation.x = -s * a;
         kid.armL.rotation.x = -s * a * .8; kid.armR.rotation.x = s * a * .8;
         kid.body.position.y = .62 + Math.abs(Math.cos(t)) * .04 * a;
@@ -588,7 +641,7 @@ function startW3() {
         const key = S.col + "|" + S.hat + "|" + playerName;
         if (!player || key !== playerKey) {
             if (player) kids.remove(player.root);
-            player = makeKid(hexOf(S.col), S.hat, playerName);
+            player = makePlayerAvatar(playerName);
             playerKey = key;
             kids.add(player.root);
         }

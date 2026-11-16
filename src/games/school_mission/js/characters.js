@@ -15,4 +15,33 @@ function chr(x,y,c,hat,name,t,say,mv){const sw=Math.sin(t)*mv,bn=Math.abs(Math.s
  if(hat){g.font="24px serif";g.textAlign="center";g.fillText(hat,x,y-56-bn)}
  tx(name,x,y-74-bn,12,"#fff","rgba(0,0,0,.6)");
  if(say){g.font="bold 12px system-ui";const w=g.measureText(say).width+18;rr(x-w/2,y-104-bn,w,24,12,"#fff");g.fillStyle="#fff";g.beginPath();g.moveTo(x-5,y-81-bn);g.lineTo(x+5,y-81-bn);g.lineTo(x,y-75-bn);g.fill();tx(say,x,y-87-bn,12,"#223")}}
+// ── Nhân vật chính dùng ảnh mascot chung: public/edu_character.png ──────────
+// 2D vẽ thẳng ảnh (bóng đổ + nhún nhẹ khi bước); ảnh chưa tải xong thì tạm
+// dùng nhân vật vector cũ để không bị trống. Đường dẫn tương đối vì trang
+// SchoolMissionPage chèn <base href=BASE_URL> cho iframe srcdoc.
+const PLAYER_AVATAR_SRC = "edu_character.png";
+const playerAvatar = new Image();
+let playerAvatarOK = false;
+playerAvatar.onload = () => { playerAvatarOK = true; };
+playerAvatar.onerror = () => { playerAvatarOK = false; };
+playerAvatar.src = PLAYER_AVATAR_SRC;
+
+function playerChr(x, y, name, t, mv) {
+ const bn = Math.abs(Math.sin(t)) * 4 * mv;   // nhún lên xuống khi đi
+ const sw = Math.sin(t) * mv;                 // lắc người rất nhẹ
+ g.save();
+ g.translate(x, y);
+ g.rotate(sw * .03);
+ g.fillStyle = "rgba(0,0,0,.25)";
+ g.beginPath(); g.ellipse(0, 0, 19, 6.5, 0, 0, 7); g.fill();
+ if (playerAvatarOK) {
+  const H = 70, W = H * (playerAvatar.naturalWidth || 1) / (playerAvatar.naturalHeight || 1);
+  g.drawImage(playerAvatar, -W / 2, -H + 2 - bn, W, H);
+ } else {
+  chr(0, 0, S.col, S.hat, "", t, null, mv);
+ }
+ g.restore();
+ tx(name, x, y - 80 - bn, 12, "#fff", "rgba(0,0,0,.6)");
+}
+
 // ---- trang trí sân ----

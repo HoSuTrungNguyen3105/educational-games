@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mèo Chia Ô</title>
+<style>
+:root{--bg:#fdf3ea;--card:#fffdf8;--line:#e6d9cb;--ink:#4a3328;--sub:#9a8272;--btn:#f0897a;--btnd:#c9564a;--frame:#e8d6c3;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#241b17;--card:#33271f;--line:#5a483b;--ink:#f6e8dc;--sub:#b9a190;--frame:#4a392d}}
+:root[data-theme="dark"]{--bg:#241b17;--card:#33271f;--line:#5a483b;--ink:#f6e8dc;--sub:#b9a190;--frame:#4a392d}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Nunito","Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;justify-content:center}
+.app{width:100%;max-width:460px;padding:14px 16px 24px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.top{display:flex;align-items:center;gap:10px;width:100%;justify-content:center;flex-wrap:wrap}
+h1{margin:0;font-size:22px}
+.tag{padding:2px 12px;border-radius:99px;font-size:13px;font-weight:700;color:#fff;background:#f08a80}
+.bar{width:100%;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--sub)}
+.track{flex:1;height:8px;background:var(--line);border-radius:9px;overflow:hidden}
+.fill{height:100%;width:0;background:var(--btn);transition:width .25s}
+img.cat{height:110px;width:auto;margin-bottom:-18px;position:relative;z-index:2;object-fit:contain}
+.cat{font-size:64px;line-height:1;margin-bottom:-18px;position:relative;z-index:2;filter:drop-shadow(0 2px 2px #0002)}
+.frame{background:var(--frame);padding:10px;border-radius:24px;width:100%}
+.board{position:relative;width:100%;aspect-ratio:1;background:var(--card);border-radius:16px;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden}
+.board>div{position:absolute}
+.cell{border:1px dashed var(--line)}
+.rect{border-radius:10px;border:2px solid;z-index:1;transition:all .15s}
+.prev{border-radius:10px;border:2px dashed;z-index:1;pointer-events:none}
+.prev.bad{border-color:#e5604f!important;background:#e5604f33!important}
+.hl{background:#8a5fd055;border:2px dashed #8a5fd0;border-radius:6px;z-index:2;pointer-events:none;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.45}}
+.clue{z-index:3;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.clue span{width:68%;height:68%;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:clamp(14px,5vw,22px);box-shadow:0 2px 0 #0003}
+.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.msg{min-height:22px;font-size:14px;font-weight:700;text-align:center;color:var(--sub)}
+.tools{display:flex;gap:10px;width:100%}
+.tools button{flex:1;padding:10px;border:0;border-radius:16px;background:var(--card);color:var(--ink);font:700 14px inherit;cursor:pointer;box-shadow:0 2px 0 var(--line)}
+.tools button:active{transform:translateY(1px)}
+.help{font-size:12px;color:var(--sub);text-align:center;line-height:1.5}
+.modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:10;padding:20px}
+.modal.on{display:flex}
+.box{background:var(--card);border-radius:24px;padding:24px;text-align:center;max-width:320px;width:100%}
+.box h2{margin:0 0 6px}
+.go{margin-top:14px;padding:12px 28px;border:0;border-radius:16px;background:var(--btn);color:#fff;font:800 16px inherit;box-shadow:0 4px 0 var(--btnd);cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><h1>🐾 Mèo Chia Ô</h1><span class="tag" id="lv"></span></div>
+  <div class="bar"><span id="cnt">0/0</span><div class="track"><div class="fill" id="fill"></div></div></div>
+  <img class="cat" src="edu_character.png" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'cat',textContent:'🐱'}))">
+  <div class="frame"><div class="board" id="board"></div></div>
+  <div class="msg" id="msg"></div>
+  <div class="tools">
+    <button id="undo">↶ Hoàn tác</button>
+    <button id="hint">💡 Gợi ý</button>
+    <button id="restart">⟲ Làm lại</button>
+  </div>
+  <div class="help">Kéo ngón tay để vẽ hình chữ nhật. Mỗi hình chứa đúng 1 số và có diện tích bằng số đó. Phủ kín toàn bộ lưới để thắng. Chạm vào hình để xóa. Ô “?” là số ẩn: hình chứa nó có thể to nhỏ tùy ý, hãy suy luận từ các số còn lại. Càng lên level càng nhiều số “?”.</div>
+</div>
+<div class="modal" id="modal"><div class="box"><div style="font-size:48px">🎉</div><h2>Hoàn thành!</h2><div id="wmsg" style="color:var(--sub)"></div><button class="go" id="next">Màn tiếp theo ▶</button></div></div>
+<script>
+const COLORS=['#e5604f','#8a5fd0','#b07a10','#2f8fc9','#2a9a6a','#d9568c','#1fa2a2','#e8892e'];
+const $=id=>document.getElementById(id);
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+let level=1;try{level=+localStorage.getItem('meo_lv')||1}catch(e){}
+let W,H,clues,sol,rects,hist,hl,hiddenArea,drag=null,won=false;
+
+// ── Lưu tiến trình ────────────────────────────────────────────────────
+// meo_state_v1: cả bàn đang chơi (màn, lưới, số, các hình đã đặt) để mở lại
+// đúng ván dở. meo_lv: màn hiện tại (giữ nguyên khoá cũ + cho sync API).
+// offlineGameSync bắt mọi write localStorage không phải key của app, nên chỉ
+// cần ghi ở đây là tiến trình tự lên API và tự khôi phục khi đăng nhập máy khác.
+const SAVE_KEY='meo_state_v1';
+function saveState(){
+  try{
+    localStorage.setItem('meo_lv',String(level));
+    localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,level,W,H,clues,sol,rects,hiddenArea}));
+  }catch(e){}
+}
+function loadState(){
+  try{
+    const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    if(!s||s.v!==1||s.level!==level)return null;
+    if(!Number.isInteger(s.W)||!Number.isInteger(s.H))return null;
+    if(!Array.isArray(s.clues)||!Array.isArray(s.sol)||!Array.isArray(s.rects))return null;
+    if(s.clues.length!==s.sol.length)return null;
+    const inB=(r,c)=>r>=0&&c>=0&&r<s.H&&c<s.W;
+    if(!s.clues.every(cl=>cl&&inB(cl.r,cl.c)&&typeof cl.n==='number'&&typeof cl.color==='string'))return null;
+    if(!s.rects.every(q=>q&&inB(q.r1,q.c1)&&inB(q.r2,q.c2)&&q.r2>=q.r1&&q.c2>=q.c1&&s.clues[q.clue]))return null;
+    return s;
+  }catch(e){return null}
+}
+
+function sizeFor(l){return l<=2?4:l<=6?5:l<=10?6:l<=15?7:l<=22?8:9}
+function label(l){return l<=2?'Dễ':l<=4?'Vừa':l<=11?'Khó':'Siêu khó'}
+
+function gen(l){
+  W=H=sizeFor(l);
+  const avg=Math.max(3,4.8-l*0.04);
+  const k=Math.min(Math.floor(W*H/avg)+R(0,1),W*H/2|0);
+  let parts=[[0,0,H-1,W-1]];
+  let guard=0;
+  while(parts.length<k&&guard++<500){
+    const cand=parts.map((p,i)=>[i,(p[2]-p[0]+1)*(p[3]-p[1]+1)]).filter(x=>x[1]>=4);
+    if(!cand.length)break;
+    // prefer large rects
+    cand.sort((a,b)=>b[1]-a[1]);
+    const [i]=cand[R(0,Math.min(2,cand.length-1))];
+    const [r1,c1,r2,c2]=parts[i];const h=r2-r1+1,w=c2-c1+1;
+    let a,b;
+    for(let t=0;t<12;t++){
+      const vert=h<2?true:w<2?false:Math.random()<w/(w+h);
+      if(vert&&w>=2){const s=R(c1+1,c2);a=[r1,c1,r2,s-1];b=[r1,s,r2,c2]}
+      else if(h>=2){const s=R(r1+1,r2);a=[r1,c1,s-1,c2];b=[s,c1,r2,c2]}
+      else continue;
+      const A=x=>(x[2]-x[0]+1)*(x[3]-x[1]+1);
+      if(A(a)>=2&&A(b)>=2)break;
+    }
+    if(!a)continue;
+    parts.splice(i,1,a,b);
+  }
+  sol=parts;
+  clues=parts.map((p,i)=>({r:R(p[0],p[2]),c:R(p[1],p[3]),n:(p[2]-p[0]+1)*(p[3]-p[1]+1),hidden:false,color:COLORS[i%COLORS.length]}));
+  // colour shuffle
+  clues.sort(()=>Math.random()-.5).forEach((c,i)=>c.color=COLORS[i%COLORS.length]);
+  const nh=l<5?0:Math.min(l>=17?4:l>=12?3:l>=8?2:1,clues.length>>1);
+  clues.map((c,i)=>i).sort(()=>Math.random()-.5).slice(0,nh).forEach(i=>clues[i].hidden=true);
+  const hc=clues.find(c=>c.hidden);
+  hiddenArea=hc?hc.n:0;
+}
+
+function start(){
+  // Mở lại đúng ván đang chơi nếu state khớp màn hiện tại; không có thì
+  // sinh ván mới như trước.
+  const saved=loadState();
+  if(saved){W=saved.W;H=saved.H;clues=saved.clues;sol=saved.sol;rects=saved.rects;hiddenArea=saved.hiddenArea||0;}
+  else{gen(level);rects=[];}
+  hist=[];hl=[];won=false;drag=null;
+  $('lv').textContent='Level '+level+' · '+label(level);
+  $('modal').classList.remove('on');
+  $('msg').textContent='';
+  render();
+  saveState();
+}
+
+function render(){
+  const b=$('board');b.innerHTML='';
+  const pw=100/W,ph=100/H;
+  const put=(cls,r1,c1,r2,c2,st)=>{const d=document.createElement('div');d.className=cls;
+    Object.assign(d.style,{left:c1*pw+'%',top:r1*ph+'%',width:(c2-c1+1)*pw+'%',height:(r2-r1+1)*ph+'%'},st||{});b.appendChild(d);return d};
+  for(let r=0;r<H;r++)for(let c=0;c<W;c++)put('cell',r,c,r,c);
+  rects.forEach(q=>{const cl=clues[q.clue];put('rect',q.r1,q.c1,q.r2,q.c2,{background:cl.color+'44',borderColor:cl.color,margin:'2px',width:`calc(${(q.c2-q.c1+1)*pw}% - 4px)`,height:`calc(${(q.r2-q.r1+1)*ph}% - 4px)`})});
+  hl.forEach(([r,c])=>put('hl',r,c,r,c));
+  clues.forEach((cl,i)=>{const d=put('clue',cl.r,cl.c,cl.r,cl.c);
+    const placed=rects.some(q=>q.clue===i);
+    const pq=rects.find(q=>q.clue===i);
+    d.innerHTML=`<span style="background:${cl.color}">${cl.hidden?(pq?(pq.r2-pq.r1+1)*(pq.c2-pq.c1+1):'?'):cl.n}</span>`});
+  if(drag&&drag.cur){const [r1,c1,r2,c2]=norm(drag.s,drag.cur);const ok=check(r1,c1,r2,c2)!=null;
+    const d=put('prev'+(ok?'':' bad'),r1,c1,r2,c2,{borderColor:'#8a5fd0',background:'#8a5fd02a'});}
+  const cnt=rects.length;$('cnt').textContent=cnt+'/'+clues.length;
+  $('fill').style.width=(100*cnt/clues.length)+'%';
+}
+
+const norm=(a,b)=>[Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[0],b[0]),Math.max(a[1],b[1])];
+// returns clue index if valid rect, else null
+function check(r1,c1,r2,c2){
+  const inside=[];clues.forEach((cl,i)=>{if(cl.r>=r1&&cl.r<=r2&&cl.c>=c1&&cl.c<=c2)inside.push(i)});
+  if(inside.length!==1)return null;
+  const cl=clues[inside[0]],area=(r2-r1+1)*(c2-c1+1);
+  if(cl.hidden)return inside[0];
+  return area===cl.n?inside[0]:null;
+}
+function cellAt(e){
+  const bb=$('board').getBoundingClientRect();
+  const c=Math.floor((e.clientX-bb.left)/bb.width*W),r=Math.floor((e.clientY-bb.top)/bb.height*H);
+  return [Math.max(0,Math.min(H-1,r)),Math.max(0,Math.min(W-1,c))];
+}
+const inRect=(q,r,c)=>r>=q.r1&&r<=q.r2&&c>=q.c1&&c<=q.c2;
+const overlap=(q,r1,c1,r2,c2)=>!(q.r2<r1||q.r1>r2||q.c2<c1||q.c1>c2);
+
+const B=$('board');
+B.addEventListener('pointerdown',e=>{if(won)return;B.setPointerCapture(e.pointerId);drag={s:cellAt(e),cur:null};hl=[];render()});
+B.addEventListener('pointermove',e=>{if(!drag)return;const c=cellAt(e);if(!drag.cur||c[0]!==drag.cur[0]||c[1]!==drag.cur[1]){drag.cur=c;render()}});
+B.addEventListener('pointerup',e=>{
+  if(!drag)return;const end=cellAt(e),s=drag.s;drag=null;
+  const [r1,c1,r2,c2]=norm(s,end);
+  if(s[0]===end[0]&&s[1]===end[1]){
+    const q=rects.find(q=>inRect(q,s[0],s[1]));
+    if(q){snap();rects=rects.filter(x=>x!==q);$('msg').textContent='';saveState();render();return}
+  }
+  const ci=check(r1,c1,r2,c2);
+  if(ci==null){B.classList.remove('shake');void B.offsetWidth;B.classList.add('shake');
+    $('msg').textContent='Hình này chưa đúng: cần đúng 1 số và đúng diện tích.';render();return}
+  snap();
+  rects=rects.filter(q=>!overlap(q,r1,c1,r2,c2)&&q.clue!==ci);
+  rects.push({r1,c1,r2,c2,clue:ci});
+  $('msg').textContent='';saveState();render();checkWin();
+});
+B.addEventListener('pointercancel',()=>{drag=null;render()});
+
+function snap(){hist.push(JSON.stringify(rects))}
+function checkWin(){
+  const covered=rects.reduce((s,q)=>s+(q.r2-q.r1+1)*(q.c2-q.c1+1),0);
+  if(covered===W*H&&rects.length===clues.length){
+    won=true;try{
+      // Lưu MÀN KẾ TIẾP (không kèm bàn) — mở lại sẽ vào thẳng màn mới.
+      localStorage.setItem('meo_lv',level+1);
+      localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,level:level+1}));
+    }catch(e){}
+    $('wmsg').textContent='Level '+level+' xong! Level tiếp theo sẽ khó hơn.';
+    setTimeout(()=>$('modal').classList.add('on'),350);
+  }
+}
+
+$('undo').onclick=()=>{if(won||!hist.length)return;rects=JSON.parse(hist.pop());hl=[];$('msg').textContent='';saveState();render()};
+$('restart').onclick=()=>{if(won)return;rects=[];hist=[];hl=[];$('msg').textContent='';saveState();render()};
+$('next').onclick=()=>{level++;start()};
+
+// Hint: "Overlap" — cells covered by every possible placement of a number
+$('hint').onclick=()=>{
+  if(won)return;
+  let best=null;
+  clues.forEach((cl,i)=>{
+    if(cl.hidden||rects.some(q=>q.clue===i))return;
+    const cells={};let total=0;
+    for(let h=1;h<=cl.n;h++){if(cl.n%h)continue;const w=cl.n/h;if(h>H||w>W)continue;
+      for(let r1=Math.max(0,cl.r-h+1);r1<=Math.min(cl.r,H-h);r1++)
+      for(let c1=Math.max(0,cl.c-w+1);c1<=Math.min(cl.c,W-w);c1++){
+        const r2=r1+h-1,c2=c1+w-1;
+        if(clues.some((o,j)=>j!==i&&o.r>=r1&&o.r<=r2&&o.c>=c1&&o.c<=c2))continue;
+        if(rects.some(q=>overlap(q,r1,c1,r2,c2)))continue;
+        total++;
+        for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++){const k=r+','+c;cells[k]=(cells[k]||0)+1}
+      }}
+    const common=Object.keys(cells).filter(k=>cells[k]===total).map(k=>k.split(',').map(Number));
+    if(total&&common.length&&(!best||common.length>best.common.length))best={common,n:cl.n,total};
+  });
+  if(best){hl=best.common;$('msg').textContent=`Gợi ý: số ${best.n} có ${best.total} cách đặt — mọi cách đều phủ các ô này.`}
+  else{ // fall back to showing a solution piece
+    const q=sol.find(p=>{const i=clues.findIndex(c=>c.r>=p[0]&&c.r<=p[2]&&c.c>=p[1]&&c.c<=p[3]);return !rects.some(x=>x.clue===i)});
+    if(q){hl=[];for(let r=q[0];r<=q[2];r++)for(let c=q[1];c<=q[3];c++)hl.push([r,c]);$('msg').textContent='Gợi ý: đây là một hình đúng.'}
+  }
+  render();
+};
+start();
+</script>
+</body>
+</html>

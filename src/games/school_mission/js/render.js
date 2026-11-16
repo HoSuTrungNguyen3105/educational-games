@@ -52,11 +52,12 @@ function draw(dt) {
         )
     }));
     
-    // Thêm nhân vật chính (Bạn) vào danh sách vẽ — tạo hình của game: màu áo +
-    // mũ bé mua trong Cửa hàng, tên lấy từ tài khoản đang đăng nhập.
+    // Thêm nhân vật chính (Bạn) vào danh sách vẽ — dùng ảnh mascot chung
+    // public/edu_character.png (js/characters.js → playerChr), tên lấy từ tài
+    // khoản đang đăng nhập.
     L.push({
         y: me.y,
-        f: () => chr(me.x, me.y, S.col, S.hat, playerName, me.t, null, me.mv)
+        f: () => playerChr(me.x, me.y, playerName, me.t, me.mv)
     });
     
     // Sắp xếp từ trên xuống dưới và vẽ

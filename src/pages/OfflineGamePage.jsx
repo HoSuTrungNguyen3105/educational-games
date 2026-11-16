@@ -5,7 +5,7 @@ import { findOfflineGame, makeFallbackMeta, resolveOfflineId } from "../games/of
 import { useGameVersion } from "../hooks/useGameVersion.js";
 import { gameCache } from "../lib/gameCache.js";
 import { addCoins, loadWallet, readWallet, subscribeWallet } from "../lib/coinWallet.js";
-import { startGameSync, endGameSync } from "../lib/offlineGameSync.js";
+import { startGameSync, endGameSync, noteGameStorageKey } from "../lib/offlineGameSync.js";
 import { gameDataService } from "../services/gameDataService.js";
 import { API_BASE } from "../services/api.js";
 import { Loader } from "../components/ui";
@@ -84,6 +84,18 @@ const EMBEDDED_SNIPPET = `<style>html.gq-embedded #homeBackBtn,html.gq-embedded 
 const FLUSH_BRIDGE = `<script>(function(){window.addEventListener("message",function(ev){var d=ev.data;if(!d||d.type!=="gq:flush")return;try{if(typeof window.__gqFlush==="function")window.__gqFlush();}catch(e){}try{window.dispatchEvent(new CustomEvent("gq:flush"));}catch(e){}try{document.dispatchEvent(new CustomEvent("gq:flush"));}catch(e){}try{ev.source&&ev.source.postMessage({type:"gq:flushed"},"*");}catch(e){}});})();</script>`;
 
 /**
+ * Cầu bắt localStorage của GAME (iframe srcdoc = realm JS riêng).
+ *
+ * Patch Storage.prototype ở host KHÔNG bắt được write của iframe: mỗi realm có
+ * Storage.prototype riêng. Đoạn script này chèn vào <head> của game (chạy
+ * trước mọi script game) để patch prototype NGAY TRONG iframe rồi báo key về
+ * host. Host gọi noteGameStorageKey → offlineGameSync xếp snapshot đẩy lên API.
+ * Nhờ vậy tiến trình mọi game offline tự lưu vào tài khoản, đăng nhập máy khác
+ * vẫn chơi tiếp. Key của app (edu_, gq_, pwa-) bị lọc ở noteWrite.
+ */
+const STORAGE_BRIDGE = `<script>(function(){try{var P=Storage.prototype,set=P.setItem,del=P.removeItem;function tell(k){try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"gq:storage",key:String(k)},"*");}catch(e){}}P.setItem=function(k,v){set.call(this,k,v);tell(k);};P.removeItem=function(k){del.call(this,k);tell(k);};}catch(e){}})();</script>`;
+
+/**
  * Địa chỉ API cho game offline.
  *
  * Game nào cần dữ liệu trên máy chủ (plantvsanimal lấy cấu hình JSON do trang
@@ -107,7 +119,7 @@ const HAS_RELATIVE_ASSET = /(?:src|href)="(?!https?:|data:|#|\/)[^"]+"/i;
 function injectGameUi(html) {
   const tokens = `<style id="gq-tokens">${TOKENS_CSS}</style>`;
   const bridge = `${API_BASE_SNIPPET}${EMBEDDED_SNIPPET}${FLUSH_BRIDGE}`;
-  const headExtra = `${HAS_RELATIVE_ASSET.test(html) ? BASE_SNIPPET : ""}${tokens}`;
+  const headExtra = `${HAS_RELATIVE_ASSET.test(html) ? BASE_SNIPPET : ""}${tokens}${STORAGE_BRIDGE}`;
   const withTokens = /<head[^>]*>/i.test(html)
     ? html.replace(/<head[^>]*>/i, (m) => `${m}${headExtra}`)
     : `${headExtra}${html}`;
@@ -313,6 +325,11 @@ export default function OfflineGamePage({ gameId: rawGameId }) {
       }
       if (event.data?.type === "gq:walletDelta") {
         postWallet(addCoins(Number(event.data.data?.amount) || 0));
+      }
+      // Game báo vừa ghi localStorage (xem STORAGE_BRIDGE) → đưa vào hàng đợi
+      // sync API. Đây là đường DUY NHẤT bắt được save của game trong iframe.
+      if (event.data?.type === "gq:storage") {
+        noteGameStorageKey(event.data.key);
       }
     };
     window.addEventListener("message", handleMessage);
