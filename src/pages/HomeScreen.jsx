@@ -538,7 +538,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     const unsubscribe = onForegroundMessage((payload) => {
       const data = payload.data || {};
       const title = data.title || payload.notification?.title || "Thông báo";
-      const body = data.body || payload.notification?.body || "";
+      // Backend lưu nội dung ở field "message"; payload push có thể gửi kèm "body" — lấy cả hai
+      const body = data.message || data.body || payload.notification?.body || "";
       setNotifications(prev => [{
         id: `fg-${Date.now()}`,
         title,
@@ -1374,7 +1375,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                           <span className="gq-link__ico"><Bell className="w-4 h-4" /></span>
                           <span className="flex-1 min-w-0">
                             <span className="block truncate">{n.title}</span>
-                            <span className="block text-[11px] font-semibold text-slate-400 truncate">{n.body}</span>
+                            {/* API /notifications trả field "message" (không có "body") */}
+                            <span className="block text-[11px] font-semibold text-slate-400 truncate">{n.message || n.body || ""}</span>
                           </span>
                         </button>
                       ))}
