@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { gameService, walletService, notificationService, ticketService } from '../services/api.js'
 import { taskService } from '../services/taskService.js'
 import { socket } from '../socket/socket.js'
@@ -53,8 +53,11 @@ import {
   Bell,
   Calculator,
   Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Coins,
-  Dices,
+  Play,
   School,
   Ticket,
   Volume2,
@@ -930,6 +933,16 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     pick.run();
   };
 
+  /* Nút prev/next ở hai mép rail "Hôm nay của bé": cuộn rail theo ~80% bề
+     rộng đang thấy. Chỉ hiện trên thiết bị có hover (màn cảm ứng vuốt trực
+     tiếp) — ẩn bằng CSS ở khối .gq-railnav. */
+  const todayRailRef = useRef(null);
+  const scrollTodayRail = (dir) => {
+    const el = todayRailRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+  };
+
   const closePwaBanner = () => {
     setPwaVisible(false);
     try { localStorage.setItem("gq_pwa_closed", "1"); } catch { /* ignore */ }
@@ -955,6 +968,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       )}
 
       <div className="gq-page">
+        {/* ─────────── KHUNG CẢNH: HEADER + HERO trên nền tranh ───────────
+            Header trong suốt nổi trên nền trời của ảnh phong cảnh (xem
+            .gq-scene trong home-gq.css), cuối hero là dải sóng mềm chuyển
+            xuống nền trang. Hàng nút tắt nằm NGOÀI scene, chồng lên mép
+            dưới của sóng. */}
+        <div className="gq-scene">
         {/* ─────────── HEADER ─────────── */}
         <header className="gq-top">
           <div className="gq-top__row">
@@ -964,7 +983,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 src={site.logoUrl || `${import.meta.env.BASE_URL}logo.svg`}
                 alt={`${site.name || "Lớp Học Vui"} Logo`}
               />
-              <span>
+              <span className="gq-logo__txt">
                 <span className="gq-logo__name">{site.name || "Lớp Học Vui"} </span>
                 <span className="gq-logo__sub">EDUGAMES</span>
               </span>
@@ -978,6 +997,22 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </span>
             </div> */}
 
+            {/* Chip thú cưng ĐƯA LÊN hàng header (trước đây ở hàng riêng
+                .gq-navrow dưới header): pill trắng cạnh logo như ảnh mẫu.
+                Thanh tab điều hướng cuộn ngang đã bỏ hẳn từ 2026-11-09 —
+                điều hướng danh mục ở trang /categories + sheet ⚙️ +
+                BottomNav, không mất điểm đến nào. */}
+            {userAuth?.user && (
+              <button className="gq-petchip" onClick={() => goTo("/pet")} title={`${pet.name} · cấp ${pet.level}`}>
+                <PetAvatar size={30} ring={false} />
+                <span className="gq-petchip__txt">
+                  <span className="gq-petchip__name">{pet.name}</span>
+                  <span className="gq-petchip__sub">Cấp {pet.level} · {moodLabel(pet.mood)}</span>
+                </span>
+                <ChevronDown className="w-4 h-4 gq-petchip__chev" aria-hidden="true" />
+              </button>
+            )}
+
             <div className="gq-actions">
               {canAccessDashboard(userAuth?.user?.role) && (
                 <button
@@ -990,11 +1025,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                   <span>Admin Dashboard</span>
                 </button>
               )}
-              <button className="gq-iconbtn" onClick={() => goTo("/my-coins")} aria-label={`Xu: ${userCoins}`} title="Xu của bé">
-                <Coins className="w-5 h-5 text-amber-500" />{userAuth?.user && !walletLoaded ? <span className="gq-iconbtn__n gq-iconbtn__n--load" aria-hidden="true">…</span> : userCoins > 0 && <span className="gq-iconbtn__n">{shortCount(userCoins)}</span>}
+              {/* Xu/Sao: pill trắng chứa icon + giá trị dạng chữ như ảnh mẫu
+                  (trước đây là nút icon + huy hiệu số nhỏ ở góc). */}
+              <button className="gq-wallet" onClick={() => goTo("/my-coins")} aria-label={`Xu: ${userCoins}`} title="Xu của bé">
+                <span className="gq-wallet__ico gq-wallet__ico--coin" aria-hidden="true"><Coins className="w-4 h-4" /></span>
+                <span className="gq-wallet__val">{userAuth?.user && !walletLoaded ? "…" : shortCount(userCoins)}</span>
               </button>
-              <button className="gq-iconbtn" onClick={() => goTo("/store")} aria-label={`Sao: ${userStars} — mở cửa hàng sao`} title="Cửa hàng sao — đổi coin ⇄ sao">
-                <Star className="w-5 h-5 text-amber-400" fill="currentColor" />{userAuth?.user && !walletLoaded ? <span className="gq-iconbtn__n gq-iconbtn__n--load" aria-hidden="true">…</span> : userStars > 0 && <span className="gq-iconbtn__n">{shortCount(userStars)}</span>}
+              <button className="gq-wallet" onClick={() => goTo("/store")} aria-label={`Sao: ${userStars} — mở cửa hàng sao`} title="Cửa hàng sao — đổi coin ⇄ sao">
+                <span className="gq-wallet__ico gq-wallet__ico--star" aria-hidden="true"><Star className="w-4 h-4" fill="currentColor" /></span>
+                <span className="gq-wallet__val">{userAuth?.user && !walletLoaded ? "…" : shortCount(userStars)}</span>
               </button>
               <button
                 className={`gq-iconbtn ${soundOn ? "" : "gq-iconbtn--on"}`}
@@ -1015,6 +1054,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 >
                   <span className="gq-kidchip__ava" aria-hidden="true"><IconUser className="w-4 h-4" /></span>
                   <span className="gq-kidchip__name">{heroName}</span>
+                  <ChevronDown className="w-3.5 h-3.5 gq-kidchip__chev" aria-hidden="true" />
                 </button>
               )}
               {/* Chuyển Sáng/Tối — lưu trên máy này (useTheme), áp cho cả
@@ -1032,28 +1072,16 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             </div>
           </div>
 
-          {/* Hàng dưới header CHỈ còn chip thú cưng. Thanh tab điều hướng
-              cuộn ngang (gq-navtabs) đã BỎ hẳn theo yêu cầu 2026-11-09:
-              điều hướng danh mục chuyển sang trang Danh mục riêng
-              (/categories, có ở thanh dưới cùng + sheet ⚙️), mọi điểm đến
-              còn lại của hàng tab cũ nằm ở mục "Khám phá" trong sheet ⚙️
-              và thanh điều hướng dưới cùng — không mất điểm đến nào. */}
-          {userAuth?.user && (
-            <nav className="gq-navrow" aria-label="Điều hướng">
-              <button className="gq-petchip" onClick={() => goTo("/pet")} title={`${pet.name} · cấp ${pet.level}`}>
-                <PetAvatar size={30} ring={false} />
-                <span className="gq-petchip__txt">
-                  <span className="gq-petchip__name">{pet.name}</span>
-                  <span className="gq-petchip__sub">Cấp {pet.level} · {moodLabel(pet.mood)}</span>
-                </span>
-              </button>
-            </nav>
-          )}
         </header>
 
         {/* ─────────── HERO CHÀO BÉ ─────────── */}
         <section className="gq-hero" aria-label="Lời chào của Đô">
-          <img src={`${import.meta.env.BASE_URL}bb4eaaa0-bcdf-4e8e-a002-e70ec5601c7f.png`} alt="" aria-hidden="true" className="gq-hero__mascot" />
+          <div className="gq-hero__art" aria-hidden="true">
+            <img src={`${import.meta.env.BASE_URL}bb4eaaa0-bcdf-4e8e-a002-e70ec5601c7f.png`} alt="" className="gq-hero__mascot" />
+            <span className="gq-spark gq-spark--1">★</span>
+            <span className="gq-spark gq-spark--2">★</span>
+            <span className="gq-spark gq-spark--3">★</span>
+          </div>
           <div className="gq-hero__bubble">
             <p className="gq-hero__hi">{userAuth?.user ? `Chào ${heroName}! 👋` : "Chào bạn! 👋"}</p>
             <p className="gq-hero__ask">
@@ -1061,19 +1089,27 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 ? "Đô đang mời trò chơi ra đây rồi…"
                 : <>Hôm nay có <b className="gq-hero__count">{gameCount}</b> trò chơi đang chờ {userAuth?.user ? "bé đó" : "bạn"}!</>}
             </p>
-            {/* Tên thú cưng hiện thêm ở đây (ngoài chip cạnh logo) để bé thấy
-                bạn đồng hành ngay trong lời chào — tên đổi theo hồ sơ thú cưng. */}
-            {userAuth?.user && (
-              <p className="gq-hero__pet">
-                <span aria-hidden="true">🐾</span>{" "}
-                <b>{pet.name}</b> đang chờ bé cùng học đó!
-              </p>
-            )}
-            {/* Chưa đăng nhập thì không chào ai cả — tên bé trong kidSettings là của
-                máy này, có thể là của tài khoản khác dùng chung thiết bị. */}
-            {!userAuth?.user && (
-              <button className="gq-hero__login" onClick={onUserLogin}>Hãy đăng nhập</button>
-            )}
+            {/* Dải ruy-băng vàng dưới lời chào: đã đăng nhập thì gọi tên thú
+                cưng (bạn đồng hành của bé, tên đổi theo hồ sơ thú cưng);
+                khách thì là lời mời khám phá chung. */}
+            <div className="gq-hero__row">
+              {userAuth?.user ? (
+                <p className="gq-hero__ribbon">
+                  <span aria-hidden="true">🐾</span>{" "}
+                  <span><b>{pet.name}</b> đang chờ bé cùng học đó!</span>
+                </p>
+              ) : (
+                <p className="gq-hero__ribbon">
+                  <span aria-hidden="true">🎓</span>{" "}
+                  <span>Cùng khám phá và học thật vui nhé!</span>
+                </p>
+              )}
+              {/* Chưa đăng nhập thì không chào ai cả — tên bé trong kidSettings là của
+                  máy này, có thể là của tài khoản khác dùng chung thiết bị. */}
+              {!userAuth?.user && (
+                <button className="gq-hero__login" onClick={onUserLogin}>Hãy đăng nhập</button>
+              )}
+            </div>
           </div>
         </section>
 
@@ -1097,35 +1133,63 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           <p className="text-xs text-center bg-white rounded-2xl py-2 px-3 shadow mb-3">{pushMessage}</p>
         )}
 
-        {/* ─────────── NÚT TẮT + CHƠI NGẪU NHIÊN ─────────── */}
+        {/* Dải sóng mềm ở chân khung cảnh — chuyển từ tranh minh hoạ xuống
+            nền trang (màu lấy theo var(--stage) nên tự khớp cả Sáng/Tối). */}
+        <svg className="gq-scene__wave" viewBox="0 0 1440 64" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+          <path d="M0 34 C 180 62, 360 8, 560 22 C 760 36, 900 60, 1100 44 C 1240 33, 1360 18, 1440 30 L1440 64 L0 64 Z" />
+        </svg>
+        </div>{/* hết .gq-scene */}
+
+        {/* ─────────── HÀNG NÚT TẮT LỚN + CHƠI NGAY ───────────
+            Chồng lên mép dưới khung cảnh (margin âm trong CSS). */}
         <div className="gq-playbar">
           {/* "Bài học" trước đây chỉ nằm trong dropdown "Thêm" của header nên
               học sinh nhỏ khó tìm (kiểm chứng production 2026-11-08); đưa ra
               hàng nút tắt ở thân trang, chỉ hiện khi đã đăng nhập như mục menu. */}
           {userAuth?.user && (
-            <button className="gq-mini" onClick={() => goTo("/lessons")}>
-              <span className="gq-mini__ico" aria-hidden="true"><BookOpen className="w-5 h-5 text-sky-600" /></span>
-              <span className="gq-mini__lbl">Bài học</span>
+            <button className="gq-play gq-play--learn" onClick={() => goTo("/lessons")}>
+              <span className="gq-play__ico" aria-hidden="true"><BookOpen className="w-6 h-6" /></span>
+              <span className="gq-play__lbl">Bài học</span>
+              <span className="gq-play__chev" aria-hidden="true"><ChevronRight className="w-5 h-5" /></span>
             </button>
           )}
-          <button className="gq-mini" onClick={() => goTo("/achievements")}>
-            <span className="gq-mini__ico" aria-hidden="true"><Trophy className="w-5 h-5 text-amber-500" /></span>
-            <span className="gq-mini__lbl">Cúp</span>
-            {pendingTaskCount > 0 && <span className="gq-mini__dot" aria-label={`${pendingTaskCount} nhiệm vụ`} />}
+          <button className="gq-play gq-play--cup" onClick={() => goTo("/achievements")}>
+            <span className="gq-play__ico" aria-hidden="true"><Trophy className="w-6 h-6" /></span>
+            <span className="gq-play__lbl">Cúp</span>
+            {pendingTaskCount > 0 && <span className="gq-play__dot" aria-label={`${pendingTaskCount} nhiệm vụ`} />}
+            <span className="gq-play__chev" aria-hidden="true"><ChevronRight className="w-5 h-5" /></span>
           </button>
-          <button className="gq-mini" onClick={() => setShowCodeModal(true)}>
-            <span className="gq-mini__ico" aria-hidden="true"><Ticket className="w-5 h-5 text-violet-500" /></span>
-            <span className="gq-mini__lbl">Nhập mã</span>
+          <button className="gq-play gq-play--code" onClick={() => setShowCodeModal(true)}>
+            <span className="gq-play__ico" aria-hidden="true"><Ticket className="w-6 h-6" /></span>
+            <span className="gq-play__lbl">Nhập mã</span>
+            <span className="gq-play__chev" aria-hidden="true"><ChevronRight className="w-5 h-5" /></span>
           </button>
-          <button className="gq-random" onClick={handleRandomPlay}>
-            <span className="gq-random__ico" aria-hidden="true"><Dices className="w-5 h-5" /></span>
-            Chơi ngẫu nhiên
+          {/* Nhãn đổi thành "Chơi ngay" cho gọn như ảnh mẫu — hành vi vẫn là
+              bốc một game ngẫu nhiên (handleRandomPlay) như cũ. */}
+          <button className="gq-play gq-play--go" onClick={handleRandomPlay}>
+            <span className="gq-play__ico" aria-hidden="true"><Play className="w-6 h-6" fill="currentColor" /></span>
+            <span className="gq-play__lbl">Chơi ngay</span>
           </button>
         </div>
 
         {/* ─────────── HÔM NAY CỦA BÉ ─────────── */}
         <section className="gq-sect">
-          <SectionHead icon={<Star className="w-5 h-5 text-amber-500" />} title="Hôm nay của bé" sub="Học xen chơi · đổi mới ngày" />
+          {/* Tiêu đề kiểu biển gỗ như ảnh mẫu (riêng section này, các section
+              dưới vẫn dùng SectionHead chung) + pill "Xem tất cả" sang trang
+              Danh mục. */}
+          <div className="gq-todayhead">
+            <div className="gq-todayhead__left">
+              <div className="gq-woodsign">
+                <span className="gq-woodsign__badge" aria-hidden="true"><Star className="w-5 h-5" fill="currentColor" /></span>
+                <h2 className="gq-woodsign__t">Hôm nay của bé</h2>
+              </div>
+              <p className="gq-todayhead__sub">Học xen chơi · đổi mới ngày</p>
+            </div>
+            <button className="gq-seeall" onClick={() => goTo("/categories")}>
+              Xem tất cả
+              <ChevronRight className="w-4 h-4" aria-hidden="true" />
+            </button>
+          </div>
 
           {/* error xét TRƯỚC games===null: tải lỗi thì games vẫn null, để
               games trước là ErrorState không bao giờ hiện (quay vòng mãi). */}
@@ -1136,21 +1200,29 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           ) : todayGames.length === 0 ? (
             <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Thầy cô thêm game vào nhé!" />
           ) : (
-            <div className="gq-rail gq-board" data-rail="today">
-              {SHOW_MATH_ADVENTURE && (
-                <GqGameCard
-                  name={FEATURED_GAME.name}
-                  icon={FEATURED_GAME.icon}
-                  thumb={gameThumbnail(FEATURED_GAME.key, FEATURED_GAME.name)}
-                  tint="#ffd45e"
-                  badge="Mới"
-                  age="2–8 tuổi"
-                  play={() => navigate(FEATURED_GAME.path)}
-                />
-              )}
-              {todayGames.slice(2).map(({ key, ...card }) => (
-                <GqGameCard key={key} {...card} />
-              ))}
+            <div className="gq-railwrap">
+              <button className="gq-railnav gq-railnav--prev" onClick={() => scrollTodayRail(-1)} aria-label="Cuộn danh sách sang trái">
+                <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+              </button>
+              <div className="gq-rail gq-board" data-rail="today" ref={todayRailRef}>
+                {SHOW_MATH_ADVENTURE && (
+                  <HomeGameCard
+                    name={FEATURED_GAME.name}
+                    icon={FEATURED_GAME.icon}
+                    thumb={gameThumbnail(FEATURED_GAME.key, FEATURED_GAME.name)}
+                    tint="#ffd45e"
+                    badge="Mới"
+                    age="2–8 tuổi"
+                    play={() => navigate(FEATURED_GAME.path)}
+                  />
+                )}
+                {todayGames.slice(2).map(({ key, ...card }) => (
+                  <HomeGameCard key={key} {...card} />
+                ))}
+              </div>
+              <button className="gq-railnav gq-railnav--next" onClick={() => scrollTodayRail(1)} aria-label="Cuộn danh sách sang phải">
+                <ChevronRight className="w-5 h-5" aria-hidden="true" />
+              </button>
             </div>
           )}
         </section>
@@ -1502,6 +1574,40 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 }
 
 /* ═══════════════════════ COMPONENT PHỤ ═══════════════════════ */
+
+/** Thẻ game RIÊNG cho rail "Hôm nay của bé" theo ảnh mẫu mới: ảnh bìa chữ
+ *  nhật bo tròn tỉ lệ 4/3 phủ kín (cover), nhãn loại ở góc trái trên vùng
+ *  ảnh, tên 2 dòng + pill tuổi ở dưới. KHÔNG dùng cho các section khác —
+ *  chúng (và trang Danh mục) vẫn dùng GqGameCard dùng chung như cũ.
+ *  Màu nhãn theo loại: "Học" xanh dương, "Mới" cam, còn lại tím — cùng
+ *  quy ước suy class như GqGameCard (badge === "Mới" → new, "Học" → learn,
+ *  còn lại → play). Thiếu ảnh bìa thì nền tint + icon/chữ cái đầu tên game. */
+function HomeGameCard({ icon, name, tint, badge, age, note, thumb, play }) {
+  return (
+    <button
+      onClick={play}
+      aria-label={`Chơi ${name}`}
+      title={name}
+      className="gq-hcard"
+    >
+      <span className="gq-hcard__media" style={{ backgroundColor: tint }} aria-hidden="true">
+        {thumb ? (
+          <img src={thumb} alt="" loading="lazy" />
+        ) : (
+          <span className="gq-hcard__glyph">{icon || String(name || " ").trim().charAt(0).toUpperCase()}</span>
+        )}
+        {badge && (
+          <span className={`gq-hcard__badge gq-hcard__badge--${badge === "Mới" ? "new" : badge === "Học" ? "learn" : "play"}`}>
+            {badge}
+          </span>
+        )}
+      </span>
+      <span className="gq-hcard__name">{name}</span>
+      {age && <span className="gq-hcard__age">{age}</span>}
+      {note && <span className="gq-hcard__note">{note}</span>}
+    </button>
+  );
+}
 
 /** Đầu mục DÙNG CHUNG cho mọi section của trang chủ: ô icon + tiêu đề
  *  (+ nhãn số lượng) + mô tả ngắn. Trước đây mỗi section tự viết lại khối
