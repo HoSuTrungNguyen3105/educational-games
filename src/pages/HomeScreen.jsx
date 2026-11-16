@@ -45,6 +45,7 @@ import {
   RefreshCw,
   LayoutDashboard,
   LayoutGrid,
+  Grip,
   Settings,
   Bell,
   Calculator,
@@ -936,6 +937,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         { key: "store", icon: Star, label: "Cửa hàng", tint: "amber", onPress: () => goTo("/store") },
         { key: "coins", icon: Coins, label: "Xu của bé", tint: "yellow", onPress: () => goTo("/my-coins") },
         { key: "cats", icon: LayoutGrid, label: "Danh mục", tint: "teal", onPress: () => goTo("/categories") },
+        { key: "more", icon: Grip, label: "Thêm", tint: "slate", onPress: openMenu },
       ]
     : [
         { key: "login", icon: LogIn, label: "Đăng nhập", tint: "sky", onPress: onUserLogin },
@@ -946,6 +948,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         { key: "sound", icon: soundOn ? Volume2 : VolumeX, label: "Âm thanh", tint: "slate", onPress: toggleSound },
         { key: "offline", icon: Sparkles, label: "Thư giãn", tint: "violet", onPress: () => scrollTo("offline-section") },
         { key: "subjects", icon: BookOpen, label: "Môn học", tint: "green", onPress: () => scrollTo("subjects-section") },
+        { key: "more", icon: Grip, label: "Thêm", tint: "slate", onPress: openMenu },
       ];
 
   return (
@@ -969,8 +972,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
       <div className="gq-page">
         {/* ─────────── GIAO DIỆN MOBILE RIÊNG (≤820px) ───────────
-            Header xanh cong + card lưới chức năng + banner, kiểu app
-            điện thoại theo ảnh mẫu Nguyên gửi 2026-11-16. Khối này ẩn
+            Header nổi trên nền tranh như desktop + card lưới chức
+            năng + banner, kiểu app điện thoại theo ảnh mẫu Nguyên gửi
+            2026-11-16. Khối này ẩn
             hẳn ở desktop (CSS .gq-mhome display:none), và ở mobile thì
             .gq-top/.gq-hero/.gq-playbar bị ẩn thay thế — hai layout
             dùng chung dữ liệu/handler, chỉ khác cách trình bày. Các
@@ -981,7 +985,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             <span className="gq-mhead__ava" aria-hidden="true">
               <img src={`${import.meta.env.BASE_URL}bb4eaaa0-bcdf-4e8e-a002-e70ec5601c7f.png`} alt="" />
             </span>
-            <div className="gq-mhead__txt">
+            <div className="gq-mhead__txt gq-mhead__hello">
               <span className="gq-mhead__hi">Xin chào,</span>
               <span className="gq-mhead__name">{userAuth?.user ? heroName : "bạn nhỏ"}</span>
             </div>
