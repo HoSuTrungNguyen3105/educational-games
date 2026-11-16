@@ -5,7 +5,6 @@ import { socket } from '../socket/socket.js'
 import { SOCKET_EVENTS } from '../socket/socket.events.js'
 import { getLevelProgress } from '../lib/utils.js'
 import { hashString, metaForSubject, subjectLabel, tintFor } from '../lib/subjectMeta.js'
-import GqGameCard from '../components/GqGameCard.jsx'
 import BottomNav, { peekHomeScrollIntent, takeHomeScrollIntent } from '../components/BottomNav.jsx'
 import useChatUnread from '../hooks/useChatUnread.js'
 import { useTemplates } from '../lib/hooks.js'
@@ -13,7 +12,6 @@ import { navigate } from '../lib/router.js'
 import { canAccessDashboard } from '../config/roles.js'
 import './home-gq.css'
 import { EmptyState, ErrorState, IconFile, IconLogout, IconNotification, IconTrash, IconUser, Loader, ThemeToggle } from '../components/ui';
-import TaskIcon from '../components/tasks/TaskIcon.jsx';
 import { EnterCodeModal } from '../components/EnterCodeModal.jsx'
 import AiChatWidget from '../components/ai/AiChatWidget.jsx'
 import SupportRequestWidget from '../components/support/SupportRequestWidget.jsx'
@@ -25,8 +23,6 @@ import { useScrollLock } from '../hooks/useScrollLock.js'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
 import useReminderCheck from '../hooks/useReminderCheck.js'
 import { useSiteConfig } from '../hooks/useSiteConfig.js'
-import useAchievements from '../hooks/useAchievements.js'
-import { selectFeaturedAchievements } from '../data/achievements.js'
 import { playVibration, playReminderSound, stopVibrationLoop } from '../lib/reminderUtils.js'
 import {
   House,
@@ -52,7 +48,6 @@ import {
   Settings,
   Bell,
   Calculator,
-  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -210,7 +205,6 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
   { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
   { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
-  { key: "achievements", icon: Trophy, label: "Thành tựu", type: "path", path: "/achievements", show: true },
   { key: "leaderboard", icon: Crown, label: "Bảng xếp hạng", type: "path", path: "/leaderboard", show: !!userAuth?.user },
   { key: "profile", icon: IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
@@ -239,13 +233,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   const [walletLoaded, setWalletLoaded] = useState(false);
   const [gift, setGift] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  // Thành tựu nổi bật trong sheet hồ sơ: dữ liệu thật của người dùng
-  // (useAchievements, cùng nguồn với trang Thành tựu), chỉ tải khi mở sheet.
-  const { items: achievementItems, error: achievementsError } = useAchievements(userAuth, { enabled: menuOpen });
-  const featuredAchievements = useMemo(
-    () => selectFeaturedAchievements(achievementItems ?? []),
-    [achievementItems]
-  );
   const [soundOn, setSoundOn] = useState(() => {
     try { return localStorage.getItem('gq_sound') !== '0'; } catch { return true; }
   });
@@ -649,14 +636,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
   const lv = getLevelProgress(userCoins);
 
-  const handleClaimTask = async (taskId) => {
-    try {
-      const res = await taskService.claimReward(taskId);
-      if (res?.newCoins != null) setUserCoins(res.newCoins);
-      await loadTasks();
-    } catch { /* ignore */ }
-  };
-
   const pendingTaskCount = (dailyTasks || []).filter(t => !t.claimed).length;
 
   const visibleGames = useMemo(() => games || [], [games]);
@@ -933,16 +912,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     pick.run();
   };
 
-  /* Nút prev/next ở hai mép rail "Hôm nay của bé": cuộn rail theo ~80% bề
-     rộng đang thấy. Chỉ hiện trên thiết bị có hover (màn cảm ứng vuốt trực
-     tiếp) — ẩn bằng CSS ở khối .gq-railnav. */
-  const todayRailRef = useRef(null);
-  const scrollTodayRail = (dir) => {
-    const el = todayRailRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
-  };
-
   const closePwaBanner = () => {
     setPwaVisible(false);
     try { localStorage.setItem("gq_pwa_closed", "1"); } catch { /* ignore */ }
@@ -969,10 +938,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
       <div className="gq-page">
         {/* ─────────── KHUNG CẢNH: HEADER + HERO trên nền tranh ───────────
-            Header trong suốt nổi trên nền trời của ảnh phong cảnh (xem
-            .gq-scene trong home-gq.css), cuối hero là dải sóng mềm chuyển
-            xuống nền trang. Hàng nút tắt nằm NGOÀI scene, chồng lên mép
-            dưới của sóng. */}
+            Header trong suốt nổi trên nền trời của ảnh phong cảnh (ảnh nằm
+            ở .gq-home phủ toàn trang, .gq-scene trong suốt — xem
+            home-gq.css). Hàng nút tắt nằm NGOÀI scene, chồng lên mép
+            dưới hero. */}
         <div className="gq-scene">
         {/* ─────────── HEADER ─────────── */}
         <header className="gq-top">
@@ -1133,11 +1102,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           <p className="text-xs text-center bg-white rounded-2xl py-2 px-3 shadow mb-3">{pushMessage}</p>
         )}
 
-        {/* Dải sóng mềm ở chân khung cảnh — chuyển từ tranh minh hoạ xuống
-            nền trang (màu lấy theo var(--stage) nên tự khớp cả Sáng/Tối). */}
-        <svg className="gq-scene__wave" viewBox="0 0 1440 64" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-          <path d="M0 34 C 180 62, 360 8, 560 22 C 760 36, 900 60, 1100 44 C 1240 33, 1360 18, 1440 30 L1440 64 L0 64 Z" />
-        </svg>
         </div>{/* hết .gq-scene */}
 
         {/* ─────────── HÀNG NÚT TẮT LỚN + CHƠI NGAY ───────────
@@ -1174,22 +1138,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
         {/* ─────────── HÔM NAY CỦA BÉ ─────────── */}
         <section className="gq-sect">
-          {/* Tiêu đề kiểu biển gỗ như ảnh mẫu (riêng section này, các section
-              dưới vẫn dùng SectionHead chung) + pill "Xem tất cả" sang trang
-              Danh mục. */}
-          <div className="gq-todayhead">
-            <div className="gq-todayhead__left">
-              <div className="gq-woodsign">
-                <span className="gq-woodsign__badge" aria-hidden="true"><Star className="w-5 h-5" fill="currentColor" /></span>
-                <h2 className="gq-woodsign__t">Hôm nay của bé</h2>
-              </div>
-              <p className="gq-todayhead__sub">Học xen chơi · đổi mới ngày</p>
-            </div>
-            <button className="gq-seeall" onClick={() => goTo("/categories")}>
-              Xem tất cả
-              <ChevronRight className="w-4 h-4" aria-hidden="true" />
-            </button>
-          </div>
+          <HomeSectionHead
+            icon={<Star className="w-5 h-5" fill="currentColor" />}
+            title="Hôm nay của bé"
+            sub="Học xen chơi · đổi mới ngày"
+            onSeeAll={() => goTo("/categories")}
+          />
 
           {/* error xét TRƯỚC games===null: tải lỗi thì games vẫn null, để
               games trước là ErrorState không bao giờ hiện (quay vòng mãi). */}
@@ -1200,76 +1154,66 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           ) : todayGames.length === 0 ? (
             <EmptyState icon={<PartyPopper className="w-10 h-10 text-gray-400" />} title="Chưa có trò chơi nào" subtitle="Thầy cô thêm game vào nhé!" />
           ) : (
-            <div className="gq-railwrap">
-              <button className="gq-railnav gq-railnav--prev" onClick={() => scrollTodayRail(-1)} aria-label="Cuộn danh sách sang trái">
-                <ChevronLeft className="w-5 h-5" aria-hidden="true" />
-              </button>
-              <div className="gq-rail gq-board" data-rail="today" ref={todayRailRef}>
-                {SHOW_MATH_ADVENTURE && (
-                  <HomeGameCard
-                    name={FEATURED_GAME.name}
-                    icon={FEATURED_GAME.icon}
-                    thumb={gameThumbnail(FEATURED_GAME.key, FEATURED_GAME.name)}
-                    tint="#ffd45e"
-                    badge="Mới"
-                    age="2–8 tuổi"
-                    play={() => navigate(FEATURED_GAME.path)}
-                  />
-                )}
-                {todayGames.slice(2).map(({ key, ...card }) => (
-                  <HomeGameCard key={key} {...card} />
-                ))}
-              </div>
-              <button className="gq-railnav gq-railnav--next" onClick={() => scrollTodayRail(1)} aria-label="Cuộn danh sách sang phải">
-                <ChevronRight className="w-5 h-5" aria-hidden="true" />
-              </button>
-            </div>
+            <HomeRail dataRail="today">
+              {SHOW_MATH_ADVENTURE && (
+                <HomeGameCard
+                  name={FEATURED_GAME.name}
+                  icon={FEATURED_GAME.icon}
+                  thumb={gameThumbnail(FEATURED_GAME.key, FEATURED_GAME.name)}
+                  tint="#ffd45e"
+                  badge="Mới"
+                  age="2–8 tuổi"
+                  play={() => navigate(FEATURED_GAME.path)}
+                />
+              )}
+              {todayGames.slice(2).map(({ key, ...card }) => (
+                <HomeGameCard key={key} {...card} />
+              ))}
+            </HomeRail>
           )}
         </section>
 
         {/* ─────────── SỐ & TOÁN (nền xanh lá) ─────────── */}
         {mathGames.length > 0 && (
           <section className="gq-sect gq-sect--green" id="math-section">
-            <SectionHead icon={<Calculator className="w-5 h-5 text-emerald-600" />} title="Số & toán" count={mathGames.length} sub="Học số · tập đếm · so sánh · chia đều · đồng hồ · công trừ" />
-            <div className="gq-rail gq-board" data-rail="math">
-              {mathGames.map(({ key, ...card }) => <GqGameCard key={key} {...card} />)}
-            </div>
+            <HomeSectionHead icon={<Calculator className="w-5 h-5 text-emerald-600" />} title="Số & toán" count={mathGames.length} sub="Học số · tập đếm · so sánh · chia đều · đồng hồ · công trừ" onSeeAll={() => goTo("/categories")} />
+            <HomeRail dataRail="math">
+              {mathGames.map(({ key, ...card }) => <HomeGameCard key={key} {...card} />)}
+            </HomeRail>
           </section>
         )}
 
         {/* ─────────── 2. GAME THƯ GIÃN (OFFLINE) ─────────── */}
         <section className="gq-sect" id="offline-section">
-          <SectionHead icon={<Gamepad2 className="w-5 h-5 text-violet-500" />} title="Game thư giãn" count={offlineCards.length} sub="Chơi không cần mạng · tiến độ lưu trên máy" />
-          <div className="gq-rail gq-board" data-rail="offline">
-            {offlineCards.map(({ key, ...card }) => <GqGameCard key={key} {...card} />)}
-          </div>
+          <HomeSectionHead icon={<Gamepad2 className="w-5 h-5 text-violet-500" />} title="Game thư giãn" count={offlineCards.length} sub="Chơi không cần mạng · tiến độ lưu trên máy" onSeeAll={() => goTo("/categories")} />
+          <HomeRail dataRail="offline">
+            {offlineCards.map(({ key, ...card }) => <HomeGameCard key={key} {...card} />)}
+          </HomeRail>
         </section>
 
         {/* ─────────── 3. GAME NHẬP VAI TRƯỜNG HỌC ─────────── */}
         <section className="gq-sect gq-sect--green" id="rpg-section">
-          <SectionHead icon={<School className="w-5 h-5 text-emerald-600" />} title="Game nhập vai trường học" sub="Khám phá trường · học từng lớp · làm bài thi" />
-          <div className="gq-rail gq-board" data-rail="school">
-            <GqGameCard {...schoolRpgCard} />
-          </div>
+          <HomeSectionHead icon={<School className="w-5 h-5 text-emerald-600" />} title="Game nhập vai trường học" sub="Khám phá trường · học từng lớp · làm bài thi" onSeeAll={() => goTo("/categories")} />
+          <HomeRail dataRail="school">
+            <HomeGameCard {...schoolRpgCard} />
+          </HomeRail>
         </section>
 
         {/* ─────────── MÔN HỌC ─────────── */}
         {subjectCards.length > 0 && (
           <section className="gq-sect" id="subjects-section">
-            <SectionHead icon={<BookOpen className="w-5 h-5 text-violet-600" />} title="Môn học" count={subjectCards.length} sub="Chọn một môn để xem các trò chơi của môn đó" />
+            <HomeSectionHead icon={<BookOpen className="w-5 h-5 text-violet-600" />} title="Môn học" count={subjectCards.length} sub="Chọn một môn để xem các trò chơi của môn đó" onSeeAll={() => goTo("/categories")} />
             <div className="gq-grid gq-board">
               {subjectCards.map(({ name, count, meta }) => (
-                <button
+                <HomeGameCard
                   key={name}
-                  onClick={() => pickSubject(name)}
-                  className="gq-card"
-                  aria-label={`Xem trò chơi môn ${name}`}
-                  title={name}
-                >
-                  <span className="gq-card__ring" style={{ backgroundColor: tintFor(name) }} aria-hidden="true">{meta.icon}</span>
-                  <span className="gq-card__name">{name}</span>
-                  <span className="gq-card__age">{count} trò chơi</span>
-                </button>
+                  name={name}
+                  icon={meta.icon}
+                  tint={tintFor(name)}
+                  age={`${count} trò chơi`}
+                  ariaLabel={`Xem trò chơi môn ${name}`}
+                  play={() => pickSubject(name)}
+                />
               ))}
             </div>
           </section>
@@ -1277,13 +1221,14 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
         {/* ─────────── 1. GAME HỌC TẬP (API) ─────────── */}
         <section className="gq-sect" id="games-section">
-          <SectionHead
+          <HomeSectionHead
             icon={<BookOpen className="w-5 h-5 text-sky-600" />}
             title="Game học tập"
             count={subjectFilter ? learningGames.length : visibleGames.length}
             sub={subjectFilter
               ? <>Đang xem môn <b>{subjectFilter}</b> · <button onClick={() => setSubjectFilter(null)} className="underline font-bold">Bỏ lọc</button></>
               : showAllGames ? "Đồng bộ điểm & tiến trình khi có mạng" : `Xem trước ${PREVIEW_GAMES} game · lưu kết quả lên máy chủ`}
+            onSeeAll={() => goTo("/categories")}
           />
 
           {/* Trạng thái tải/lỗi/rỗng giống hệt khu "Hôm nay của bé" — trước
@@ -1302,7 +1247,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               const meta = metaForSubject(subject);
               const tint = tintFor(game.name || String(index));
               return (
-                <GqGameCard
+                <HomeGameCard
                   key={game._id || game.id || index}
                   name={game.name}
                   icon={t?.icon}
@@ -1411,25 +1356,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               </div>
               <div className="gq-sheet__sep" />
 
-              {/* Nhiệm vụ hôm nay */}
-              {userAuth?.user && (
-                <>
-                  <p className="px-3 pt-2 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
-                    Nhiệm vụ hôm nay{pendingTaskCount ? ` · ${pendingTaskCount}` : ""}
-                  </p>
-                  {dailyTasks === null ? (
-                    <p className="px-3 py-2 text-xs text-slate-400 animate-pulse">Đang tải nhiệm vụ...</p>
-                  ) : dailyTasks.length === 0 ? (
-                    <p className="px-3 py-2 text-xs text-slate-400">Không có nhiệm vụ hôm nay</p>
-                  ) : (
-                    dailyTasks.slice(0, 4).map((t) => (
-                      <MiniQuestRow key={t.id} task={t} onClaim={handleClaimTask} />
-                    ))
-                  )}
-                  <div className="gq-sheet__sep" />
-                </>
-              )}
-
               {/* Thông báo */}
               {userAuth?.user && (
                 <>
@@ -1460,36 +1386,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                     </>
                   )}
                   <div className="gq-sheet__sep" />
-                </>
-              )}
-
-              {/* Thành tựu nổi bật — dữ liệu thật (useAchievements), chỉ hiện khi đã đăng nhập */}
-              {userAuth?.user && (
-                <>
-                  <div className="gq-sheet__sep" />
-                  <p className="px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Thành tựu</p>
-                  {achievementItems === null ? (
-                    <p className="px-3 py-2 text-xs text-slate-400 animate-pulse">Đang tải thành tựu...</p>
-                  ) : achievementsError ? (
-                    <p className="px-3 py-2 text-xs text-slate-400">Không tải được thành tựu</p>
-                  ) : (
-                    featuredAchievements.map((a) => (
-                      <div key={a.id} className="gq-link" style={{ cursor: "default" }}>
-                        <span className="gq-link__ico">{a.icon}</span>
-                        <span className="flex-1 min-w-0">
-                          <span className="block truncate">{a.title}</span>
-                          <span className="mt-1 block h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                            <span
-                              className="block h-full rounded-full bg-emerald-400"
-                              style={{ width: `${Math.min(100, (a.progress / a.target) * 100)}%` }}
-                            />
-                          </span>
-                        </span>
-                        <span className="text-[11px] font-extrabold text-amber-600">{a.progress.toLocaleString()}/{a.target.toLocaleString()}</span>
-                      </div>
-                    ))
-                  )}
-                  <button onClick={() => goTo("/achievements")} className="gq-link text-xs text-slate-500">Xem tất cả thành tựu</button>
                 </>
               )}
 
@@ -1575,18 +1471,19 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
 
 /* ═══════════════════════ COMPONENT PHỤ ═══════════════════════ */
 
-/** Thẻ game RIÊNG cho rail "Hôm nay của bé" theo ảnh mẫu mới: ảnh bìa chữ
- *  nhật bo tròn tỉ lệ 4/3 phủ kín (cover), nhãn loại ở góc trái trên vùng
- *  ảnh, tên 2 dòng + pill tuổi ở dưới. KHÔNG dùng cho các section khác —
- *  chúng (và trang Danh mục) vẫn dùng GqGameCard dùng chung như cũ.
- *  Màu nhãn theo loại: "Học" xanh dương, "Mới" cam, còn lại tím — cùng
- *  quy ước suy class như GqGameCard (badge === "Mới" → new, "Học" → learn,
- *  còn lại → play). Thiếu ảnh bìa thì nền tint + icon/chữ cái đầu tên game. */
-function HomeGameCard({ icon, name, tint, badge, age, note, thumb, play }) {
+/** Thẻ game RIÊNG cho trang chủ theo ảnh mẫu mới: ảnh bìa chữ nhật bo
+ *  tròn tỉ lệ 4/3 phủ kín (cover), nhãn loại ở góc trái trên vùng ảnh,
+ *  tên 2 dòng + pill tuổi ở dưới. Dùng cho MỌI section của trang chủ
+ *  (trang Danh mục vẫn dùng GqGameCard dùng chung như cũ).
+ *  Màu nhãn theo loại: "Học" xanh dương, "Mới" cam đỏ, "Offline" cam hổ
+ *  phách, còn lại tím. Thiếu ảnh bìa thì nền tint + icon/chữ cái đầu tên
+ *  game. `ariaLabel` ghi đè nhãn mặc định "Chơi {name}" (thẻ Môn học
+ *  không phải game để "chơi"). */
+function HomeGameCard({ icon, name, tint, badge, age, note, thumb, play, ariaLabel }) {
   return (
     <button
       onClick={play}
-      aria-label={`Chơi ${name}`}
+      aria-label={ariaLabel || `Chơi ${name}`}
       title={name}
       className="gq-hcard"
     >
@@ -1597,7 +1494,7 @@ function HomeGameCard({ icon, name, tint, badge, age, note, thumb, play }) {
           <span className="gq-hcard__glyph">{icon || String(name || " ").trim().charAt(0).toUpperCase()}</span>
         )}
         {badge && (
-          <span className={`gq-hcard__badge gq-hcard__badge--${badge === "Mới" ? "new" : badge === "Học" ? "learn" : "play"}`}>
+          <span className={`gq-hcard__badge gq-hcard__badge--${badge === "Mới" ? "new" : badge === "Học" ? "learn" : badge === "Offline" ? "offline" : "play"}`}>
             {badge}
           </span>
         )}
@@ -1609,49 +1506,63 @@ function HomeGameCard({ icon, name, tint, badge, age, note, thumb, play }) {
   );
 }
 
-/** Đầu mục DÙNG CHUNG cho mọi section của trang chủ: ô icon + tiêu đề
- *  (+ nhãn số lượng) + mô tả ngắn. Trước đây mỗi section tự viết lại khối
- *  này nên style dễ lệch nhau; nay một mẫu duy nhất. `sub` nhận cả JSX
- *  (khu Game học tập có nút "Bỏ lọc" trong dòng mô tả). */
-function SectionHead({ icon, title, count, sub }) {
+/** Đầu mục DÙNG CHUNG cho mọi section của trang chủ, theo diện mạo của
+ *  section "Hôm nay của bé": biển gỗ (gradient nâu, nghiêng −1deg) với
+ *  huy hiệu tròn vàng ở mép trái chứa `icon` của section, `count` (nếu
+ *  có) thành pill đỏ nhỏ ngay trên biển, `sub` nằm dưới biển, pill
+ *  "Xem tất cả" ở mép phải khi có `onSeeAll`. `sub` nhận cả JSX (khu
+ *  Game học tập có nút "Bỏ lọc" trong dòng mô tả). */
+function HomeSectionHead({ icon, title, count, sub, onSeeAll }) {
   return (
-    <div className="gq-sect__head">
-      <span className="gq-sect__ico" aria-hidden="true">{icon}</span>
-      <div>
-        <h2 className="gq-sect__t">{title}{count != null && <span className="gq-sect__n">{count}</span>}</h2>
-        {sub && <p className="gq-sect__s">{sub}</p>}
+    <div className="gq-todayhead">
+      <div className="gq-todayhead__left">
+        <div className="gq-woodsign">
+          <span className="gq-woodsign__badge" aria-hidden="true">{icon}</span>
+          <h2 className="gq-woodsign__t">{title}</h2>
+          {count != null && <span className="gq-woodsign__n">{count}</span>}
+        </div>
+        {sub && <p className="gq-todayhead__sub">{sub}</p>}
       </div>
-    </div>
-  );
-}
-
-/* Ô game dùng chung đã chuyển sang src/components/GqGameCard.jsx để
-   trang Danh mục dùng lại đúng thẻ này. */
-
-/** Một dòng nhiệm vụ gọn cho sheet menu. */
-function MiniQuestRow({ task, onClaim }) {
-  return (
-    <div className="gq-link" style={{ cursor: "default" }}>
-      <span className="gq-link__ico"><TaskIcon code={task.code} type={task.type} className="w-4 h-4" /></span>
-      <span className="flex-1 min-w-0">
-        <span className="block truncate">{task.title}</span>
-        <span className="block text-[11px] font-semibold text-slate-400">
-          {Math.min(task.progress || 0, task.target || 0)}/{task.target || 0}
-        </span>
-      </span>
-      {task.claimed ? (
-        <span className="text-xs font-bold text-emerald-500 inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Đã nhận</span>
-      ) : (
-        <button
-          onClick={() => onClaim(task.id)}
-          className="rounded-full bg-emerald-500 text-white text-[11px] font-bold px-3 py-1"
-        >
-          Nhận
+      {onSeeAll && (
+        <button className="gq-seeall" onClick={onSeeAll}>
+          Xem tất cả
+          <ChevronRight className="w-4 h-4" aria-hidden="true" />
         </button>
       )}
     </div>
   );
 }
+
+/** Rail cuộn ngang DÙNG CHUNG cho các section dạng dải của trang chủ:
+ *  khung board + nút prev/next tròn ở hai mép, cuộn ~80% bề rộng đang
+ *  thấy mỗi lần bấm. Chỉ hiện nút trên thiết bị có hover (màn cảm ứng
+ *  vuốt trực tiếp) — ẩn bằng CSS ở khối .gq-railnav. `dataRail` giữ
+ *  nguyên giá trị cũ của từng section vì cơ chế nhớ vị trí cuộn
+ *  (writeScrollMemo) đọc theo thuộc tính data-rail. */
+function HomeRail({ dataRail, children }) {
+  const railRef = useRef(null);
+  const scrollRail = (dir) => {
+    const el = railRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+  };
+  return (
+    <div className="gq-railwrap">
+      <button className="gq-railnav gq-railnav--prev" onClick={() => scrollRail(-1)} aria-label="Cuộn danh sách sang trái">
+        <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+      </button>
+      <div className="gq-rail gq-board" data-rail={dataRail} ref={railRef}>
+        {children}
+      </div>
+      <button className="gq-railnav gq-railnav--next" onClick={() => scrollRail(1)} aria-label="Cuộn danh sách sang phải">
+        <ChevronRight className="w-5 h-5" aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
+/* Ô game dùng chung GqGameCard (src/components/GqGameCard.jsx) nay chỉ
+   còn trang Danh mục dùng — trang chủ đã chuyển hẳn sang HomeGameCard. */
 
 /**
  * Confetti — dải hoạ tiết ôm lấy phần đầu trang (đằng sau header).
