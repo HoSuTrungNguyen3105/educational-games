@@ -1493,11 +1493,11 @@
 
 /* ============================================================
    GIAO DIỆN MOBILE RIÊNG (≤820px) — kiểu app điện thoại theo ảnh
-   mẫu Nguyên gửi 2026-11-16: header xanh bo cong đáy + card lưới
-   chức năng chồng lên header + banner ngang bo tròn, các section
-   game thành lưới thẻ 2 cột. Desktop (>820px) GIỮ NGUYÊN: khối
-   .gq-mhome ẩn hẳn ở base và MỌI rule mobile khác đều nằm trong
-   media query dưới đây nên không rò sang desktop.
+   mẫu Nguyên gửi 2026-11-16: header nổi trên nền tranh như desktop
+   + card lưới chức năng chồng lên header + banner ngang bo tròn,
+   các section game thành lưới thẻ 2 cột. Desktop (>820px) GIỮ
+   NGUYÊN: khối .gq-mhome ẩn hẳn ở base và MỌI rule mobile khác
+   đều nằm trong media query dưới đây nên không rò sang desktop.
    ============================================================ */
 .gq-mhome { display: none; }
 
@@ -1509,20 +1509,22 @@
   .gq-hero,
   .gq-playbar { display: none; }
 
-  /* ── Header xanh cong ──
+  /* ── Header nổi trên nền tranh (như desktop) ──
      Tràn hết bề ngang .gq-page bằng margin âm (cùng kỹ thuật .gq-scene).
-     Không cộng thêm var(--sat): body ở index.css đã chừa safe-area-top
-     cho toàn trang rồi, cộng nữa sẽ thừa một khoảng trên máy có tai thỏ. */
+     Nền TRONG SUỐT: ảnh tranh của .gq-home hiện xuyên suốt qua header
+     như desktop — bản mobile đầu dùng dải gradient xanh đặc nên tranh
+     chỉ còn thấy ở phía dưới, nhìn lạc quẻ (Nguyên góp ý 2026-11-16).
+     Chữ chào bọc trong pill trắng .gq-mhead__hello cho dễ đọc trên
+     nền trời sáng. Không cộng thêm var(--sat): body ở index.css đã
+     chừa safe-area-top cho toàn trang rồi, cộng nữa sẽ thừa một
+     khoảng trên máy có tai thỏ. */
   .gq-mhead {
     display: flex;
     align-items: center;
     gap: 12px;
     margin: 0 calc(clamp(12px, 2.5vw, 40px) * -1);
     padding: 16px clamp(12px, 2.5vw, 40px) 44px;
-    background: linear-gradient(160deg, #38bdf8 0%, #2563eb 100%);
-    border-bottom-left-radius: 30px;
-    border-bottom-right-radius: 30px;
-    box-shadow: 0 12px 26px rgba(37, 99, 235, 0.28);
+    background: transparent;
   }
   .gq-mhead__ava {
     width: 52px;
@@ -1541,9 +1543,20 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    color: #fff;
+    color: var(--ink);
   }
-  .gq-mhead__hi { font-size: 13px; font-weight: 600; opacity: 0.85; }
+  /* Pill trắng ôm khối chữ chào — nổi trên nền tranh như các pill
+     của header desktop. flex 0 1 auto đè flex 1 của .gq-mhead__txt
+     để pill ôm theo nội dung thay vì giãn hết bề ngang; khoảng trống
+     còn lại do .gq-mhead__actions margin-left:auto chiếm. */
+  .gq-mhead__hello {
+    flex: 0 1 auto;
+    background: var(--card);
+    border-radius: 999px;
+    padding: 7px 14px;
+    box-shadow: 0 6px 14px rgba(22, 48, 94, 0.18);
+  }
+  .gq-mhead__hi { font-size: 13px; font-weight: 600; color: var(--muted); }
   .gq-mhead__name {
     font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
     font-size: 21px;
@@ -1553,26 +1566,27 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .gq-mhead__actions { display: flex; gap: 8px; flex: 0 0 auto; }
-  /* Nút tròn mờ trên nền xanh (Sáng/Tối + Menu) — icon theo currentColor. */
+  .gq-mhead__actions { display: flex; gap: 8px; flex: 0 0 auto; margin-left: auto; }
+  /* Nút tròn trắng như desktop (Sáng/Tối + Menu) — icon theo currentColor. */
   .gq-miconbtn {
     position: relative;
     width: 40px;
     height: 40px;
     border-radius: 999px;
     border: 0;
-    background: rgba(255, 255, 255, 0.22);
-    color: #fff;
+    background: var(--card);
+    color: var(--ink);
     display: grid;
     place-items: center;
     cursor: pointer;
+    box-shadow: 0 6px 14px rgba(22, 48, 94, 0.18);
     transition: background-color 0.15s ease, transform 0.15s ease;
   }
-  .gq-miconbtn:active { transform: scale(0.94); background: rgba(255, 255, 255, 0.34); }
+  .gq-miconbtn:active { transform: scale(0.94); }
   /* Badge số chưa đọc tái dùng .gq-iconbtn__n; viền của nó theo --gq-paper
-     (xanh nhạt) nên vẫn nổi trên nền xanh của header. */
+     (xanh nhạt) nên vẫn nổi trên nền thẻ của nút. */
 
-  /* ── Card lưới chức năng chồng lên phần cong của header ──
+  /* ── Card lưới chức năng chồng lên mép dưới header ──
      Margin ngang 0: .gq-page đã có đệm ngang clamp(12px…) nên card tự
      thẳng lề với các section bên dưới. */
   .gq-mquick {
