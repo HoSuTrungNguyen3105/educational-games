@@ -562,59 +562,124 @@ function startW3() {
         }
         return kid;
     }
-    /* Nhân vật chính dùng ảnh mascot chung (public/edu_character.png).
-
-       Ảnh gốc là 2D nên ở chế độ 3D được dựng thành sprite billboard: luôn
-       quay mặt về phía camera nhưng vẫn đứng/đi trong không gian 3D, có bóng
-       đổ dưới chân và nhún nhẹ khi bước — đúng cảm giác nhân vật 3D mà không
-       phải nặn model từ hình phẳng. Ảnh được thu vào canvas 256×256 (kích
-       thước luỹ thừa 2) để hợp mọi GPU; tải xong tự cập nhật texture. */
-    let avatarTex = null;
-    function avatarTexture() {
-        if (avatarTex) return avatarTex;
-        const cv = document.createElement("canvas");
-        cv.width = cv.height = 256;
-        const cx = cv.getContext("2d");
-        avatarTex = new THREE.CanvasTexture(cv);
-        avatarTex.anisotropy = 4;
-        const img = new Image();
-        img.onload = () => {
-            const h = 256, w = Math.round(h * img.naturalWidth / Math.max(1, img.naturalHeight));
-            cx.clearRect(0, 0, 256, 256);
-            cx.drawImage(img, (256 - w) / 2, 0, w, h);
-            avatarTex.needsUpdate = true;
-        };
-        img.src = "edu_character.png";
-        return avatarTex;
-    }
-    function makePlayerAvatar(name) {
+    /* Nhân vật chính dựng thành model 3D thật (không dùng ảnh billboard):
+       ngôi sao vàng đội mũ tốt nghiệp xanh, tay găng trắng, giày xanh, ba lô
+       sau lưng — lấy cảm hứng từ public/edu_character.png nhưng là khối 3D
+       nên nhìn được mọi góc khi camera xoay. Dùng lại geometry/material dùng
+       chung để đổi trang phục/đổi cảnh không rò rỉ bộ nhớ. */
+    let starBodyGeo = null;
+    function makeStarPlayer(name) {
         const root = new THREE.Group();
-        const body = new THREE.Group(); root.add(body);
-        const H = 1.5;
-        const sp = new THREE.Sprite(new THREE.SpriteMaterial({
-            map: avatarTexture(), transparent: true, depthWrite: false
-        }));
-        sp.scale.set(H, H, 1);
-        sp.position.y = H / 2 + .02;
-        body.add(sp);
-        const sh = new THREE.Mesh(
-            new THREE.CircleGeometry(.36, 20),
+        if (!starBodyGeo) {
+            const sh = new THREE.Shape();
+            for (let i = 0; i < 10; i++) {
+                const rad = i % 2 ? .25 : .55;
+                const a = Math.PI / 2 + i * Math.PI / 5;
+                const x = Math.cos(a) * rad, y = Math.sin(a) * rad;
+                if (!i) sh.moveTo(x, y); else sh.lineTo(x, y);
+            }
+            sh.closePath();
+            starBodyGeo = new THREE.ExtrudeGeometry(sh, {
+                depth: .2, bevelEnabled: true, bevelSegments: 2, steps: 1,
+                bevelSize: .035, bevelThickness: .035, curveSegments: 4
+            });
+            starBodyGeo.translate(0, 0, -.1);
+        }
+
+        const YEL = 0xffcf1a, BLUE = 0x2f5fd0, WHITE = 0xffffff;
+        const body = new THREE.Group(); body.position.y = .82; root.add(body);
+
+        // thân: ngôi sao 5 cánh dày, mặt trước quay về -z (hướng di chuyển)
+        body.add(new THREE.Mesh(starBodyGeo, matOf(YEL)));
+
+        // ── mặt trước ──
+        const faceG = new THREE.Group(); body.add(faceG);
+        const eyeL = ball(.06, 0x3a2416, -.15, .04, -.17, faceG);
+        eyeL.scale.set(.06, .078, .028);
+        const eyeR = ball(.06, 0x3a2416, .15, .04, -.17, faceG);
+        eyeR.scale.set(.06, .078, .028);
+        ball(.019, WHITE, -.17, .072, -.195, faceG);
+        ball(.019, WHITE, .13, .072, -.195, faceG);
+        const browL = cube(.09, .022, .022, 0x3a2416, -.15, .135, -.16, faceG);
+        browL.rotation.z = .22;
+        const browR = cube(.09, .022, .022, 0x3a2416, .15, .135, -.16, faceG);
+        browR.rotation.z = -.22;
+        const smile = new THREE.Mesh(
+            new THREE.TorusGeometry(.085, .017, 8, 14, Math.PI),
+            matOf(0x8a2b2b)
+        );
+        smile.position.set(0, -.06, -.16); smile.rotation.z = Math.PI; faceG.add(smile);
+        const ckL = ball(.05, 0xff9aa8, -.31, -.03, -.145, faceG);
+        ckL.scale.set(.055, .036, .018);
+        const ckR = ball(.05, 0xff9aa8, .31, -.03, -.145, faceG);
+        ckR.scale.set(.055, .036, .018);
+
+        // ── mũ tốt nghiệp ──
+        const cap = new THREE.Group();
+        cap.position.set(0, .46, 0); cap.rotation.set(-.06, .55, .06); body.add(cap);
+        const capBase = new THREE.Mesh(cylG, matOf(BLUE));
+        capBase.scale.set(.17, .12, .17); cap.add(capBase);
+        cube(.46, .05, .46, BLUE, 0, .09, 0, cap);
+        ball(.028, 0xa9c4ff, 0, .125, 0, cap);
+        const tas = new THREE.Mesh(cylG, matOf(0xffb300));
+        tas.scale.set(.012, .17, .012); tas.position.set(.23, -.02, 0); cap.add(tas);
+        ball(.032, 0xffb300, .23, .08, 0, cap);
+        cube(.05, .07, .04, 0xffb300, .23, -.13, 0, cap);
+
+        // ── tay + găng trắng ──
+        const armL = kidArm(body, -.48, -.3, YEL, WHITE);
+        const armR = kidArm(body, .48, .3, YEL, WHITE);
+
+        // ── chân + giày ──
+        const legL = kidLeg(root, -.16, YEL, BLUE, WHITE);
+        const legR = kidLeg(root, .16, YEL, BLUE, WHITE);
+
+        // ── ba lô sau lưng (nhìn thấy khi camera ở phía sau) ──
+        cube(.42, .44, .16, BLUE, 0, -.02, .2, body);
+        cube(.24, .18, .05, 0xf59a1e, 0, -.12, .29, body);
+        cube(.08, .06, .06, YEL, 0, -.12, .32, body);
+
+        const shadow = new THREE.Mesh(
+            new THREE.CircleGeometry(.38, 20),
             new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .22, depthWrite: false })
         );
-        sh.rotation.x = -Math.PI / 2; sh.position.y = .015; root.add(sh);
-        const kid = { root, body, face: 0, isAvatar: true };
+        shadow.rotation.x = -Math.PI / 2; shadow.position.y = .015; root.add(shadow);
+
+        const kid = { root, body, face: 0, isStar: true, baseY: .82, legL, legR, armL, armR };
         if (name) {
             const n = sign(name, "#ffffff", 46, 256, 88, .62);
-            n.position.set(0, H + .42, 0); root.add(n);
+            n.position.set(0, 1.75, 0); root.add(n);
         }
         return kid;
     }
+    /* Tay: group ở vai, cánh tay vàng + găng trắng; trả group để pose xoay. */
+    function kidArm(body, x, tilt, YEL, WHITE) {
+        const g2 = new THREE.Group();
+        g2.position.set(x, 0, 0); g2.rotation.z = tilt; body.add(g2);
+        const arm = new THREE.Mesh(cylG, matOf(YEL));
+        arm.scale.set(.062, .26, .062); arm.position.y = -.13; g2.add(arm);
+        ball(.085, WHITE, 0, -.28, 0, g2);
+        return g2;
+    }
+    /* Chân: group ở hông, ống chân vàng + giày xanh đế trắng. */
+    function kidLeg(root, x, YEL, BLUE, WHITE) {
+        const g2 = new THREE.Group();
+        g2.position.set(x, .42, 0); root.add(g2);
+        const leg = new THREE.Mesh(cylG, matOf(YEL));
+        leg.scale.set(.07, .3, .07); leg.position.y = -.15; g2.add(leg);
+        cube(.2, .12, .3, BLUE, 0, -.34, -.03, g2);
+        cube(.21, .05, .31, WHITE, 0, -.415, -.03, g2);
+        return g2;
+    }
     function pose(kid, t, mv) {
         const a = Math.min(1, .2 + mv), s = Math.sin(t);
-        if (kid.isAvatar) {
-            // Sprite tự quay về camera; chỉ nhún + lắc nhẹ cho có sức sống.
-            kid.body.position.y = Math.abs(s) * .07 * a;
+        if (kid.isStar) {
+            // nhún theo nhịp bước, thân lắc nhẹ, tay chân đưa qua lại
+            kid.body.position.y = kid.baseY + Math.abs(s) * .06 * a;
             kid.body.rotation.z = s * .05 * a;
+            kid.body.rotation.y = s * .06 * a;
+            kid.legL.rotation.x = s * a * .8; kid.legR.rotation.x = -s * a * .8;
+            kid.armL.rotation.x = -s * a * .7; kid.armR.rotation.x = s * a * .7;
             return;
         }
         kid.legL.rotation.x = s * a; kid.legR.rotation.x = -s * a;
@@ -641,7 +706,7 @@ function startW3() {
         const key = S.col + "|" + S.hat + "|" + playerName;
         if (!player || key !== playerKey) {
             if (player) kids.remove(player.root);
-            player = makePlayerAvatar(playerName);
+            player = makeStarPlayer(playerName);
             playerKey = key;
             kids.add(player.root);
         }

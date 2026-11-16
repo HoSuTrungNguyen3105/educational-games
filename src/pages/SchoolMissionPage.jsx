@@ -97,8 +97,9 @@ function withTimeout(promise, ms) {
  * Game nhập vai trường học — tải School_mission.html, nhúng script/CSS, tiêm
  * config + tên tài khoản + tiến độ đã lưu trên API.
  *
- * Nhân vật chính dùng ảnh mascot chung public/edu_character.png ở cả 2D lẫn
- * 3D (2D: vẽ ảnh + nhún khi đi; 3D: sprite billboard có bóng đổ).
+ * Nhân vật chính lấy cảm hứng từ mascot public/edu_character.png:
+ * 2D vẽ thẳng ảnh; 3D dựng model ngôi sao + mũ tốt nghiệp từ khối three.js
+ * (tay chân, ba lô, animation đi bộ) thay vì ảnh billboard.
  *
  * Game gửi `{ type: "school-save", data }` mỗi khi state đổi. Trang này ghi
  * vào hàng đợi (localStorage) rồi gửi API; mất mạng thì giữ lại và tự gửi khi
