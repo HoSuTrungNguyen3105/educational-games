@@ -22,14 +22,17 @@
   min-height: 100vh;
   color: var(--gq-ink);
   background-color: #bfe6fb;
-  /* BẢN LÀM LẠI V2 (2026-11-16): ảnh phong cảnh chuyển vào .gq-scene (khung
-     header + hero) để hero là một "bức tranh" khép kín có sóng chuyển ở
-     chân; .gq-home chỉ còn gradient trời/lá làm nền cho phần thân dưới. */
   background-image:
+    url("/educational-games/cd961dc9-a056-4831-9e6a-cb62ccbada3f.png"),
     linear-gradient(180deg, #a8dcf9 0, #cdeffd 34%, #e6f7e9 68%, #d8f3d0 100%);
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  background-position: top center;
+  background-repeat: no-repeat, no-repeat;
+  /* Ảnh nền phủ HẾT bề ngang và cao theo đúng tỉ lệ gốc (rộng:cao = 2:1) —
+     ép chiều cao cố định làm tranh bị background-size cắt mất phần dưới.
+     Phần dưới ảnh dùng gradient trời/lá. (Bản V2 2026-11-16 từng dời ảnh
+     vào riêng .gq-scene nên tranh bị cắt ở chân hero — Nguyên yêu cầu
+     khôi phục nền toàn trang như bản này.) */
+  background-size: 100% auto, 100% 100%;
+  background-position: top center, top center;
   /* `clip` chứ không phải `hidden`: `overflow-x:hidden` khiến overflow-y bị
      tính thành `auto` → dựng thêm một scroll container lồng nhau (2 thanh cuộn). */
   overflow-x: clip;
@@ -72,29 +75,17 @@
 }
 
 /* ─────────────────────── KHUNG CẢNH (SCENE) ───────────────────────
-   Vùng header + hero dùng CHÍNH ảnh phong cảnh Nguyên chỉ định làm nền
-   (trời/mây/cầu vồng/trường học/đồi), tràn hết bề ngang trang (margin âm
-   triệt tiêu padding của .gq-page, padding bù lại để nội dung thẳng hàng).
-   Ảnh giữ tỉ lệ gốc 2:1 (100% auto, neo trên) như bản trước — không ép
-   `cover` vì sẽ cắt mất trường học/cầu vồng ở hai bên. Cuối scene là dải
-   sóng SVG mềm màu var(--stage) chuyển xuống nền trang; hàng nút tắt
-   (.gq-playbar) nằm ngoài scene, chồng lên mép dưới của sóng. */
+   Vùng header + hero tràn hết bề ngang trang (margin âm triệt tiêu
+   padding của .gq-page, padding bù lại để nội dung thẳng hàng). Scene
+   KHÔNG mang nền riêng: ảnh phong cảnh nằm ở .gq-home phủ toàn trang và
+   xuyên suốt qua vùng trong suốt này, nên tranh chảy liên tục từ hero
+   xuống hết trang như bản trước V2. Hàng nút tắt (.gq-playbar) nằm
+   ngoài scene, chồng lên mép dưới hero. */
 .gq-scene {
   position: relative;
   margin: 0 calc(clamp(12px, 2.5vw, 40px) * -1);
   padding: 0 clamp(12px, 2.5vw, 40px);
-  background-image: url("/educational-games/cd961dc9-a056-4831-9e6a-cb62ccbada3f.png");
-  background-repeat: no-repeat;
-  background-size: 100% auto;
-  background-position: top center;
 }
-.gq-scene__wave {
-  display: block;
-  width: 100%;
-  height: 46px;
-  margin-top: 4px;
-}
-.gq-scene__wave path { fill: var(--stage); }
 
 /* ───────────────────────── HEADER ───────────────────────── */
 
@@ -602,8 +593,8 @@
 }
 
 /* ─────────── HÀNG NÚT TẮT LỚN (PLAYBAR) ─────────── */
-/* 4 pill cao ~72px bo tròn hoàn toàn, chồng lên mép dưới khung cảnh
-   (margin-top âm, z-index trên sóng). Mỗi pill có bóng đổ TẦNG: cạnh dưới
+/* 4 pill cao ~72px bo tròn hoàn toàn, chồng lên mép dưới hero
+   (margin-top âm, z-index cao hơn nội dung hero). Mỗi pill có bóng đổ TẦNG: cạnh dưới
    đậm 6px cùng tông + bóng mềm — bấm xuống thì pill lún theo. "Chơi ngay"
    (vẫn là bốc game ngẫu nhiên) to hơn hẳn theo flex-grow như ảnh mẫu.
    Khách chưa đăng nhập không có pill "Bài học" — 3 pill còn lại tự giãn.
@@ -709,41 +700,6 @@
 /* ───────────────────────── SECTION ───────────────────────── */
 
 .gq-sect { margin-bottom: 18px; scroll-margin-top: 20px; }
-.gq-sect__head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 11px;
-}
-.gq-sect__ico {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  font-size: 19px;
-  background: #fff;
-  box-shadow: 0 8px 18px rgba(22, 48, 94, 0.1);
-  flex-shrink: 0;
-}
-.gq-sect__t {
-  font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.15;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-.gq-sect__n {
-  background: #e8443c;
-  color: #fff;
-  font-size: 12.5px;
-  font-weight: 800;
-  border-radius: 999px;
-  padding: 2px 9px;
-}
-.gq-sect__s { font-size: 13px; color: #31517e; font-weight: 600; }
 
 /* Khung chung cho dải ngang lẫn lưới: MỘT viền mảnh bo quanh toàn bộ nhóm game,
    các ô bên trong phẳng và không có viền riêng. */
@@ -872,11 +828,11 @@
   white-space: nowrap;
 }
 
-/* ─────────── ĐẦU MỤC "HÔM NAY CỦA BÉ" KIỂU BIỂN GỖ ───────────
-   Riêng section này dùng biển gỗ thay SectionHead chung: nền gradient gỗ,
-   hơi nghiêng -1deg, huy hiệu sao vàng trong vòng tròn nổi ở mép trái,
-   chữ trắng đậm có bóng chữ. Biển gỗ là hoạ tiết trang trí — giữ nguyên
-   ở cả chế độ Tối. Phụ đề nằm dưới biển, theo màu chữ của trang. */
+/* ─────────── ĐẦU MỤC KIỂU BIỂN GỖ (HomeSectionHead) ───────────
+   Mọi section của trang chủ dùng chung đầu mục biển gỗ này: nền gradient
+   gỗ, hơi nghiêng -1deg, huy hiệu tròn vàng nổi ở mép trái chứa icon của
+   section, chữ trắng đậm có bóng chữ. Biển gỗ là hoạ tiết trang trí —
+   giữ nguyên ở cả chế độ Tối. Phụ đề nằm dưới biển, theo màu chữ của trang. */
 .gq-todayhead {
   display: flex;
   align-items: flex-start;
@@ -919,6 +875,17 @@
   text-shadow: 0 2px 0 rgba(90, 55, 15, 0.45);
   white-space: nowrap;
 }
+/* Pill số lượng nằm ngay trên biển, cạnh tiêu đề (vd "43" game thư giãn). */
+.gq-woodsign__n {
+  margin-left: 10px;
+  background: #e8443c;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 2px 9px;
+  box-shadow: 0 3px 8px rgba(90, 55, 15, 0.35);
+}
 .gq-todayhead__sub {
   margin-top: 8px;
   margin-left: 12px;
@@ -951,7 +918,7 @@
 }
 .gq-seeall:active { transform: scale(0.97); }
 
-/* ─────────── RAIL "HÔM NAY" + NÚT CUỘN HAI MÉP ─────────── */
+/* ─────────── RAIL DÙNG CHUNG (HomeRail) + NÚT CUỘN HAI MÉP ─────────── */
 .gq-railwrap { position: relative; }
 .gq-railnav {
   position: absolute;
@@ -981,7 +948,7 @@
   .gq-railnav { display: none; }
 }
 
-/* ─────────── THẺ GAME RIÊNG CHO RAIL "HÔM NAY" (HomeGameCard) ───────────
+/* ─────────── THẺ GAME CỦA TRANG CHỦ (HomeGameCard) ───────────
    Ảnh bìa chữ nhật 4/3 phủ kín vùng ảnh, nhãn loại ở góc trái trên vùng
    ảnh, tên + pill tuổi ở thân thẻ. Bề mặt thẻ theo var(--card)/var(--ink)
    nên tự đảo ở chế độ Tối. */
@@ -1042,6 +1009,7 @@
 }
 .gq-hcard__badge--learn { background: #2563eb; }
 .gq-hcard__badge--new { background: #f97316; }
+.gq-hcard__badge--offline { background: #f59e0b; }
 .gq-hcard__badge--play { background: #8b5cf6; }
 .gq-hcard__name {
   font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
@@ -1092,6 +1060,9 @@
   padding: 13px;
 }
 .gq-grid .gq-card { width: auto; }
+/* Thẻ trang chủ trong LƯỚI (Môn học, Game học tập): bỏ bề rộng cố định
+   của bản rail để thẻ tự đầy ô lưới ở mọi kích thước màn hình. */
+.gq-grid .gq-hcard { width: auto; max-width: none; }
 
 /* ───────────────────────── ÔNG NHẬP NHÁNG ───────────────────────── */
 
@@ -1362,8 +1333,6 @@
   .gq-card { width: 190px; }
   .gq-card__ring { width: 114px; height: 94px; font-size: 48px; }
   .gq-card__name { font-size: 15px; min-height: 36px; }
-  .gq-sect__t { font-size: 24px; }
-  .gq-sect__s { font-size: 13.5px; }
   .gq-play { min-height: 76px; }
   .gq-play__lbl { font-size: 18px; }
   .gq-play--go .gq-play__lbl { font-size: 20px; }
@@ -1387,13 +1356,10 @@
   .gq-spark--2 { font-size: 28px; }
   .gq-card { width: 168px; }
   .gq-card__ring { width: 100px; height: 82px; font-size: 44px; }
-  .gq-sect__t { font-size: 23px; }
 }
 
 @media (max-width: 640px) {
-  .gq-sect__t { font-size: 18px; }
   .gq-top__row { gap: 8px; }
-  .gq-scene__wave { height: 32px; }
   .gq-petchip { height: 36px; padding: 0 11px 0 4px; }
   .gq-petchip__sub { display: none; }
   .gq-petchip__chev { display: none; }
@@ -1479,11 +1445,11 @@
   --gq-tile: #1B263B;
   --gq-tile-hover: #24334F;
   --gq-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
-  /* Gradient thân trang chuyển tông tối. Ảnh phong cảnh nằm ở .gq-scene
-     (khung hero) — là "bức tranh" nên GIỮ SÁNG ở cả chế độ Tối, cùng bong
-     bóng mây và khối logo; sóng ở chân scene lấy var(--stage) nên tự tối. */
+  /* Lớp gradient DƯỚI ảnh phong cảnh chuyển tông tối; ảnh (lớp trên) giữ
+     nguyên — tranh vẫn hiện full ở cả chế độ Tối như bản trước V2. */
   background-color: #0F1726;
   background-image:
+    url("/educational-games/cd961dc9-a056-4831-9e6a-cb62ccbada3f.png"),
     linear-gradient(180deg, #16233A 0, #101B2E 34%, #0F1726 68%, #0B1220 100%);
 }
 /* Các bề mặt trắng/trắng trong → thẻ tối. KHÔNG gồm .gq-hero__bubble và
@@ -1495,7 +1461,6 @@
 [data-theme="dark"] .gq-wallet,
 [data-theme="dark"] .gq-pwa,
 [data-theme="dark"] .gq-board,
-[data-theme="dark"] .gq-sect__ico,
 [data-theme="dark"] .gq-sheet,
 [data-theme="dark"] .gq-gift__card,
 [data-theme="dark"] .gq-reminder,
@@ -1514,7 +1479,6 @@
 /* Nút âm thanh đang tắt có nền vàng (màu nhấn) — giữ nguyên cả ở chế độ tối. */
 [data-theme="dark"] .gq-iconbtn--on { background: #ffd45e; }
 /* Chữ phụ / nhãn trên nền tối */
-[data-theme="dark"] .gq-sect__s,
 [data-theme="dark"] .gq-todayhead__sub { color: var(--gq-mute); }
 [data-theme="dark"] .gq-card__age,
 [data-theme="dark"] .gq-hcard__age { background: rgba(233, 238, 246, 0.12); color: #B9C6DA; }
