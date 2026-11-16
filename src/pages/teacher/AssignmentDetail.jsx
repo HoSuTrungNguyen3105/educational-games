@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { assignmentService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
-import { Copy, Trophy, Clock, FileQuestionMark, Lock, Repeat, Link2 } from 'lucide-react';
+import { Copy, Trophy, Clock, FileQuestionMark, Lock, Repeat, Link2, Printer } from 'lucide-react';
+import { loadMergedQuestionPool } from '../../lib/questionPool.js';
+import AssignmentWorksheet from './AssignmentWorksheet.jsx';
 import { ConfirmModal, IconBack, IconChart, IconCheck, IconEdit, IconUsers, SearchInput, ViewToggle, cardGridClass, tableWrapClass, useViewMode } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
@@ -17,6 +19,8 @@ export default function AssignmentDetail({ assignmentId }) {
   const [viewMode, setViewMode] = useViewMode("assignment-detail");
   const { askConfirm, confirmProps } = useConfirm();
   const [copiedKey, copy] = useCopy();
+  // Phiếu in giấy: null = đóng; 'loading' = đang tải câu hỏi; object = dữ liệu phiếu.
+  const [worksheet, setWorksheet] = useState(null);
 
   useEffect(() => {
     if (!assignmentId) return;
@@ -40,6 +44,24 @@ export default function AssignmentDetail({ assignmentId }) {
 
   function copyCode() {
     copy(assignment?.code || '', 'code');
+  }
+
+  /**
+   * Mở phiếu bài tập để in ra giấy: tải câu hỏi đầy đủ bằng helper dùng chung
+   * (giữ đáp án đúng — phía giáo viên) và sắp theo đúng thứ tự questionIds.
+   * Tải lười khi bấm nút để trang chi tiết không phải kéo cả ngân hàng câu hỏi.
+   */
+  async function handlePrintWorksheet() {
+    if (!assignment?.questionIds?.length || worksheet === 'loading') return;
+    setWorksheet('loading');
+    try {
+      const pool = await loadMergedQuestionPool({ ids: assignment.questionIds });
+      const byId = new Map((pool || []).map((q) => [q.id, q]));
+      const ordered = assignment.questionIds.map((id) => byId.get(id)).filter(Boolean);
+      setWorksheet({ questions: ordered, total: assignment.questionIds.length, loadError: false });
+    } catch {
+      setWorksheet({ questions: [], total: assignment.questionIds.length, loadError: true });
+    }
   }
 
   function copyLink() {
@@ -118,6 +140,15 @@ export default function AssignmentDetail({ assignmentId }) {
         </div>
 
         <div className="flex gap-2 shrink-0">
+          {(assignment.questionIds?.length || 0) > 0 && (
+            <button
+              onClick={handlePrintWorksheet}
+              disabled={worksheet === 'loading'}
+              className="px-3.5 py-2 bg-ink/5 text-ink/70 rounded-xl text-sm font-body hover:bg-ink/10 transition flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <Printer className="w-3.5 h-3.5" /> {worksheet === 'loading' ? 'Đang tải...' : 'In phiếu'}
+            </button>
+          )}
           {assignment.status === 'ACTIVE' && (
             <>
               <button
@@ -346,6 +377,16 @@ export default function AssignmentDetail({ assignmentId }) {
       )}
 
       <ConfirmModal {...confirmProps} />
+
+      {worksheet && worksheet !== 'loading' && (
+        <AssignmentWorksheet
+          assignment={assignment}
+          questions={worksheet.questions}
+          totalQuestions={worksheet.total}
+          loadError={worksheet.loadError}
+          onClose={() => setWorksheet(null)}
+        />
+      )}
     </div>
   );
 }
