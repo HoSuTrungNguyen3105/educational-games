@@ -6,12 +6,17 @@
 //   · Bảng: mỗi cột có ô lọc riêng (lọc ngay trên trang đang xem).
 //   · Bấm dòng mở modal chi tiết (?m=roleDetail&role=… qua useModalParam),
 //     trong modal có nút mở trang "Ma trận quyền" (/dashboard/roles-matrix) để sửa.
+//   · Thêm/Sửa/Xoá vai trò NGAY tại trang này (cùng API + cùng cách chặn
+//     vai trò hệ thống như RoleManagement): vai trò built-in khoá sửa/xoá,
+//     phân quyền chi tiết vẫn làm ở trang Ma trận quyền.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { permissionService } from "../../services/api.js";
 import { navigate } from "../../lib/router.js";
 import { useModalParam } from "../../hooks/useModalParam.js";
 import {
+  ConfirmModal,
   ErrorState,
+  FormModal,
   GhostButton,
   GridCard,
   IconClose,
@@ -25,14 +30,15 @@ import {
   ViewToggle,
 } from "../../components/ui";
 import RangePagination from "../../components/RangePagination.jsx";
-import { Download, Eye, Filter, Grid2x2 } from "lucide-react";
-import { exportCsv } from "../../lib/exportCsv.js";
+import { Download, Eye, Filter, Grid2x2, Pencil, Plus, Trash2 } from "lucide-react";
 
 const PER_PAGE = 10;
 
 const EMPTY_FILTERS = { id: "", slug: "", name_vi: "", name_en: "", total_permissions: "" };
+const EMPTY_ROLE_FORM = { key: "", label: "", name_en: "", description: "", dashboardAccess: "false" };
+const STATIC_BUILTIN_KEYS = ["admin", "teacher", "student"];
 
-export default function RoleListManagement({ user }) {
+export default function RoleListManagement({ user, showToast }) {
   const isAdmin = user?.role === "admin";
   const modalParam = useModalParam();
   const [mode, setMode] = useViewMode("admin-roles-list", "grid");
@@ -45,6 +51,115 @@ export default function RoleListManagement({ user }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [error, setError] = useState(null);
   const [detail, setDetail] = useState(null);
+
+  // ── Thêm / Sửa / Xoá vai trò tại chỗ ──────────────────────────────────
+  // Danh sách phân trang (GET /roles) không trả isBuiltIn → tra thêm qua
+  // listRoles (cùng nguồn RoleManagement dùng) để biết vai trò hệ thống.
+  const [builtinMap, setBuiltinMap] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState(null); // row đang sửa (null = thêm mới)
+  const [form, setForm] = useState(EMPTY_ROLE_FORM);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      permissionService.listRoles()
+        .then((rs) => setBuiltinMap(Object.fromEntries((rs || []).map((r) => [r.key, !!r.isBuiltIn]))))
+        .catch(() => setBuiltinMap({}));
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
+  const isBuiltin = useCallback((row) => {
+    if (!row) return false;
+    if (builtinMap && Object.prototype.hasOwnProperty.call(builtinMap, row.slug)) return !!builtinMap[row.slug];
+    return STATIC_BUILTIN_KEYS.includes(row.slug);
+  }, [builtinMap]);
+
+  const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm({ ...EMPTY_ROLE_FORM });
+    setFormError("");
+    setFormOpen(true);
+  };
+
+  const openEdit = async (row) => {
+    if (isBuiltin(row)) return;
+    setFormError("");
+    try {
+      // Row phân trang thiếu description/dashboardAccess → lấy chi tiết thật.
+      const d = await permissionService.getRole(row.slug);
+      setEditing(row);
+      setForm({
+        key: row.slug,
+        label: d?.label || row.name_vi || "",
+        name_en: d?.name_en || row.name_en || "",
+        description: d?.description || "",
+        dashboardAccess: d?.dashboardAccess ? "true" : "false",
+      });
+      setFormOpen(true);
+    } catch (e) {
+      showToast?.(e.message || "Không tải được chi tiết vai trò", "error");
+    }
+  };
+
+  const submitForm = async () => {
+    if (!form.label.trim()) { setFormError("Vui lòng nhập tên vai trò"); return; }
+    if (!editing && !form.key.trim()) { setFormError("Vui lòng nhập mã vai trò (key)"); return; }
+    setSaving(true);
+    setFormError("");
+    try {
+      const payload = {
+        label: form.label.trim(),
+        name_en: form.name_en.trim() || form.label.trim(),
+        description: form.description.trim(),
+        dashboardAccess: form.dashboardAccess === "true",
+      };
+      if (editing) {
+        await permissionService.updateRole(editing.slug, payload);
+        showToast?.("Đã cập nhật vai trò", "success");
+      } else {
+        await permissionService.createRole({ key: form.key.trim(), ...payload });
+        showToast?.("Đã tạo vai trò", "success");
+      }
+      setFormOpen(false);
+      setEditing(null);
+      load();
+    } catch (e) {
+      setFormError(e.message || "Không lưu được vai trò");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const doDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await permissionService.deleteRole(deleteTarget.slug);
+      showToast?.("Đã xóa vai trò", "success");
+      if (detail?.slug === deleteTarget.slug) { setDetail(null); modalParam.close("roleDetail"); }
+      setDeleteTarget(null);
+      load();
+    } catch (e) {
+      showToast?.(e.message || "Không xóa được vai trò", "error");
+      setDeleteTarget(null);
+    }
+  };
+
+  const roleFormFields = [
+    { name: "key", label: "Mã vai trò (key)", placeholder: "vd: monitor", disabled: !!editing },
+    { name: "label", label: "Tên Việt" },
+    { name: "name_en", label: "Tên Anh" },
+    { name: "description", label: "Mô tả", type: "textarea", full: true },
+    {
+      name: "dashboardAccess", label: "Truy cập dashboard", type: "select",
+      options: [{ value: "false", label: "Không" }, { value: "true", label: "Có" }],
+    },
+  ];
 
   const load = useCallback(() => {
     setError(null);
@@ -131,12 +246,17 @@ export default function RoleListManagement({ user }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modalParam.modal]);
 
-  const handleExportCsv = () => {
-    exportCsv(
-      "roles.csv",
-      ["ID", "Mã vai trò", "Tên Việt", "Tên Anh", "Số quyền", "Ngày tạo", "Cập nhật"],
-      filtered.map((r) => [r.id, r.slug, r.name_vi, r.name_en, r.total_permissions, r.created_at, r.updated_at]),
-    );
+  const exportCsv = () => {
+    const head = ["ID", "Mã vai trò", "Tên Việt", "Tên Anh", "Số quyền", "Ngày tạo", "Cập nhật"];
+    const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = filtered.map((r) => [r.id, r.slug, r.name_vi, r.name_en, r.total_permissions, r.created_at, r.updated_at].map(esc).join(","));
+    const blob = new Blob(["\uFEFF" + [head.map(esc).join(","), ...lines].join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "roles.csv";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (!isAdmin) {
@@ -159,10 +279,13 @@ export default function RoleListManagement({ user }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ManagementHeader subtitle="Hệ thống" title="Vai trò" />
         <div className="flex flex-wrap items-center gap-2">
+          <PrimaryButton onClick={openCreate} className="!px-4 !py-2 text-sm flex items-center gap-1.5">
+            <Plus className="w-4 h-4" /> Thêm vai trò
+          </PrimaryButton>
           <SearchInput value={keyword} onChange={setKeyword} placeholder="Tìm vai trò" className="w-48" />
           <button
             type="button"
-            onClick={handleExportCsv}
+            onClick={exportCsv}
             disabled={!filtered.length}
             title="Xuất CSV"
             className="w-9 h-9 rounded-lg border border-ink/15 bg-paper inline-flex items-center justify-center text-ink/60 hover:text-teal disabled:opacity-40 transition"
@@ -212,6 +335,7 @@ export default function RoleListManagement({ user }) {
                   <th className="py-2.5 px-3 font-medium w-28">Số quyền</th>
                   <th className="py-2.5 px-3 font-medium w-40">Ngày tạo</th>
                   <th className="py-2.5 px-3 font-medium w-40">Cập nhật</th>
+                  <th className="py-2.5 pl-3 pr-4 font-medium w-28 text-right">Thao tác</th>
                 </tr>
                 <tr className="border-b border-ink/10">
                   <td className="py-2 pl-4 pr-3">
@@ -231,6 +355,7 @@ export default function RoleListManagement({ user }) {
                   </td>
                   <td className="py-2 px-3" />
                   <td className="py-2 px-3" />
+                  <td className="py-2 px-3" />
                 </tr>
               </thead>
               <tbody>
@@ -243,6 +368,30 @@ export default function RoleListManagement({ user }) {
                     <td className="py-3 px-3 text-xs font-mono text-ink">{r.total_permissions}</td>
                     <td className="py-3 px-3 text-xs text-[#8A7C63] font-body whitespace-nowrap">{r.created_at}</td>
                     <td className="py-3 px-3 text-xs text-[#8A7C63] font-body whitespace-nowrap">{r.updated_at}</td>
+                    <td className="py-3 pl-3 pr-4">
+                      {isBuiltin(r) ? (
+                        <span className="block text-right text-[11px] font-mono uppercase text-[#8A7C63]">Hệ thống</span>
+                      ) : (
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openEdit(r); }}
+                            title="Sửa vai trò"
+                            className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-ink/45 hover:text-teal hover:bg-teal/10 transition"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(r); }}
+                            title="Xóa vai trò"
+                            className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-ink/45 hover:text-ticket hover:bg-ticket/10 transition"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -260,6 +409,10 @@ export default function RoleListManagement({ user }) {
                 meta={`Cập nhật: ${r.updated_at}`}
                 footerActions={[
                   { label: "Chi tiết", icon: <Eye />, onClick: () => openDetail(r), tone: "blue" },
+                  ...(isBuiltin(r) ? [] : [
+                    { label: "Sửa", icon: <Pencil />, onClick: () => openEdit(r), tone: "blue" },
+                    { label: "Xóa", icon: <Trash2 />, onClick: () => setDeleteTarget(r), tone: "red" },
+                  ]),
                 ]}
               />
             ))}
@@ -308,6 +461,16 @@ export default function RoleListManagement({ user }) {
 
           <div className="flex items-center justify-end gap-2 mt-5">
             <GhostButton onClick={closeDetail}>Đóng</GhostButton>
+            {!isBuiltin(detail) && (
+              <>
+                <GhostButton onClick={() => { closeDetail(); openEdit(detail); }} className="flex items-center gap-1.5">
+                  <Pencil className="w-4 h-4" /> Sửa
+                </GhostButton>
+                <GhostButton onClick={() => setDeleteTarget(detail)} className="flex items-center gap-1.5 !text-ticket">
+                  <Trash2 className="w-4 h-4" /> Xóa
+                </GhostButton>
+              </>
+            )}
             <PrimaryButton onClick={() => navigate("/dashboard/roles-matrix")} className="flex items-center gap-1.5">
               <Grid2x2 className="w-4 h-4" />
               Ma trận quyền
@@ -315,6 +478,29 @@ export default function RoleListManagement({ user }) {
           </div>
         </Modal>
       )}
+
+      <FormModal
+        open={formOpen}
+        title="vai trò"
+        fields={roleFormFields}
+        values={form}
+        onChange={setField}
+        onSubmit={submitForm}
+        onClose={() => { setFormOpen(false); setEditing(null); }}
+        error={formError}
+        saving={saving}
+        editId={editing?.slug}
+        wide
+      />
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Xóa vai trò"
+        message={deleteTarget ? `Xóa vai trò "${deleteTarget.name_vi}" (${deleteTarget.slug})? Vai trò đang có tài khoản sử dụng sẽ không xóa được.` : ""}
+        confirmLabel="Xóa vai trò"
+        onConfirm={doDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

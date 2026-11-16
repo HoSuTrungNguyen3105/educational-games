@@ -342,3 +342,83 @@
   .studio-mobile-sheet { max-height: 82dvh; }
 }
 
+/* ============================================================
+   CHẾ ĐỘ TỐI — AI Studio (editor toàn màn hình, NGOÀI .edu-admin nên
+   khối dark của admin.css không chạm tới). Các biến --card/--stage/
+   --line/--ink/--muted ở :root đã tự đảo trong index.css; khối này xử
+   lý nốt HEX CỨNG trong file này + các class Tailwind arbitrary
+   (bg-white, border-[#E7D9BE]…) ở JSX của editor, chỉ trong các vùng
+   KHUNG: header, thư viện, panel thuộc tính, dải trang, nav/sheet
+   mobile. GIỮ NGUYÊN TRẮNG: .studio-canvas-frame và
+   .studio-strip-thumb — đó là bề mặt TRANG BÀI HỌC (nội dung học sinh
+   sẽ thấy), không phải khung công cụ.
+   ============================================================ */
+[data-theme="dark"] .studio-canvas-scroll {
+  background:
+    radial-gradient(circle, rgba(233, 238, 246, 0.12) 1px, transparent 1px) 0 0 / 22px 22px,
+    var(--stage, #0F1726);
+}
+[data-theme="dark"] .studio-strip-thumb:hover { border-color: var(--line, #2A3A55); }
+
+[data-theme="dark"] .studio-rail-btn { color: var(--muted, #9AA7BC); }
+[data-theme="dark"] .studio-rail-btn:hover { background: rgba(233, 238, 246, 0.08); color: var(--ink, #E9EEF6); }
+[data-theme="dark"] .studio-rail-btn.is-active { background: var(--ink, #E9EEF6); color: #16233A; }
+
+[data-theme="dark"] .studio-add-tile { background: #232F4D; color: var(--ink, #E9EEF6); }
+[data-theme="dark"] .studio-add-tile:hover { background: #26334F; }
+[data-theme="dark"] .studio-add-tile small { color: var(--muted, #9AA7BC); }
+
+[data-theme="dark"] .studio-field { background: var(--stage, #0F1726); color: var(--ink, #E9EEF6); }
+[data-theme="dark"] .studio-field::placeholder { color: var(--muted, #9AA7BC); }
+[data-theme="dark"] .studio-field-label { color: var(--muted, #9AA7BC); }
+
+/* Class Tailwind arbitrary ở JSX — chỉ trong các vùng khung của editor */
+[data-theme="dark"] .studio-header { background-color: var(--card, #1B263B); border-color: var(--line, #2A3A55); }
+[data-theme="dark"] .studio-library,
+[data-theme="dark"] .studio-props,
+[data-theme="dark"] .studio-pagestrip { background-color: var(--card, #1B263B); }
+
+[data-theme="dark"] .studio-header [class~="bg-white"],
+[data-theme="dark"] .studio-library [class~="bg-white"],
+[data-theme="dark"] .studio-props [class~="bg-white"],
+[data-theme="dark"] .studio-pagestrip [class~="bg-white"] { background-color: #232F4D; }
+
+[data-theme="dark"] .studio-header [class~="border-[#E7D9BE]"],
+[data-theme="dark"] .studio-library [class~="border-[#E7D9BE]"],
+[data-theme="dark"] .studio-library [class~="border-[#E7D9BE]/70"],
+[data-theme="dark"] .studio-props [class~="border-[#E7D9BE]"],
+[data-theme="dark"] .studio-props [class~="border-[#E7D9BE]/80"],
+[data-theme="dark"] .studio-pagestrip [class~="border-[#E7D9BE]"],
+[data-theme="dark"] .studio-pagestrip [class~="border-[#C9BBA0]"] { border-color: var(--line, #2A3A55); }
+
+[data-theme="dark"] .studio-header [class~="text-[#8A7C63]"],
+[data-theme="dark"] .studio-library [class~="text-[#8A7C63]"],
+[data-theme="dark"] .studio-props [class~="text-[#8A7C63]"],
+[data-theme="dark"] .studio-pagestrip [class~="text-[#8A7C63]"] { color: var(--muted, #9AA7BC); }
+
+[data-theme="dark"] .studio-header [class~="hover:bg-[#F4F8FF]"]:hover,
+[data-theme="dark"] .studio-library [class~="hover:bg-[#FFF6E7]"]:hover,
+[data-theme="dark"] .studio-props [class~="hover:bg-[#FFF6E7]"]:hover { background-color: rgba(233, 238, 246, 0.08); }
+[data-theme="dark"] .studio-library [class~="hover:border-[#D9C79E]"]:hover,
+[data-theme="dark"] .studio-pagestrip [class~="hover:border-[#2F6FED]"]:hover { border-color: var(--line, #2A3A55); }
+
+/* Hộp cảnh báo vàng trong PropsPanel */
+[data-theme="dark"] .studio-props [class~="bg-[#FFF7E6]"] { background-color: rgba(244, 185, 66, 0.12); }
+[data-theme="dark"] .studio-props [class~="border-[#F2D8A0]"] { border-color: rgba(244, 185, 66, 0.45); }
+
+/* Nav + sheet mobile */
+[data-theme="dark"] .studio-mobile-nav {
+  border-top-color: var(--line, #2A3A55);
+  background: rgba(27, 38, 59, 0.98);
+}
+[data-theme="dark"] .studio-mobile-nav button { color: var(--muted, #9AA7BC); }
+[data-theme="dark"] .studio-mobile-nav button.is-active { background: rgba(47, 111, 237, 0.22); color: #8FB0F7; }
+[data-theme="dark"] .studio-mobile-sheet { background: var(--card, #1B263B); }
+[data-theme="dark"] .studio-mobile-sheet-head { border-bottom-color: var(--line, #2A3A55); }
+[data-theme="dark"] .studio-mobile-sheet-head strong { color: var(--ink, #E9EEF6); }
+[data-theme="dark"] .studio-mobile-sheet-head button {
+  border-color: var(--line, #2A3A55);
+  background: #232F4D;
+  color: var(--ink, #E9EEF6);
+}
+

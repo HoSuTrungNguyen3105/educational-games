@@ -28,6 +28,7 @@ import * as questionService from "../services/questionService.js";
 import { isOn } from "../services/systemConfigService.js";
 import { callAiBackend, aiBackendHealth, AiBackendError, getAiInferenceStatus } from "../services/aiBackendService.js";
 import { listChatLogs, deleteChatLogs } from "../services/aiChatLogService.js";
+import { computeLearningMetrics, topicDisplayName, MIN_QUESTIONS_PER_TOPIC } from "../services/aiLearningMetrics.js";
 import { getAiCreditStatus } from "../services/aiUsageService.js";
 import { record as auditRecord, AUDIT } from "../services/auditService.js";
 
@@ -359,6 +360,69 @@ async function handleLearningAnalysis(req, res) {
 
 router.post("/learning-analysis", authenticate, requireAiEnabled, handleLearningAnalysis);
 router.get("/learning-analysis", authenticate, requireAiEnabled, handleLearningAnalysis);
+
+// ───────────────────── Tổng quan lớp (số liệu hệ thống, KHÔNG gọi AI) ─────────────────────
+//
+// GET /api/ai/class-overview — bức tranh toàn lớp cho trang Phân tích AI khi
+// giáo viên chưa chọn học sinh cụ thể: điểm TB, tỉ lệ đúng chung, chủ đề yếu
+// chung, số học sinh đã có dữ liệu. Mọi con số do computeLearningMetrics tính
+// từ `results` đã verified (cùng hàm với phân tích từng học sinh) — không qua
+// AI Service nên KHÔNG gắn requireAiEnabled: tắt AI vẫn xem được số liệu.
+router.get("/class-overview", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const results = await getCollection("results")
+      .find({ verified: true }, {
+        projection: {
+          _id: 0, id: 1, userId: 1, gameId: 1, score: 1, correctAnswers: 1,
+          totalQuestions: 1, accuracy: 1, completionTime: 1, xpGained: 1,
+          verified: 1, createdAt: 1,
+        },
+      })
+      .sort({ createdAt: -1 })
+      .limit(5000)
+      .toArray();
+
+    const games = await loadGamesFor(results.map((r) => r.gameId));
+    const gameIndex = new Map();
+    for (const g of games) {
+      const game = { name: g.name ?? null, subject: g.subject ?? null, topic: g.topic ?? null };
+      for (const key of [g._id, g.id, g.code]) {
+        if (key != null && String(key).trim() !== "") gameIndex.set(String(key), game);
+      }
+    }
+
+    const { metrics } = computeLearningMetrics(results, gameIndex, null, null);
+    const studentsWithData = new Set(
+      results.map((r) => (r.userId == null ? "" : String(r.userId))).filter(Boolean)
+    ).size;
+    const totalStudents = await getCollection("users").countDocuments({ role: "student" });
+
+    // Chủ đề yếu chung: chỉ xét chủ đề đủ câu hỏi để kết luận (cùng ngưỡng
+    // MIN_QUESTIONS_PER_TOPIC của phân tích từng học sinh), đúng thấp nhất lên đầu.
+    const weakTopics = metrics.topics
+      .filter((t) => t.questionsOffered >= MIN_QUESTIONS_PER_TOPIC)
+      .sort((a, b) => a.accuracy - b.accuracy)
+      .slice(0, 5)
+      .map((t) => ({
+        label: topicDisplayName(t),
+        subject: t.subject,
+        plays: t.plays,
+        questionsOffered: t.questionsOffered,
+        correctAnswers: t.correctAnswers,
+        accuracy: t.accuracy,
+      }));
+
+    sendSuccess(res, {
+      studentsWithData,
+      totalStudents,
+      totalPlays: metrics.totalPlays,
+      totalQuestionsOffered: metrics.totalQuestionsOffered,
+      accuracy: metrics.accuracy,
+      averageScore: metrics.averageScore,
+      weakTopics,
+    });
+  } catch (e) { next(e); }
+});
 
 // ───────────────────── Lịch sử hỏi AI (chỉ admin) ─────────────────────
 //

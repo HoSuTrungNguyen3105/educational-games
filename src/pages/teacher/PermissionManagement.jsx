@@ -6,6 +6,7 @@
 //   · Bấm dòng mở modal chi tiết (?m=permDetail&perm=<slug> qua useModalParam).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { permissionService } from "../../services/api.js";
+import { navigate } from "../../lib/router.js";
 import { useModalParam } from "../../hooks/useModalParam.js";
 import {
   ErrorState,
@@ -24,7 +25,6 @@ import {
 } from "../../components/ui";
 import RangePagination from "../../components/RangePagination.jsx";
 import { Download, Eye, Filter, Wand2 } from "lucide-react";
-import { exportCsv } from "../../lib/exportCsv.js";
 
 const PER_PAGE = 10;
 
@@ -150,12 +150,17 @@ export default function PermissionManagement({ user, showToast }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modalParam.modal]);
 
-  const handleExportCsv = () => {
-    exportCsv(
-      "permissions.csv",
-      ["ID", "Slug", "Tên Việt", "Tên Anh", "Mô-đun", "Ngày tạo", "Cập nhật"],
-      filtered.map((r) => [r.id, r.slug, r.name_vi, r.name_en, r.module, r.created_at, r.updated_at]),
-    );
+  const exportCsv = () => {
+    const head = ["ID", "Slug", "Tên Việt", "Tên Anh", "Mô-đun", "Ngày tạo", "Cập nhật"];
+    const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = filtered.map((r) => [r.id, r.slug, r.name_vi, r.name_en, r.module, r.created_at, r.updated_at].map(esc).join(","));
+    const blob = new Blob(["\uFEFF" + [head.map(esc).join(","), ...lines].join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "permissions.csv";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (!canView) {
@@ -187,7 +192,7 @@ export default function PermissionManagement({ user, showToast }) {
           )}
           <button
             type="button"
-            onClick={handleExportCsv}
+            onClick={exportCsv}
             disabled={!filtered.length}
             title="Xuất CSV"
             className="w-9 h-9 rounded-lg border border-ink/15 bg-paper inline-flex items-center justify-center text-ink/60 hover:text-teal disabled:opacity-40 transition"
@@ -215,6 +220,15 @@ export default function PermissionManagement({ user, showToast }) {
           />
         </div>
       </div>
+
+      <p className="note-card p-3 text-xs leading-relaxed text-[#8A7C63] font-body">
+        Danh mục quyền do <span className="font-semibold text-ink">hệ thống định nghĩa sẵn</span> — trang này
+        chỉ để xem và tra cứu, không thêm/sửa/xóa quyền tại đây. Muốn cấp hoặc thu quyền cho từng vai trò,
+        dùng trang{" "}
+        <button type="button" onClick={() => navigate("/dashboard/roles-matrix")} className="font-semibold text-teal hover:underline">
+          Ma trận quyền
+        </button>.
+      </p>
 
       {error && rows === null ? (
         <ErrorState subtitle={error} onRetry={load} />
