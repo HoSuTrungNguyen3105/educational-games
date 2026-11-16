@@ -304,6 +304,27 @@ export async function analyzeLearning({ studentId, from, to, gameId, signal } = 
 }
 
 /**
+ * Tổng quan lớp cho trang Phân tích AI (chỉ giáo viên/admin): điểm TB, tỉ lệ
+ * đúng chung, chủ đề yếu chung, số học sinh đã có dữ liệu phân tích.
+ * Số liệu do BACKEND tính từ lượt chơi thật (không qua AI diễn giải) nên đọc
+ * được cả khi AI đang tắt.
+ *
+ * @param {object} [p]
+ * @param {AbortSignal} [p.signal]
+ * @returns {Promise<{studentsWithData: number, totalStudents: number, totalPlays: number,
+ *   totalQuestionsOffered: number, accuracy: number, averageScore: number,
+ *   weakTopics: Array<{label: string, subject: string|null, plays: number,
+ *   questionsOffered: number, correctAnswers: number, accuracy: number}>}>}
+ */
+export async function getClassOverview({ signal } = {}) {
+  const json = await aiFetch("/api/ai/class-overview", { method: "GET", signal });
+  if (!json || typeof json.totalPlays !== "number" || !Array.isArray(json.weakTopics)) {
+    throw new AiServiceError("Không đọc được tổng quan lớp.", { kind: "badResponse" });
+  }
+  return json;
+}
+
+/**
  * Nhờ AI Bạn Học giải thích câu hỏi vừa trả lời (giai đoạn 1 — MVP).
  *
  * Client KHÔNG gửi `isCorrect` cũng không gửi đáp án đúng, và cũng không tự biết câu nào

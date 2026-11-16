@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, Check, FileDown, FolderOpen, Link2, MessageSquare, RefreshCw, Rocket, Upload, Volume2 } from 'lucide-react'
 import { gameService, questionBankService } from '../../services/api.js'
-import { ConfirmModal, GhostButton, Loader, ManagementHeader, Modal, PrimaryButton } from '../../components/ui'
+import { BulkDeleteBar, ConfirmModal, GhostButton, Loader, ManagementHeader, Modal, PrimaryButton } from '../../components/ui'
+import { bulkInChunks, useBulkSelection } from '../../lib/hooks.js'
 
 /*
  * Ngân hàng câu hỏi — bản React của mục "bank" trong src/games/_tools/admin.html.
@@ -27,7 +28,7 @@ const LET = 'ABCD'
 const CSVH = ['mon', 'lop', 'cau_hoi', 'dap_an_dung', 'sai_1', 'sai_2', 'sai_3', 'bieu_tuong', 'giai_thich', 'ngon_ngu']
 
 const label = 'text-[11px] font-mono text-[#8A7C63] leading-tight block mb-1'
-const box = 'w-full rounded-lg border border-ink/15 px-2.5 py-1.5 bg-white text-sm font-body focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/60 transition'
+const box = 'w-full rounded-lg border border-ink/15 px-2.5 py-1.5 bg-paper text-sm font-body focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/60 transition'
 const toolBtn = 'px-3 py-1.5 rounded-lg border text-sm font-body transition'
 
 /** Subject trong DB có thể là id ("viet") hoặc nhãn ("Tiếng Việt") — quy về id. */
@@ -198,7 +199,8 @@ export default function QuestionBankManagement({ showToast }) {
   const [formErr, setFormErr] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const [sel, setSel] = useState([])
+  const sel = useBulkSelection()
+  const [bulkDeleting, setBulkDeleting] = useState(false)
   const [linkFor, setLinkFor] = useState(null)   // { ids: [], title }
   const [linkGames, setLinkGames] = useState([])
   const [impOpen, setImpOpen] = useState(false)
@@ -309,13 +311,30 @@ export default function QuestionBankManagement({ showToast }) {
     try { await questionBankService.remove(d.id); showToast?.('Đã xóa câu hỏi'); setConfirmDel(null); load() }
     catch (e) { showToast?.(e.message || 'Lỗi xóa', 'error') }
   }
-  const removeMany = async (list) => {
+  // Xoá hàng loạt theo bộ dùng chung (useBulkSelection + bulkInChunks +
+  // BulkDeleteBar) như các trang quản lý khác. Server CHƯA có endpoint bulk
+  // cho question-banks nên adapter dưới đây gọi remove từng câu TRONG lô —
+  // khi server có endpoint bulk chỉ cần thay thân adapter này.
+  const doBulkRemove = async () => {
+    if (!sel.count) return
+    const total = sel.count
+    setBulkDeleting(true)
     try {
-      let ok = 0
-      for (const d of list) { try { await questionBankService.remove(d.id); ok++ } catch { /* tính sau */ } }
-      showToast?.(`Đã xóa ${ok}/${list.length} câu hỏi`)
-      setConfirmDel(null); setSel([]); load()
-    } catch (e) { showToast?.(e.message || 'Lỗi xóa', 'error') }
+      const r = await bulkInChunks(sel.selected, async (ids) => {
+        const deleted = [], failed = []
+        for (const id of ids) {
+          try { await questionBankService.remove(id); deleted.push(id) } catch { failed.push({ id }) }
+        }
+        return { deleted, failed }
+      })
+      if (r.failed.length) {
+        showToast?.(`Đã xóa ${r.deleted.length}/${total} câu hỏi — ${r.failed.length} câu không xóa được`, r.deleted.length ? 'info' : 'error')
+      } else {
+        showToast?.(`Đã xóa ${r.deleted.length} câu hỏi`)
+      }
+      sel.clear(); load()
+    } catch (e) { showToast?.(e.message || 'Lỗi xóa hàng loạt', 'error') }
+    finally { setBulkDeleting(false) }
   }
   const syncOne = async (d) => {
     try { const r = await questionBankService.sync(d.id); showToast?.(`Đã đồng bộ ${r.modified} bản sao trong games`) }
@@ -333,7 +352,7 @@ export default function QuestionBankManagement({ showToast }) {
       } catch { fail += linkFor.ids.length }
     }
     showToast?.(`Đã thêm ${ok} câu vào ${linkGames.length} game${fail ? ` — ${fail} thất bại (đã có hoặc lỗi)` : ''}`)
-    setLinkFor(null); setLinkGames([]); setSel([])
+    setLinkFor(null); setLinkGames([]); sel.clear()
   }
 
   /* ── nhập / xuất ── */
@@ -373,8 +392,6 @@ export default function QuestionBankManagement({ showToast }) {
     } catch (e) { setImpParsed((p) => ({ ...p, err: e.message || 'Import thất bại' })) } finally { setImpBusy(false) }
   }
 
-  const toggleSel = (id) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
-
   if (!docs) {
     return (
       <div>
@@ -395,12 +412,12 @@ export default function QuestionBankManagement({ showToast }) {
 
       <div className="flex flex-wrap gap-2">
         <button onClick={openCreate} className={`${toolBtn} bg-ink text-paper border-ink font-semibold`}>+ Thêm câu</button>
-        <button onClick={() => { setImpParsed(null); setImpOpen(true) }} className={`${toolBtn} inline-flex items-center gap-1.5 bg-white text-ink border-ink/15 hover:border-ink/35`}><Upload className="w-3.5 h-3.5" /> Nhập CSV/JSON</button>
-        <button onClick={doExportCSV} className={`${toolBtn} inline-flex items-center gap-1.5 bg-white text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Xuất CSV</button>
-        <button onClick={doExportJSON} className={`${toolBtn} inline-flex items-center gap-1.5 bg-white text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Xuất JSON</button>
-        <button onClick={load} className={`${toolBtn} bg-white text-ink/70 border-ink/15 hover:border-ink/35 inline-flex items-center gap-1`}><RefreshCw className="w-3.5 h-3.5" /> Tải lại</button>
+        <button onClick={() => { setImpParsed(null); setImpOpen(true) }} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><Upload className="w-3.5 h-3.5" /> Nhập CSV/JSON</button>
+        <button onClick={doExportCSV} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Xuất CSV</button>
+        <button onClick={doExportJSON} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Xuất JSON</button>
+        <button onClick={load} className={`${toolBtn} bg-paper text-ink/70 border-ink/15 hover:border-ink/35 inline-flex items-center gap-1`}><RefreshCw className="w-3.5 h-3.5" /> Tải lại</button>
         {docs.length > 0 && (
-          <button onClick={() => setConfirmWipe(true)} className={`${toolBtn} bg-white text-red-600 border-red-200 hover:bg-red-50`}>Xóa tất cả</button>
+          <button onClick={() => setConfirmWipe(true)} className={`${toolBtn} bg-paper text-red-600 border-red-200 hover:bg-red-50`}>Xóa tất cả</button>
         )}
       </div>
 
@@ -416,7 +433,7 @@ export default function QuestionBankManagement({ showToast }) {
       {badN > 0 && (
         <p className="note-card p-2.5 bg-red-50 border-red-200 text-sm text-red-700 flex flex-wrap items-center gap-2">
           <span>{badN} câu có lỗi. Sửa hết lỗi rồi liên kết vào game.</span>
-          <button onClick={() => setFBad(true)} className={`${toolBtn} !py-1 !text-xs bg-white border-red-200 text-red-700`}>Chỉ hiện câu lỗi</button>
+          <button onClick={() => setFBad(true)} className={`${toolBtn} !py-1 !text-xs bg-paper border-red-200 text-red-700`}>Chỉ hiện câu lỗi</button>
         </p>
       )}
       {dupN > 0 && <p className="note-card p-2.5 bg-amber-50 border-amber-200 text-sm text-amber-800">{dupN} câu hỏi bị trùng nội dung.</p>}
@@ -460,7 +477,7 @@ export default function QuestionBankManagement({ showToast }) {
         <div className="flex flex-wrap gap-1.5">
           {['all', ...subjects].map((s) => (
             <button key={s} onClick={() => { setFSubj(s); setLimit(40) }}
-              className={`px-3 py-1.5 rounded-full border text-sm transition ${fSubj === s ? 'bg-ink text-paper border-ink' : 'bg-white text-ink/70 border-ink/15 hover:border-ink/35'}`}>
+              className={`px-3 py-1.5 rounded-full border text-sm transition ${fSubj === s ? 'bg-ink text-paper border-ink' : 'bg-paper text-ink/70 border-ink/15 hover:border-ink/35'}`}>
               {s === 'all' ? 'Tất cả' : subjLabel(s)}
             </button>
           ))}
@@ -470,7 +487,7 @@ export default function QuestionBankManagement({ showToast }) {
           {GRADES.map((g) => <option key={g} value={g}>Lớp {g}</option>)}
         </select>
         <button onClick={() => setFBad((v) => !v)}
-          className={`px-3 py-1.5 rounded-full border text-sm transition ${fBad ? 'bg-red-500/10 border-red-300 text-red-700' : 'bg-white text-ink/70 border-ink/15 hover:border-ink/35'}`}>
+          className={`px-3 py-1.5 rounded-full border text-sm transition ${fBad ? 'bg-red-500/10 border-red-300 text-red-700' : 'bg-paper text-ink/70 border-ink/15 hover:border-ink/35'}`}>
           Chỉ câu lỗi
         </button>
         <input type="search" value={search} placeholder="Tìm câu hỏi..."
@@ -479,14 +496,15 @@ export default function QuestionBankManagement({ showToast }) {
         <span className="text-xs text-[#8A7C63] whitespace-nowrap">{filtered.length} câu</span>
       </div>
 
-      {sel.length > 0 && (
-        <div className="note-card p-2.5 bg-amber-50 border-amber-200 flex flex-wrap items-center gap-2 text-sm">
-          <span className="font-semibold text-amber-800">Đã chọn {sel.length} câu</span>
-          <button onClick={() => { setLinkFor({ ids: sel, title: `${sel.length} câu hỏi` }); setLinkGames([]) }}
-            className={`${toolBtn} inline-flex items-center gap-1 bg-ink text-paper border-ink`}><Rocket className="w-3.5 h-3.5" /> Áp dụng vào game</button>
-          <button onClick={() => setConfirmDel({ ids: sel, label: `${sel.length} câu hỏi đã chọn` })}
-            className={`${toolBtn} bg-white text-red-600 border-red-200 hover:bg-red-50`}>Xóa đã chọn</button>
-          <button onClick={() => setSel([])} className={`${toolBtn} bg-white text-ink/70 border-ink/15`}>Bỏ chọn</button>
+      {sel.count > 0 && (
+        <div className="space-y-2">
+          <div className="note-card p-2.5 flex flex-wrap items-center gap-2 text-sm">
+            <span className="font-semibold text-ink">Đã chọn {sel.count} câu</span>
+            <button onClick={() => { setLinkFor({ ids: sel.selected, title: `${sel.count} câu hỏi` }); setLinkGames([]) }}
+              className={`${toolBtn} inline-flex items-center gap-1 bg-ink text-paper border-ink`}><Rocket className="w-3.5 h-3.5" /> Áp dụng vào game</button>
+          </div>
+          <BulkDeleteBar count={sel.count} itemLabel="câu hỏi" deleting={bulkDeleting}
+            onDeleteSelected={doBulkRemove} onClear={sel.clear} />
         </div>
       )}
 
@@ -500,7 +518,7 @@ export default function QuestionBankManagement({ showToast }) {
           {shown.map(({ d, s, bad }) => (
             <article key={d.id} className={`note-card p-3 flex flex-col gap-2 ${bad.length ? '!border-red-300' : ''}`}>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <input type="checkbox" checked={sel.includes(d.id)} onChange={() => toggleSel(d.id)} className="accent-teal" aria-label={`Chọn ${d.content}`} />
+                <input type="checkbox" checked={sel.isSelected(d.id)} onChange={() => sel.toggle(d.id)} className="accent-teal" aria-label={`Chọn ${d.content}`} />
                 <span className="px-2 py-0.5 rounded-full bg-teal/10 text-teal text-[11px]">{subjLabel(s)}</span>
                 <span className="px-2 py-0.5 rounded-full bg-ink/5 text-ink/70 text-[11px]">Lớp {d.grade || 1}</span>
                 {d.icon && <span aria-hidden>{d.icon}</span>}
@@ -528,13 +546,13 @@ export default function QuestionBankManagement({ showToast }) {
               {!!bad.length && <p className="text-[11px] text-red-600 inline-flex items-start gap-1"><AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" /> {bad.join('; ')}</p>}
 
               <div className="flex flex-wrap gap-1.5 mt-auto pt-1 border-t border-ink/10">
-                <button onClick={() => openEdit(d)} className={`${toolBtn} !px-2.5 !py-1 !text-xs bg-white border-ink/15 hover:border-ink/35`}>Sửa</button>
-                <button onClick={() => duplicate(d)} className={`${toolBtn} !px-2.5 !py-1 !text-xs bg-white border-ink/15 hover:border-ink/35`}>Nhân bản</button>
+                <button onClick={() => openEdit(d)} className={`${toolBtn} !px-2.5 !py-1 !text-xs bg-paper border-ink/15 hover:border-ink/35`}>Sửa</button>
+                <button onClick={() => duplicate(d)} className={`${toolBtn} !px-2.5 !py-1 !text-xs bg-paper border-ink/15 hover:border-ink/35`}>Nhân bản</button>
                 <button onClick={() => { setLinkFor({ ids: [d.id], title: d.content }); setLinkGames([]) }}
-                  className={`${toolBtn} inline-flex items-center gap-1 !px-2.5 !py-1 !text-xs bg-white border-ink/15 hover:border-ink/35`}><Link2 className="w-3 h-3" /> Vào game</button>
-                <button onClick={() => syncOne(d)} className={`${toolBtn} inline-flex items-center gap-1 !px-2.5 !py-1 !text-xs bg-white border-ink/15 hover:border-ink/35`}><RefreshCw className="w-3 h-3" /> Đồng bộ</button>
+                  className={`${toolBtn} inline-flex items-center gap-1 !px-2.5 !py-1 !text-xs bg-paper border-ink/15 hover:border-ink/35`}><Link2 className="w-3 h-3" /> Vào game</button>
+                <button onClick={() => syncOne(d)} className={`${toolBtn} inline-flex items-center gap-1 !px-2.5 !py-1 !text-xs bg-paper border-ink/15 hover:border-ink/35`}><RefreshCw className="w-3 h-3" /> Đồng bộ</button>
                 <button onClick={() => setConfirmDel({ ids: [d.id], label: d.content })}
-                  className={`${toolBtn} !px-2.5 !py-1 !text-xs bg-white text-red-600 border-red-200 hover:bg-red-50`}>Xóa</button>
+                  className={`${toolBtn} !px-2.5 !py-1 !text-xs bg-paper text-red-600 border-red-200 hover:bg-red-50`}>Xóa</button>
               </div>
             </article>
           ))}
@@ -543,7 +561,7 @@ export default function QuestionBankManagement({ showToast }) {
 
       {filtered.length > shown.length && (
         <div className="flex justify-center">
-          <button onClick={() => setLimit((v) => v + 60)} className={`${toolBtn} bg-white text-ink border-ink/15 hover:border-ink/35`}>
+          <button onClick={() => setLimit((v) => v + 60)} className={`${toolBtn} bg-paper text-ink border-ink/15 hover:border-ink/35`}>
             Hiện thêm ({filtered.length - shown.length})
           </button>
         </div>
@@ -668,7 +686,7 @@ export default function QuestionBankManagement({ showToast }) {
               mảng câu hỏi của trang này hay ngân hàng theo môn của tool cũ đều nhập được.
             </p>
             <div className="flex flex-wrap gap-2">
-              <button onClick={downloadTemplate} className={`${toolBtn} inline-flex items-center gap-1.5 bg-white text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Tải mẫu CSV</button>
+              <button onClick={downloadTemplate} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Tải mẫu CSV</button>
               <button onClick={pickFile} className={`${toolBtn} inline-flex items-center gap-1.5 bg-ink text-paper border-ink`}><FolderOpen className="w-3.5 h-3.5" /> Chọn tệp...</button>
             </div>
             <div className="flex gap-4 text-sm">
@@ -692,15 +710,15 @@ export default function QuestionBankManagement({ showToast }) {
         </Modal>
       )}
 
-      <ConfirmModal open={!!confirmDel} title={confirmDel?.ids?.length > 1 ? 'Xóa nhiều câu hỏi' : 'Xóa câu hỏi'}
+      <ConfirmModal open={!!confirmDel} title="Xóa câu hỏi"
         message={confirmDel ? `Xóa ${confirmDel.label.length > 70 ? confirmDel.label.slice(0, 70) + '…' : confirmDel.label}? Bản sao đã liên kết trong game vẫn còn nhưng mất liên kết với bank.` : ''}
-        onConfirm={() => (confirmDel.ids.length > 1 ? removeMany(docs.filter((d) => confirmDel.ids.includes(d.id))) : removeOne(docs.find((d) => d.id === confirmDel.ids[0])))}
+        onConfirm={() => removeOne(docs.find((d) => d.id === confirmDel.ids[0]))}
         onClose={() => setConfirmDel(null)} />
 
       <ConfirmModal open={confirmWipe} title="Xóa toàn bộ ngân hàng" confirmLabel="Xóa tất cả"
         message={`${docs.length} câu sẽ bị xóa khỏi máy chủ, mọi liên kết bankId trong game bị cắt. Không hoàn tác được — hãy “Xuất” trước.`}
         onConfirm={async () => {
-          try { const r = await questionBankService.removeAll(); showToast?.(`Đã xóa ${r?.deleted ?? docs.length} câu hỏi`); setSel([]); load() }
+          try { const r = await questionBankService.removeAll(); showToast?.(`Đã xóa ${r?.deleted ?? docs.length} câu hỏi`); sel.clear(); load() }
           catch (e) { showToast?.(e.message || 'Không xóa được', 'error') }
           setConfirmWipe(false)
         }}

@@ -868,3 +868,178 @@
   .docstudio-mobile-nav button svg { width: 19px; height: 19px; }
   .docstudio-mobile-sheet { max-height: 84dvh; }
 }
+
+/* ============================================================
+   CHẾ ĐỘ TỐI — Teacher Document Studio (editor toàn màn hình, NGOÀI
+   .edu-admin nên khối dark của admin.css không chạm tới). Bảng màu
+   bám đúng bộ biến dark của admin.css: nền #14181d, panel #1d2327,
+   bề mặt nổi #262d33, viền #3c434a, đường kẻ #2c3338, chữ #e9eef2,
+   chữ mờ #a7aaad. Chỉ đảo KHUNG (topbar, rail, flyout, panel soạn /
+   xem trước, nav + sheet mobile). GIỮ NGUYÊN: trang giấy Word và
+   slide trong vùng xem trước (nội dung tài liệu sẽ in/xuất file —
+   render qua SandboxFrame + class riêng của WordPreview/
+   PowerPointPreview, không bị khối này đụng vào) và banner màu
+   thương hiệu theo loại tài liệu.
+   ============================================================ */
+[data-theme="dark"] .docstudio-screen {
+  --doc-accent-soft: rgba(59, 130, 246, 0.16) !important;
+  --doc-accent-line: rgba(59, 130, 246, 0.45) !important;
+  background:
+    radial-gradient(1100px 480px at 8% -12%, rgba(37, 99, 235, 0.10), transparent 62%),
+    radial-gradient(900px 420px at 100% 0%, rgba(37, 99, 235, 0.05), transparent 58%),
+    #14181d;
+}
+[data-theme="dark"] .docstudio-screen.is-powerpoint {
+  --doc-accent-soft: rgba(251, 146, 60, 0.16) !important;
+  --doc-accent-line: rgba(251, 146, 60, 0.45) !important;
+  background:
+    radial-gradient(1100px 480px at 8% -12%, rgba(234, 88, 12, 0.10), transparent 62%),
+    radial-gradient(900px 420px at 100% 0%, rgba(234, 88, 12, 0.05), transparent 58%),
+    #14181d;
+}
+
+[data-theme="dark"] .docstudio-topbar {
+  background: rgba(29, 35, 39, 0.94);
+  border-bottom-color: #2c3338;
+}
+[data-theme="dark"] .docstudio-topbar-sep { background: #3c434a; }
+[data-theme="dark"] .docstudio-topbar-title { color: #e9eef2; }
+[data-theme="dark"] .docstudio-name-input { color: #a7aaad; }
+[data-theme="dark"] .docstudio-name-input:hover { border-color: #3c434a; }
+[data-theme="dark"] .docstudio-name-input:focus { background: #1d2327; color: #e9eef2; }
+[data-theme="dark"] .docstudio-avatar { border-color: #1d2327; }
+[data-theme="dark"] .docstudio-ghost-btn {
+  color: #e9eef2;
+  background: #1d2327;
+  border-color: #3c434a;
+}
+[data-theme="dark"] .docstudio-ghost-btn:hover { background: #262d33; }
+[data-theme="dark"] .docstudio-save-state.is-saved { color: #4ade80; background: rgba(34, 197, 94, 0.15); }
+[data-theme="dark"] .docstudio-save-state.is-dirty { color: #fbbf24; background: rgba(245, 158, 11, 0.15); }
+
+[data-theme="dark"] .docstudio-alert.is-info { color: #93c5fd; background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.35); }
+[data-theme="dark"] .docstudio-alert.is-error { color: #fca5a5; background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.35); }
+[data-theme="dark"] .docstudio-alert.is-warning { color: #fcd34d; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.35); }
+[data-theme="dark"] .docstudio-alert.is-success { color: #86efac; background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.35); }
+
+[data-theme="dark"] .docstudio-rail,
+[data-theme="dark"] .docstudio-flyout,
+[data-theme="dark"] .docstudio-editor,
+[data-theme="dark"] .docstudio-preview {
+  background: #1d2327;
+  border-color: #2c3338;
+}
+[data-theme="dark"] .docstudio-rail-btn { color: #a7aaad; }
+[data-theme="dark"] .docstudio-rail-btn:hover { color: #e9eef2; }
+[data-theme="dark"] .docstudio-flyout h3 { color: #e9eef2; }
+[data-theme="dark"] .docstudio-flyout-hint { color: #a7aaad; }
+[data-theme="dark"] .docstudio-label { color: #a7aaad; }
+[data-theme="dark"] .docstudio-input,
+[data-theme="dark"] .docstudio-select,
+[data-theme="dark"] .docstudio-textarea {
+  background: #14181d;
+  border-color: #3c434a;
+  color: #e9eef2;
+}
+[data-theme="dark"] .docstudio-check { color: #e9eef2; }
+[data-theme="dark"] .docstudio-btn-ghost {
+  color: #e9eef2;
+  background: #1d2327;
+  border-color: #3c434a;
+}
+[data-theme="dark"] .docstudio-btn-ghost:hover { background: #262d33; }
+
+[data-theme="dark"] .docstudio-seg,
+[data-theme="dark"] .docstudio-tabs { background: #14181d; }
+[data-theme="dark"] .docstudio-seg button,
+[data-theme="dark"] .docstudio-tab { color: #a7aaad; }
+[data-theme="dark"] .docstudio-seg button.is-active,
+[data-theme="dark"] .docstudio-tab.is-active { color: #e9eef2; background: #262d33; }
+
+[data-theme="dark"] .docstudio-template-search {
+  background: #14181d;
+  border-color: #3c434a;
+  color: #a7aaad;
+}
+[data-theme="dark"] .docstudio-template-search input { color: #e9eef2; }
+[data-theme="dark"] .docstudio-template-empty { color: #a7aaad; }
+[data-theme="dark"] .docstudio-template-swatch { border-color: #3c434a; }
+[data-theme="dark"] .docstudio-template {
+  background: #262d33;
+  border-color: #3c434a;
+}
+[data-theme="dark"] .docstudio-template b { color: #e9eef2; }
+[data-theme="dark"] .docstudio-template small { color: #a7aaad; }
+
+[data-theme="dark"] .docstudio-editor-head,
+[data-theme="dark"] .docstudio-preview-head {
+  background: #262d33;
+  border-bottom-color: #2c3338;
+}
+[data-theme="dark"] .docstudio-preview-title { color: #a7aaad; }
+[data-theme="dark"] .docstudio-tool-btn,
+[data-theme="dark"] .docstudio-convert-btn {
+  background: #1d2327;
+  border-color: #3c434a;
+  color: #a7aaad;
+}
+[data-theme="dark"] .docstudio-editor-code { background: #14181d; }
+[data-theme="dark"] .docstudio-editor-foot,
+[data-theme="dark"] .docstudio-preview-foot {
+  background: #1d2327;
+  border-top-color: #2c3338;
+}
+[data-theme="dark"] .docstudio-stats { color: #a7aaad; }
+[data-theme="dark"] .docstudio-img-error {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+[data-theme="dark"] .docstudio-divider { background: #2c3338; }
+[data-theme="dark"] .docstudio-zoom-btn { color: #a7aaad; }
+[data-theme="dark"] .docstudio-zoom-btn:hover { background: #262d33; }
+[data-theme="dark"] .docstudio-zoom-val { color: #a7aaad; }
+[data-theme="dark"] .docstudio-export-btn:hover { background: #262d33; }
+
+/* Bề mặt "bàn" quanh trang giấy trong vùng xem trước tối theo khung;
+   trang giấy/slide bên trong (SandboxFrame) giữ nguyên màu nội dung. */
+[data-theme="dark"] .docstudio-preview-body [class~="bg-[#cfc9bb]"] { background-color: #14181d; }
+
+/* CodeMirror (theme mặc định là sáng) — phủ màu nền/chữ/gutter cơ bản */
+[data-theme="dark"] .docstudio-codeeditor .cm-editor { background: #14181d; color: #e9eef2; }
+[data-theme="dark"] .docstudio-codeeditor .cm-gutters {
+  background: #1d2327;
+  color: #a7aaad;
+  border-right-color: #2c3338;
+}
+[data-theme="dark"] .docstudio-codeeditor .cm-activeLine,
+[data-theme="dark"] .docstudio-codeeditor .cm-activeLineGutter { background: rgba(233, 238, 246, 0.05); }
+[data-theme="dark"] .docstudio-codeeditor .cm-cursor { border-left-color: #e9eef2; }
+[data-theme="dark"] .docstudio-codeeditor .cm-panel {
+  background: #1d2327;
+  color: #e9eef2;
+}
+[data-theme="dark"] .docstudio-codeeditor .cm-panel input,
+[data-theme="dark"] .docstudio-codeeditor .cm-panel select {
+  background: #14181d;
+  border-color: #3c434a;
+  color: #e9eef2;
+}
+
+@media (max-width: 1023px) {
+  [data-theme="dark"] .docstudio-mobile-nav {
+    border-top-color: #2c3338;
+    background: rgba(29, 35, 39, 0.98);
+  }
+  [data-theme="dark"] .docstudio-mobile-nav button { color: #a7aaad; }
+  [data-theme="dark"] .docstudio-mobile-nav button.is-active { color: #e9eef2; }
+  [data-theme="dark"] .docstudio-mobile-sheet { background: #1d2327; }
+  [data-theme="dark"] .docstudio-mobile-sheet-head { border-bottom-color: #2c3338; }
+  [data-theme="dark"] .docstudio-mobile-sheet-head strong { color: #e9eef2; }
+  [data-theme="dark"] .docstudio-mobile-sheet-head button {
+    border-color: #3c434a;
+    background: #262d33;
+    color: #e9eef2;
+  }
+  [data-theme="dark"] .docstudio-mobile-sheet-tools { border-bottom-color: #2c3338; }
+}

@@ -795,3 +795,160 @@
   .tpl-preview-head { padding: 13px 14px; }
   .tpl-preview-body { height: 62vh; padding: 8px; }
 }
+
+/* ============================================================
+   CHẾ ĐỘ TỐI — Thư viện mẫu + modal tải file. Bảng màu bám bộ biến
+   dark của admin.css (nền #14181d, panel #1d2327, nổi #262d33, viền
+   #3c434a, kẻ #2c3338, chữ #e9eef2, mờ #a7aaad) qua chính các biến
+   --tpl-* của trang. Chỉ đảo KHUNG (hero, tab, chip, thẻ, modal);
+   GIỮ NGUYÊN toàn bộ hình thu nhỏ .tpl-thumb/.tpl-mini-* — đó là
+   bản xem trước của trang giấy/slide mẫu (nội dung), mỗi mẫu có
+   bảng màu riêng.
+   ============================================================ */
+[data-theme="dark"] .tpl-library {
+  --tpl-ink: #e9eef2;
+  --tpl-muted: #a7aaad;
+  --tpl-line: #2c3338;
+}
+
+[data-theme="dark"] .tpl-library-hero {
+  border-color: #2c3338;
+  background:
+    radial-gradient(540px 240px at 92% -20%, rgba(37, 99, 235, 0.14), transparent 65%),
+    radial-gradient(420px 220px at 8% 120%, rgba(234, 88, 12, 0.10), transparent 65%),
+    linear-gradient(135deg, #1d2327 0%, #191f24 55%, #14181d 100%);
+}
+[data-theme="dark"] .tpl-library-hero h1 { color: #e9eef2; }
+[data-theme="dark"] .tpl-library-hero p { color: #a7aaad; }
+[data-theme="dark"] .tpl-library-btn.ghost {
+  border-color: #3c434a;
+  background: rgba(29, 35, 39, 0.8);
+  color: #e9eef2;
+}
+[data-theme="dark"] .tpl-library-btn.ghost:hover { background: #262d33; border-color: #3c434a; }
+
+[data-theme="dark"] .tpl-library-tabs { border-color: #2c3338; background: #14181d; }
+[data-theme="dark"] .tpl-library-tab { color: #a7aaad; }
+[data-theme="dark"] .tpl-library-tab.is-active { background: #262d33; color: #93c5fd; }
+[data-theme="dark"] .tpl-library-tab .count { background: rgba(59, 130, 246, 0.18); color: #93c5fd; }
+
+[data-theme="dark"] .tpl-library-search svg { color: #a7aaad; }
+[data-theme="dark"] .tpl-library-search input {
+  border-color: #3c434a;
+  background: #1d2327;
+  color: #e9eef2;
+}
+[data-theme="dark"] .tpl-chip-row > span { color: #a7aaad; }
+[data-theme="dark"] .tpl-chip {
+  border-color: #3c434a;
+  background: #1d2327;
+  color: #a7aaad;
+}
+[data-theme="dark"] .tpl-chip:hover { border-color: #93c5fd; color: #93c5fd; }
+[data-theme="dark"] .tpl-chip-count { background: rgba(59, 130, 246, 0.18); color: #93c5fd; }
+[data-theme="dark"] .tpl-library-summary { color: #a7aaad; }
+[data-theme="dark"] .tpl-library-summary strong { color: #e9eef2; }
+
+[data-theme="dark"] .tpl-card {
+  border-color: #2c3338;
+  background: #1d2327;
+}
+[data-theme="dark"] .tpl-card:hover { border-color: #3c434a; }
+[data-theme="dark"] .tpl-card-preview {
+  background: #14181d;
+  border-bottom-color: #2c3338;
+}
+[data-theme="dark"] .tpl-card h3 { color: #e9eef2; }
+[data-theme="dark"] .tpl-card-desc { color: #a7aaad; }
+[data-theme="dark"] .tpl-card-meta { color: #a7aaad; }
+[data-theme="dark"] .tpl-badge.word { background: rgba(59, 130, 246, 0.16); color: #93c5fd; }
+[data-theme="dark"] .tpl-badge.ppt { background: rgba(251, 146, 60, 0.16); color: #fdba74; }
+[data-theme="dark"] .tpl-badge.soft { background: rgba(233, 238, 246, 0.08); color: #a7aaad; }
+[data-theme="dark"] .tpl-badge.green { background: rgba(34, 197, 94, 0.14); color: #86efac; }
+[data-theme="dark"] .tpl-card-btn {
+  border-color: #3c434a;
+  background: #262d33;
+  color: #e9eef2;
+}
+[data-theme="dark"] .tpl-card-btn:hover { background: #2c3338; }
+[data-theme="dark"] .tpl-card-btn.primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+[data-theme="dark"] .tpl-library-empty {
+  border-color: #3c434a;
+  background: #14181d;
+  color: #a7aaad;
+}
+[data-theme="dark"] .tpl-library-empty strong { color: #e9eef2; }
+
+/* Modal xem trước mẫu: khung tối, sân khấu quanh hình thu nhỏ tối,
+   hình thu nhỏ (nội dung mẫu) giữ nguyên màu riêng. */
+[data-theme="dark"] .tpl-preview-head { border-bottom-color: #2c3338; }
+[data-theme="dark"] .tpl-preview-head h3 { color: #e9eef2; }
+[data-theme="dark"] .tpl-preview-head p { color: #a7aaad; }
+[data-theme="dark"] .tpl-preview-body { background: #14181d; }
+[data-theme="dark"] .tpl-preview-foot { border-top-color: #2c3338; background: #1d2327; }
+[data-theme="dark"] .tpl-preview-close {
+  border-color: #3c434a;
+  background: #262d33;
+  color: #a7aaad;
+}
+
+/* Modal tải file */
+[data-theme="dark"] .doc-upload { background: #1d2327; }
+[data-theme="dark"] .doc-upload-head {
+  background: linear-gradient(135deg, #1d2327, #14181d);
+  border-bottom-color: #2c3338;
+}
+[data-theme="dark"] .doc-upload-eyebrow { color: #93c5fd; }
+[data-theme="dark"] .doc-upload-head h2 { color: #e9eef2; }
+[data-theme="dark"] .doc-upload-head p { color: #a7aaad; }
+[data-theme="dark"] .doc-upload-close {
+  border-color: #3c434a;
+  background: rgba(38, 45, 51, 0.8);
+  color: #a7aaad;
+}
+[data-theme="dark"] .doc-upload-drop { border-color: #3c434a; background: #14181d; }
+[data-theme="dark"] .doc-upload-drop.has-file { border-color: rgba(34, 197, 94, 0.5); background: rgba(34, 197, 94, 0.08); }
+[data-theme="dark"] .doc-upload-empty { color: #a7aaad; }
+[data-theme="dark"] .doc-upload-empty strong { color: #e9eef2; }
+[data-theme="dark"] .doc-upload-file-icon { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+[data-theme="dark"] .doc-upload-file strong { color: #86efac; }
+[data-theme="dark"] .doc-upload-file span { color: #a7aaad; }
+[data-theme="dark"] .doc-upload-label { color: #a7aaad; }
+[data-theme="dark"] .doc-upload-segment { border-color: #2c3338; background: #14181d; }
+[data-theme="dark"] .doc-upload-segment button { color: #a7aaad; }
+[data-theme="dark"] .doc-upload-segment button small { color: #a7aaad; }
+[data-theme="dark"] .doc-upload-segment button.is-active { background: #262d33; color: #93c5fd; }
+[data-theme="dark"] .doc-upload-segment button.is-active small { color: #a7aaad; }
+[data-theme="dark"] .doc-upload-select,
+[data-theme="dark"] .doc-upload-name {
+  border-color: #3c434a;
+  background: #14181d;
+  color: #e9eef2;
+}
+[data-theme="dark"] .doc-upload-hint { color: #a7aaad; }
+[data-theme="dark"] .doc-upload-error {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+[data-theme="dark"] .doc-upload-result {
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.08);
+}
+[data-theme="dark"] .doc-upload-result-icon { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+[data-theme="dark"] .doc-upload-result-head strong { color: #86efac; }
+[data-theme="dark"] .doc-upload-result-head span { color: #a7aaad; }
+[data-theme="dark"] .doc-upload-warnings,
+[data-theme="dark"] .doc-upload-preview {
+  border-color: #2c3338;
+  background: #1d2327;
+}
+[data-theme="dark"] .doc-upload-warnings summary,
+[data-theme="dark"] .doc-upload-preview summary { color: #a7aaad; }
+[data-theme="dark"] .doc-upload-foot { border-top-color: #2c3338; background: #1d2327; }
+[data-theme="dark"] .doc-upload-foot-note { color: #a7aaad; }
+[data-theme="dark"] .doc-upload-btn.ghost {
+  border-color: #3c434a;
+  background: #262d33;
+  color: #e9eef2;
+}
