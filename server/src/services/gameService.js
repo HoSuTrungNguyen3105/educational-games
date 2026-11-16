@@ -254,7 +254,26 @@ export async function getConfigByKey(key, gameId) {
   };
 }
 
+// Chặn dùng template chưa "dùng được" để tạo/đổi game: template tìm thấy
+// mà status !== "published" (draft/inactive) thì không cho dùng. templateId
+// rỗng, không parse được ObjectId, hoặc không tìm thấy template → BỎ QUA
+// (không throw) để giữ nguyên hành vi cũ với dữ liệu lạ.
+async function assertTemplateUsable(templateId) {
+  if (!templateId) return;
+  let oid;
+  try { oid = new ObjectId(templateId); } catch { return; }
+  const tpl = await getCollection("templates").findOne(
+    { _id: oid },
+    { projection: { name: 1, status: 1 } }
+  );
+  if (!tpl) return;
+  if (tpl.status !== "published") {
+    throw new Error(`Template "${tpl.name || ""}" chưa xuất bản hoặc đã tắt, không thể dùng để tạo game`);
+  }
+}
+
 export async function create(data) {
+  if (data.templateId) await assertTemplateUsable(data.templateId);
   const now = new Date().toISOString();
   // Ưu tiên subjectId hợp lệ (lưu kèm tên resolve); chỉ có tên thì suy ra id
   // nếu khớp một môn; id không tồn tại → subjectId = null, giữ tên theo input.
@@ -285,7 +304,17 @@ export async function create(data) {
 
 export async function update(id, data) {
   const { _id, ...rest } = data;
-  if (rest.templateId) rest.templateId = new ObjectId(rest.templateId);
+  if (rest.templateId) {
+    // Chỉ chặn khi game ĐỔI sang template khác: sửa game cũ đang gắn template
+    // nay đã inactive/draft (vì lý do khác) không bị chặn oan.
+    const current = await getCollection(COLLECTION).findOne(
+      { _id: new ObjectId(id) },
+      { projection: { templateId: 1 } }
+    );
+    const currentTplId = current?.templateId ? current.templateId.toString() : null;
+    if (String(rest.templateId) !== currentTplId) await assertTemplateUsable(rest.templateId);
+    rest.templateId = new ObjectId(rest.templateId);
+  }
   if (rest.deliveryMode !== undefined && !DELIVERY_MODES.includes(rest.deliveryMode)) {
     rest.deliveryMode = DEFAULT_DELIVERY_MODE;
   }

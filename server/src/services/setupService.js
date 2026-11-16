@@ -29,15 +29,39 @@ function serialize(doc) {
   return out;
 }
 
+// Đếm số game đang dùng từng template qua field templateId của games.
+// gamesCount là field TÍNH TOÁN lúc đọc (gắn sau serialize) — không lưu vào
+// DB của template. Gom nhóm bằng $toString để đếm được cả khi templateId
+// được lưu dạng ObjectId lẫn dạng chuỗi (dữ liệu cũ).
+async function countGamesByTemplate() {
+  const rows = await getCollection("games").aggregate([
+    { $match: { templateId: { $ne: null } } },
+    { $group: { _id: { $toString: "$templateId" }, count: { $sum: 1 } } },
+  ]).toArray();
+  const map = new Map();
+  for (const r of rows) map.set(r._id, r.count);
+  return map;
+}
+
 export async function listTemplates() {
   const docs = await getCollection("templates").find({}).sort({ name: 1 }).toArray();
-  return docs.map(serialize);
+  const counts = await countGamesByTemplate();
+  return docs.map((d) => {
+    const out = serialize(d);
+    out.gamesCount = counts.get(out._id) || 0;
+    return out;
+  });
 }
 
 export async function getTemplate(id) {
   try {
     const doc = await getCollection("templates").findOne({ _id: new ObjectId(id) });
-    return serialize(doc);
+    const out = serialize(doc);
+    if (out) {
+      const counts = await countGamesByTemplate();
+      out.gamesCount = counts.get(out._id) || 0;
+    }
+    return out;
   } catch {
     return null;
   }

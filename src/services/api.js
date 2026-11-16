@@ -216,6 +216,7 @@ export const gameService = {
     if (filters.type && filters.type !== "all") params.set("type", filters.type);
     if (filters.playMode && filters.playMode !== "all") params.set("playMode", filters.playMode);
     if (filters.deliveryMode && filters.deliveryMode !== "all") params.set("deliveryMode", filters.deliveryMode);
+    if (filters.templateId && filters.templateId !== "all") params.set("templateId", filters.templateId);
     const hasPaging = filters.from || filters.to;
     if (filters.from) params.set("from", filters.from);
     if (filters.to) params.set("to", filters.to);

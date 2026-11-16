@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Eye, Pencil, Trash2 } from 'lucide-react'
 import { navigate } from '../../lib/router.js'
-import { templateService } from '../../services/api.js'
-import { BulkDeleteBar, Checkbox, GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, TemplateThumb } from '../../components/ui'
+import { gameService, templateService } from '../../services/api.js'
+import { BulkDeleteBar, Checkbox, GhostButton, GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, StatusBadge, TemplateThumb } from '../../components/ui'
 import { useBulkSelection, bulkInChunks } from '../../lib/hooks.js'
 import { matchesQuery } from '../../lib/searchText.js'
 
@@ -26,10 +26,37 @@ export default function TemplateManagement({ showToast }) {
   const confirmRemove = (t) => setConfirm({ open: true, item: t });
 
   const [query, setQuery] = useState("");
-  const filtered = useMemo(
-    () => (templates ?? []).filter((t) => matchesQuery(query, t.name, t.category, t.type, t.status)),
-    [templates, query]
-  );
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("name");
+  const filtered = useMemo(() => {
+    const list = (templates ?? [])
+      .filter((t) => matchesQuery(query, t.name, t.category, t.type, t.status))
+      .filter((t) => statusFilter === "all" || t.status === statusFilter);
+    const sorted = [...list];
+    if (sortBy === "games") sorted.sort((a, b) => (b.gamesCount || 0) - (a.gamesCount || 0));
+    else if (sortBy === "updated") sorted.sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    else sorted.sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "vi"));
+    return sorted;
+  }, [templates, query, statusFilter, sortBy]);
+
+  // ── Xem danh sách game đang dùng 1 template ─────────────────────────
+  const [gamesTpl, setGamesTpl] = useState(null);
+  const [gamesState, setGamesState] = useState({ loading: false, error: null, items: [] });
+
+  const openGames = async (t) => {
+    setGamesTpl(t);
+    setGamesState({ loading: true, error: null, items: [] });
+    try {
+      const res = await gameService.list({ templateId: t._id, from: 1, to: 200 });
+      setGamesState({ loading: false, error: null, items: res?.items || [] });
+    } catch (e) {
+      setGamesState({ loading: false, error: e.message || "Không tải được danh sách game", items: [] });
+    }
+  };
+
+  const openPreview = (t) => {
+    if (t.htmlUrl) window.open(t.htmlUrl, "_blank", "noopener");
+  };
   const doRemove = async () => {
     try {
       const result = await templateService.remove(confirm.item._id);
@@ -82,6 +109,20 @@ export default function TemplateManagement({ showToast }) {
           onDeleteSelected={doBulkRemove} onDeleteAll={doRemoveAll} onClear={sel.clear} />
       </div>
 
+      <div className="flex flex-wrap gap-3 mb-4">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="note-card px-4 py-2.5 text-sm">
+          <option value="all">Tất cả trạng thái</option>
+          <option value="published">Hoạt động</option>
+          <option value="draft">Bản nháp</option>
+          <option value="inactive">Đã tắt</option>
+        </select>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="note-card px-4 py-2.5 text-sm">
+          <option value="name">Tên A–Z</option>
+          <option value="games">Nhiều game nhất</option>
+          <option value="updated">Mới cập nhật</option>
+        </select>
+      </div>
+
       <ManagementTable
         viewKey="templates"
         count={templates ? filtered.length : 0}
@@ -91,18 +132,34 @@ export default function TemplateManagement({ showToast }) {
         emptyLabel={query ? "Không tìm thấy template nào khớp tìm kiếm." : "Chưa có template nào."}
         onCreate={() => navigate("/dashboard/templates/new")}
         search={{ value: query, onChange: setQuery, placeholder: "Tìm kiếm" }}
-        headers={[<Checkbox key="sel-all" checked={sel.allSelected(filtered.map((t) => t._id))} onChange={() => sel.toggleAll(filtered.map((t) => t._id))} />, "Ảnh", "Tên", "Loại", "Thể loại", "Trạng thái", "Cập nhật", ""]}
+        headers={[<Checkbox key="sel-all" checked={sel.allSelected(filtered.map((t) => t._id))} onChange={() => sel.toggleAll(filtered.map((t) => t._id))} />, "Ảnh", "Tên", "Loại", "Thể loại", "Trạng thái", "Game dùng", "Cập nhật", ""]}
         renderGridCard={(t) => (
           <GridCard
             key={t._id}
             media={<TemplateThumb thumbnail={t.thumbnail} name={t.name} ring={t.ring} size={40} className="shrink-0" />}
-            title={t.name}
+            title={<>{t.name} <span className="text-[11px] font-mono font-normal text-[#8A7C63]">v{t.version}</span></>}
             badge={STATUS_BADGE[t.status] || { label: t.status, tone: "gray" }}
             mono={t.category}
             extra={(
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-[#646970]">Loại: {t.type === "play-to-win" ? "Chơi để thắng (Win)" : "Học tập (Learn)"}</span>
-                <Checkbox checked={sel.isSelected(t._id)} onChange={() => sel.toggle(t._id)} />
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-[#646970]">Loại: {t.type === "play-to-win" ? "Chơi để thắng (Win)" : "Học tập (Learn)"}</span>
+                  <Checkbox checked={sel.isSelected(t._id)} onChange={() => sel.toggle(t._id)} />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  {t.gamesCount > 0 ? (
+                    <button onClick={() => openGames(t)} className="text-xs font-semibold text-ticket hover:underline">
+                      Đang dùng: {t.gamesCount} game
+                    </button>
+                  ) : (
+                    <span className="text-xs text-[#646970]">Đang dùng: 0 game</span>
+                  )}
+                  {t.htmlUrl && (
+                    <button onClick={() => openPreview(t)} className="inline-flex items-center gap-1 text-xs font-semibold text-teal hover:underline">
+                      <Eye className="w-3.5 h-3.5" /> Xem trước
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             meta={t.updatedAt ? `Cập nhật: ${new Date(t.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}` : undefined}
@@ -116,7 +173,10 @@ export default function TemplateManagement({ showToast }) {
               <Checkbox checked={sel.isSelected(t._id)} onChange={() => sel.toggle(t._id)} />
             </td>
             <td className="px-5 py-3"><TemplateThumb thumbnail={t.thumbnail} name={t.name} ring={t.ring} size={36} /></td>
-            <td className="px-5 py-3 font-body text-ink">{t.name}</td>
+            <td className="px-5 py-3 font-body text-ink">
+              {t.name}
+              <span className="ml-2 text-[11px] font-mono text-[#8A7C63]">v{t.version}</span>
+            </td>
             <td className="px-5 py-3">
               <span className={`text-[11px] font-mono uppercase px-2.5 py-1 rounded-full border ${t.type === "play-to-win" ? "bg-teal/15 text-teal border-teal/30" : "bg-ticket/15 text-ticket border-ticket/30"}`}>
                 {t.type === "play-to-win" ? "Win" : "Learn"}
@@ -131,10 +191,20 @@ export default function TemplateManagement({ showToast }) {
                 : t.status === "inactive" ? "bg-ink/10 text-ink/50 border-ink/20" : "bg-gold/15 text-gold border-gold/30"
                 }`}>{t.status}</span>
             </td>
+            <td className="px-5 py-3">
+              {t.gamesCount > 0 ? (
+                <button onClick={() => openGames(t)} className="text-sm font-semibold text-ticket hover:underline">
+                  {t.gamesCount} game
+                </button>
+              ) : (
+                <span className="text-sm text-[#8A7C63]">0 game</span>
+              )}
+            </td>
             <td className="px-5 py-3 text-sm text-[#8A7C63]">
               {t.updatedAt ? new Date(t.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
             </td>
             <td className="px-5 py-3 text-right flex gap-1 justify-end">
+              {t.htmlUrl && <IconButton title="Xem trước" onClick={() => openPreview(t)}><Eye /></IconButton>}
               <IconButton title="Sửa" onClick={() => navigate(`/dashboard/templates/${t._id}`)}><Pencil /></IconButton>
               <IconButton title="Xóa" tone="danger" onClick={() => confirmRemove(t)}><Trash2 /></IconButton>
             </td>
@@ -143,8 +213,42 @@ export default function TemplateManagement({ showToast }) {
       />
 
       <ConfirmModal open={confirm.open} title="Xóa template"
-        message={confirm.item ? `Xóa template "${confirm.item.name}"?` : ""}
+        message={confirm.item
+          ? (confirm.item.gamesCount > 0
+            ? `Template "${confirm.item.name}" đang được ${confirm.item.gamesCount} game sử dụng. Xóa sẽ chuyển template sang trạng thái inactive (đã tắt) và KHÔNG xóa các game liên quan.`
+            : `Xóa template "${confirm.item.name}"?`)
+          : ""}
         onConfirm={doRemove} onClose={() => setConfirm({ open: false, item: null })} />
+
+      {gamesTpl && (
+        <Modal onClose={() => setGamesTpl(null)}>
+          <h3 className="font-display text-xl text-ink mb-1">Game đang dùng template</h3>
+          <p className="text-sm text-[#8A7C63] mb-4">"{gamesTpl.name}" — {gamesTpl.gamesCount || 0} game</p>
+          {gamesState.loading && <p className="text-sm text-[#8A7C63] py-4">Đang tải danh sách game...</p>}
+          {!gamesState.loading && gamesState.error && (
+            <p className="text-sm text-ticket py-4">Không tải được danh sách game: {gamesState.error}</p>
+          )}
+          {!gamesState.loading && !gamesState.error && gamesState.items.length === 0 && (
+            <p className="text-sm text-[#8A7C63] py-4">Chưa có game nào dùng template này.</p>
+          )}
+          {!gamesState.loading && !gamesState.error && gamesState.items.length > 0 && (
+            <div className="max-h-[50vh] overflow-y-auto space-y-2 mb-4">
+              {gamesState.items.map((g) => (
+                <div key={g._id} className="note-card p-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-body text-ink truncate">{g.name}</p>
+                    <p className="text-[11px] font-mono text-[#8A7C63]">{g.subject || "Khác"} · {g.questionsCount || 0} câu hỏi</p>
+                  </div>
+                  <StatusBadge status={g.status} />
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-end">
+            <GhostButton onClick={() => setGamesTpl(null)}>Đóng</GhostButton>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { gameService, statsService } from '../../services/api.js'
+import { navigate } from '../../lib/router.js'
 import { gameDataService } from '../../services/gameDataService.js'
 import { useSubjects, useCategories, useTemplates } from '../../lib/hooks.js'
 import { BulkDeleteBar, Checkbox, EmptyState, ErrorState, GhostButton, IconButton, IconCast, IconEdit, IconPlay, IconTrash, Loader, ManagementHeader, Modal, PrimaryButton, TemplateThumb, StatusBadge, TicketStub, useViewMode, ViewToggle } from '../../components/ui';
@@ -31,13 +32,20 @@ function StatCard({ icon: Icon, label, value, tone = "ink" }) {
   );
 }
 
-function ManagementGameCard({ game, templates, publishedVersion, onEdit, onResults, onDuplicate, onDelete, onShare, onLive, onPublish, onVersions, selected, onToggleSelect }) {
+// Resolve template gốc của game: ưu tiên templateId (khớp _id), fallback
+// slug/id cũ. Trả { tplId, tpl } — tpl null khi có id mà không tìm thấy.
+function templateOf(game, templates) {
   const tplId = game.templateId
     ? (typeof game.templateId === "string" ? game.templateId : game.templateId?.$oid || game.templateId)
     : null;
   const tpl = tplId
     ? templates.find(t => t._id === tplId)
     : templates.find(t => t.slug === game.template || t.id === game.template);
+  return { tplId, tpl };
+}
+
+function ManagementGameCard({ game, templates, publishedVersion, onEdit, onResults, onDuplicate, onDelete, onShare, onLive, onPublish, onVersions, selected, onToggleSelect }) {
+  const { tplId, tpl } = templateOf(game, templates);
 
   return (
     <div className="note-card p-4 flex flex-col gap-3 anim-pop hover:-translate-y-0.5 transition shadow-[0_2px_0_rgba(0,0,0,0.06)]">
@@ -50,6 +58,15 @@ function ManagementGameCard({ game, templates, publishedVersion, onEdit, onResul
       </div>
       <div>
         <h3 className="font-display text-base sm:text-lg text-ink leading-snug clamp-2">{game.name}</h3>
+        {tpl ? (
+          <button onClick={() => navigate(`/dashboard/templates/${tpl._id}`)} title="Xem template gốc"
+            className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-body font-semibold bg-ink/5 text-ink/70 border border-ink/15 hover:border-ink/35 transition max-w-full">
+            <Layers className="w-3 h-3 shrink-0" />
+            <span className="truncate">{tpl.name}</span>
+          </button>
+        ) : (tplId && templates.length > 0 ? (
+          <p className="mt-1.5 text-[11px] text-[#B7A987] italic">Template không tồn tại</p>
+        ) : null)}
         <div className="flex flex-wrap items-center gap-2 mt-2">
           <span className="px-2.5 py-0.5 rounded-full text-[11px] font-body font-semibold bg-teal/10 text-teal border border-teal/20">
             {game.subject || "Khác"}
@@ -105,6 +122,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
   const [status, setStatus] = useState("all");
   const [subject, setSubject] = useState("all");
   const [category, setCategory] = useState("all");
+  const [templateFilter, setTemplateFilter] = useState("all");
   const [games, setGames] = useState(null);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
@@ -130,6 +148,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
   const onStatusChange = (v) => { setStatus(v); setFrom(1); };
   const onSubjectChange = (v) => { setSubject(v); setFrom(1); };
   const onCategoryChange = (v) => { setCategory(v); setFrom(1); };
+  const onTemplateChange = (v) => { setTemplateFilter(v); setFrom(1); };
 
   const loadStats = useCallback(() => {
     statsService.get().then(s => {
@@ -148,7 +167,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
 
   const load = useCallback(() => {
     setGames(null); setError(null);
-    gameService.list({ query, status, subject, category, from, to }).then(res => {
+    gameService.list({ query, status, subject, category, templateId: templateFilter, from, to }).then(res => {
       if (res && res.items) {
         setGames(res.items);
         setTotal(res.pagination?.total || 0);
@@ -157,7 +176,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
         setTotal(0);
       }
     }).catch(e => setError(e.message || "Lỗi tải dữ liệu"));
-  }, [query, status, subject, category, from, to]);
+  }, [query, status, subject, category, templateFilter, from, to]);
 
   useEffect(() => { const t = setTimeout(load, 250); return () => clearTimeout(t); }, [load]);
   useEffect(() => { loadStats(); }, [loadStats]);
@@ -358,6 +377,10 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
           <option value="published">Đã xuất bản</option>
           <option value="draft">Bản nháp</option>
         </select>
+        <select value={templateFilter} onChange={e => onTemplateChange(e.target.value)} className="note-card px-4 py-2.5 text-sm">
+          <option value="all">Tất cả template</option>
+          {templates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+        </select>
         <ViewToggle mode={mode} onChange={setMode} className="inline-flex self-center" />
       </div>
 
@@ -422,10 +445,21 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
               <tbody>
                 {games.map(g => {
                   const gid = g._id?.toString() || g.id;
+                  const { tplId: rowTplId, tpl: rowTpl } = templateOf(g, templates);
                   return (
                     <tr key={gid}>
                       <td><Checkbox checked={sel.isSelected(gid)} onChange={() => sel.toggle(gid)} /></td>
-                      <td className="font-semibold">{g.name}</td>
+                      <td className="font-semibold">
+                        {g.name}
+                        {rowTpl ? (
+                          <button onClick={() => navigate(`/dashboard/templates/${rowTpl._id}`)} title="Xem template gốc"
+                            className="block text-[11px] font-body font-semibold text-ink/50 hover:text-ticket hover:underline mt-0.5">
+                            {rowTpl.name}
+                          </button>
+                        ) : (rowTplId && templates.length > 0 ? (
+                          <span className="block text-[11px] font-normal text-[#B7A987] italic mt-0.5">Template không tồn tại</span>
+                        ) : null)}
+                      </td>
                       <td><StatusBadge status={g.status} /></td>
                       <td>{g.subject || "Khác"}</td>
                       <td>{g.questionsCount || 0}</td>
