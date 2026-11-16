@@ -242,22 +242,37 @@ function StepTemplate({ form, setForm, templates, categories }) {
       <div className="grid sm:grid-cols-2 gap-4">
         {list.map(t => {
           const tplConfig = matchGameDef({ template: t });
+          // Template chưa published (draft/inactive) KHÔNG chọn được để tạo
+          // game mới — NGOẠI TRỪ template đang gắn với game đang sửa: vẫn cho
+          // giữ nguyên kèm ghi chú, tránh phá game cũ khi sửa field khác.
+          const isCurrent = form.templateId === t._id;
+          const locked = t.status !== "published" && !isCurrent;
+          const statusLabel = t.status === "inactive" ? "Đã tắt" : t.status === "draft" ? "Bản nháp" : null;
           return (
-          <button key={t._id} onClick={() => setForm(f => ({ ...f, templateId: t._id }))}
+          <button key={t._id} disabled={locked} onClick={() => { if (!locked) setForm(f => ({ ...f, templateId: t._id })); }}
             className={`text-left p-5 rounded-2xl border-2 transition flex gap-4 items-start
-              ${form.templateId === t._id ? "border-ticket bg-ticket/5" : "border-ink/10 hover:border-ink/25"}`}>
+              ${isCurrent ? "border-ticket bg-ticket/5" : "border-ink/10 hover:border-ink/25"}
+              ${locked ? "opacity-50 cursor-not-allowed hover:border-ink/10" : ""}`}>
             <TemplateThumb thumbnail={t.thumbnail} name={t.name} ring={t.ring} size={48} />
             <div className="min-w-0">
               <h3 className="font-display text-base text-ink">{t.name}</h3>
               <p className="text-sm text-[#8A7C63] mt-1">{t.description}</p>
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 <span className="inline-block text-[10px] font-mono uppercase text-[#B7A987]">{t.category}</span>
+                {statusLabel && (
+                  <span className={`inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded ${t.status === "inactive" ? "bg-ink/10 text-ink/50" : "bg-gold/15 text-[#8a6a10]"}`}>
+                    {statusLabel}
+                  </span>
+                )}
                 {tplConfig && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-teal/10 text-teal">
                     <Settings className="w-3 h-3" /> {tplConfig.icon} {tplConfig.name}
                   </span>
                 )}
               </div>
+              {isCurrent && t.status !== "published" && (
+                <p className="text-[11px] text-[#8a6a10] mt-1.5">Template hiện tại (đã tắt/chưa xuất bản) — giữ nguyên cho game này</p>
+              )}
             </div>
           </button>
           );
