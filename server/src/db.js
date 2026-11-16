@@ -223,6 +223,17 @@ async function _runHeavyInit(database) {
           coinsEarnedToday: { bsonType: ["int", "double", "long"] },
           // Ngày đã nhận quà sao hằng ngày (YYYY-MM-DD) — chặn nhận trùng.
           lastStarGiftOn: { bsonType: "string" },
+          // Điểm danh mỗi ngày của học sinh (checkinService): chuỗi ngày
+          // liên tiếp + tổng số lần điểm danh. lastDate theo giờ Việt Nam.
+          dailyCheckin: {
+            bsonType: "object",
+            properties: {
+              lastDate: { bsonType: "string" },
+              streak: { bsonType: ["int", "double", "long"] },
+              longestStreak: { bsonType: ["int", "double", "long"] },
+              totalCheckins: { bsonType: ["int", "double", "long"] },
+            },
+          },
           createdAt: { bsonType: "string" },
         },
       }
