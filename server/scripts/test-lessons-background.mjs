@@ -5,18 +5,27 @@
 // normalizePages phía server chỉ trả { id, title, elements } nên nền bị
 // rơi khi lưu), nền sai dạng bị bỏ qua mà không chặn lưu, và DTO phía
 // học sinh (đã publish) vẫn mang nền nhưng không lộ correctAnswer.
-import { MongoMemoryServer } from "mongodb-memory-server";
 import { createServer } from "node:http";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = process.env.TEST_MONGO_DBPATH || path.join(here, ".test-lessons-bg-mongo-data");
-mkdirSync(dbPath, { recursive: true });
-const mongod = await MongoMemoryServer.create({ instance: { dbPath, storageEngine: "wiredTiger" } });
-process.env.MONGODB_URI = mongod.getUri();
-process.env.MONGODB_DB = "lessons_bg_test";
+// Mặc định dùng mongodb-memory-server; máy chưa cài package này có thể trỏ
+// TEST_MONGODB_URI (+ TEST_MONGODB_DB) vào DB test riêng — script DROP DB
+// đó ở cuối. Không truyền TEST_MONGODB_URI thì giữ nguyên hành vi cũ.
+let mongod = null;
+if (process.env.TEST_MONGODB_URI) {
+  process.env.MONGODB_URI = process.env.TEST_MONGODB_URI;
+  process.env.MONGODB_DB = process.env.TEST_MONGODB_DB || `lessons_bg_test_${process.pid}`;
+} else {
+  const dbPath = process.env.TEST_MONGO_DBPATH || path.join(here, ".test-lessons-bg-mongo-data");
+  mkdirSync(dbPath, { recursive: true });
+  const { MongoMemoryServer } = await import("mongodb-memory-server");
+  mongod = await MongoMemoryServer.create({ instance: { dbPath, storageEngine: "wiredTiger" } });
+  process.env.MONGODB_URI = mongod.getUri();
+  process.env.MONGODB_DB = "lessons_bg_test";
+}
 
 const db = await import("../src/db.js");
 await db.initDatabase();
@@ -128,5 +137,6 @@ checkTrue("DTO học sinh: không lộ correctAnswer",
 
 console.log(failed === 0 ? "\nALL PASS" : `\n${failed} FAIL`);
 server.close();
-await mongod.stop();
+if (mongod) await mongod.stop();
+else await db.getDb().dropDatabase();
 process.exit(failed === 0 ? 0 : 1);

@@ -45,15 +45,17 @@ export default function ImageLibrary({ user, showToast }) {
     finally { setLoading(false); }
   }, [folder]);
 
+  // Tải danh sách khi vào trang/đổi folder; load() tự bật loading rồi setState
+  // sau await — cùng ngoại lệ với ImagePicker/StudioLessons.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   const handleUpload = async (files) => {
     if (!files.length) return;
     setUploading(true);
     try {
-      const result = files.length === 1
-        ? await imageService.upload(files[0], folder)
-        : await imageService.uploadMultiple(Array.from(files), folder);
+      if (files.length === 1) await imageService.upload(files[0], folder);
+      else await imageService.uploadMultiple(Array.from(files), folder);
       showToast(`Đã upload ${files.length} ảnh`, "success");
       load();
     } catch (e) { showToast(e.message || "Lỗi upload", "error"); }

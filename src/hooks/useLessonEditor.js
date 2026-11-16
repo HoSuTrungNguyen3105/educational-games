@@ -311,42 +311,6 @@ export function useLessonEditor(lessonId) {
     setSelectedId(null);
   }, [mutate, pageId]);
 
-  /** Sửa thuộc tính TRANG hiện tại (vd: đổi `background`). Một mốc undo. */
-  const patchPage = useCallback((patch) => {
-    const cur = docRef.current;
-    const pid = pageId || cur?.pages[0]?.id;
-    if (!cur || !pid) return;
-    mutate((d) => ({
-      ...d,
-      pages: d.pages.map((p) => (p.id === pid ? { ...p, ...patch } : p)),
-    }));
-  }, [mutate, pageId]);
-
-  /**
-   * Áp một MẪU TRANG lên trang hiện tại: đổi nền + thay toàn bộ phần tử bằng
-   * cấu trúc mẫu (một mốc undo). `elements` là mảng { type, x, y, w, h, props }
-   * — id mới được sinh lại để không trùng với phần tử ở trang khác.
-   */
-  const applyPageTemplate = useCallback(({ background, title, elements }) => {
-    const cur = docRef.current;
-    const pid = pageId || cur?.pages[0]?.id;
-    if (!cur || !pid) return;
-    const nextElements = (elements || []).map((el, i) => ({
-      id: uid("el"),
-      type: el.type,
-      x: el.x, y: el.y, w: el.w, h: el.h,
-      z: i,
-      props: clone(el.props || {}),
-    }));
-    mutate((d) => ({
-      ...d,
-      pages: d.pages.map((p) => (p.id === pid
-        ? { ...p, background: background || "white", ...(title ? { title } : {}), elements: nextElements }
-        : p)),
-    }));
-    setSelectedId(null);
-  }, [mutate, pageId]);
-
   const duplicatePage = useCallback((id) => {
     const cur = docRef.current;
     if (!cur || cur.pages.length >= MAX_PAGES) return;

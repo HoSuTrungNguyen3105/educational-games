@@ -13,7 +13,6 @@
 // `upload_prefix` ngay lúc nạp module nên phải cấu hình TRƯỚC khi import
 // app (qua createRequire vào lib/config.js của chính SDK).
 //   node server/scripts/test-images-owner-filter.mjs
-import { MongoMemoryServer } from "mongodb-memory-server";
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { mkdirSync } from "node:fs";
@@ -21,11 +20,21 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = process.env.TEST_MONGO_DBPATH || path.join(here, `.test-images-owner-mongo-data-${process.pid}`);
-mkdirSync(dbPath, { recursive: true });
-const mongod = await MongoMemoryServer.create({ instance: { dbPath, storageEngine: "wiredTiger" } });
-process.env.MONGODB_URI = mongod.getUri();
-process.env.MONGODB_DB = "images_owner_test";
+// Mặc định chạy trên mongodb-memory-server. Ở máy chưa cài package này có
+// thể trỏ TEST_MONGODB_URI (+ TEST_MONGODB_DB) vào một DB test riêng —
+// script sẽ DROP DB đó ở cuối, không bao giờ dùng DB thật.
+let mongod = null;
+if (process.env.TEST_MONGODB_URI) {
+  process.env.MONGODB_URI = process.env.TEST_MONGODB_URI;
+  process.env.MONGODB_DB = process.env.TEST_MONGODB_DB || `images_owner_test_${process.pid}`;
+} else {
+  const dbPath = process.env.TEST_MONGO_DBPATH || path.join(here, `.test-images-owner-mongo-data-${process.pid}`);
+  mkdirSync(dbPath, { recursive: true });
+  const { MongoMemoryServer } = await import("mongodb-memory-server");
+  mongod = await MongoMemoryServer.create({ instance: { dbPath, storageEngine: "wiredTiger" } });
+  process.env.MONGODB_URI = mongod.getUri();
+  process.env.MONGODB_DB = "images_owner_test";
+}
 
 // ───────────────────── Stub Cloudinary ─────────────────────
 const store = new Map(); // publicId -> resource
@@ -337,5 +346,6 @@ check("đồng bộ lần 2: claimed = 0 (không còn ảnh vô chủ)", sync2.b
 console.log(failed === 0 ? "\nALL PASS" : `\n${failed} FAIL`);
 server.close();
 stub.close();
-await mongod.stop();
+if (mongod) await mongod.stop();
+else await db.getDb().dropDatabase();
 process.exit(failed === 0 ? 0 : 1);

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import LessonElementView from "./LessonElementView.jsx";
-import { pageBackgroundOverlayStyle, pageBackgroundStyle } from "./pageBackgrounds.jsx";
+import { pageBackgroundOverlayStyle } from "./pageBackgrounds.jsx";
 import { CANVAS_W, CANVAS_H, clampGeo } from "../../hooks/useLessonEditor.js";
 
 // LessonCanvas — stage vẽ MỘT trang bài học theo hệ toạ độ logic
@@ -18,7 +18,7 @@ import { CANVAS_W, CANVAS_H, clampGeo } from "../../hooks/useLessonEditor.js";
 /** Style nền của trang từ page.background ({ type: "color"|"image", value });
  *  không có nền → trắng mặc định như trước. Dùng cho CẢ 3 chế độ vì mọi
  *  nơi đều vẽ qua LessonCanvas (editor, player, thumbnail dải trang). */
-export function pageBackgroundStyle(page) {
+function pageBackgroundStyle(page) {
   const bg = page?.background;
   if (bg?.type === "color" && bg.value) return { background: bg.value };
   if (bg?.type === "image" && bg.value) {
