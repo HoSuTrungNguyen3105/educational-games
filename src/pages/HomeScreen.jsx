@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { gameService, walletService, notificationService, ticketService } from '../services/api.js'
+import { gameService, walletService, notificationService, ticketService, gameProgressService } from '../services/api.js'
 import { taskService } from '../services/taskService.js'
 import { socket } from '../socket/socket.js'
 import { SOCKET_EVENTS } from '../socket/socket.events.js'
 import { getLevelProgress } from '../lib/utils.js'
+import { matchesQuery } from '../lib/searchText.js'
 import { hashString, metaForSubject, subjectLabel, tintFor } from '../lib/subjectMeta.js'
 import BottomNav, { peekHomeScrollIntent, takeHomeScrollIntent } from '../components/BottomNav.jsx'
 import useChatUnread from '../hooks/useChatUnread.js'
@@ -64,6 +65,8 @@ import {
   X,
   Users,
   CalendarDays,
+  History,
+  ShieldCheck,
 } from 'lucide-react'
 
 
@@ -354,6 +357,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   };
 
   const [dailyTasks, setDailyTasks] = useState(null);
+  // Từ khoá của ô tìm kiếm game toàn cục (dưới hero) — rỗng thì trang chủ
+  // hiện như bình thường, section kết quả chỉ dựng khi có từ khoá.
+  const [query, setQuery] = useState("");
+  // Tiến độ chơi của bé (GET /users/me/games) cho rail "Chơi tiếp":
+  // null = chưa tải xong hoặc tải lỗi → ẩn rail, không vỡ trang.
+  const [recentProgress, setRecentProgress] = useState(null);
   const [showAllGames, setShowAllGames] = useState(false);
   // Môn đang lọc ở khu Game học tập — đặt khi bấm vào thẻ môn ở bảng Môn học.
   const [subjectFilter, setSubjectFilter] = useState(null);
@@ -428,6 +437,20 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   useEffect(() => {
     if (!userAuth?.user) return;
     return subscribeWallet((w) => { setUserCoins(w.coins); setWalletLoaded(true); });
+  }, [userAuth?.user]);
+
+  // Nạp tiến độ chơi cho rail "Chơi tiếp" — cùng endpoint trang Hồ sơ
+  // đang dùng (gameProgressService.listGames). Khách chưa đăng nhập thì
+  // không gọi; lỗi thì giữ null để rail ẩn hẳn thay vì hiện khung trống.
+  // Đăng xuất không cần xoá state tại đây: continueCards tự đóng cổng
+  // theo userAuth nên dữ liệu cũ không bao giờ hiện cho khách.
+  useEffect(() => {
+    if (!userAuth?.user) return;
+    let alive = true;
+    gameProgressService.listGames()
+      .then((list) => { if (alive) setRecentProgress(Array.isArray(list) ? list : []); })
+      .catch(() => { if (alive) setRecentProgress(null); });
+    return () => { alive = false; };
   }, [userAuth?.user]);
 
   const [pushStatus, setPushStatus] = useState(() => getPushSupportStatus());
@@ -889,6 +912,70 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
     []
   );
 
+  /* Thẻ game online dựng MỘT lần theo đúng cách khu "Game học tập" vẫn
+     dựng (cùng template/thumb/tint/nhãn) — nguồn cho pool dùng chung bên
+     dưới, để ô tìm kiếm và rail "Chơi tiếp" không tự dựng thẻ riêng. */
+  const onlineGameCards = useMemo(() => learningGamesAll.map(({ game, index, template: t }) => {
+    const subject = subjectLabel(game.subject);
+    const meta = metaForSubject(subject);
+    return {
+      key: String(game._id || game.id || index),
+      id: String(game._id || game.id || ""),
+      name: game.name,
+      icon: t?.icon,
+      thumb: t?.thumbnail || gameThumbnail(t?.slug || t?.id || t?._id, game.name),
+      tint: tintFor(game.name || String(index)),
+      badge: meta.kind === "learn" ? "Học" : "Chơi",
+      age: meta.age,
+      haystack: `${game.name || ""} ${subject}`,
+      play: () => onSelectGame(game),
+    };
+  }), [learningGamesAll, onSelectGame]);
+
+  /* Pool thẻ game TOÀN CỤC của trang chủ: online + offline + nhập vai.
+     Mỗi thẻ mang `id` (khoá ghép với tiến độ chơi) và `haystack` (chuỗi
+     đem so khớp tìm kiếm) — hai tính năng mới dùng chung pool này. */
+  const searchPool = useMemo(() => [
+    ...onlineGameCards,
+    ...offlineCards.map((c) => ({ ...c, id: c.key, haystack: `${c.name || ""} ${c.age || ""}` })),
+    { ...schoolRpgCard, key: SCHOOL_RPG_GAME.key, id: SCHOOL_RPG_GAME.key, haystack: `${SCHOOL_RPG_GAME.name} ${SCHOOL_RPG_GAME.tag}` },
+  ], [onlineGameCards, offlineCards, schoolRpgCard]);
+
+  // ── Tìm kiếm: so khớp không dấu/không phân biệt hoa thường qua helper
+  // dùng chung matchesQuery (lib/searchText.js) trên haystack của thẻ.
+  const searching = query.trim().length > 0;
+  const searchResults = useMemo(
+    () => (searching ? searchPool.filter((c) => matchesQuery(query, c.haystack)) : []),
+    [searchPool, query, searching]
+  );
+
+  /* ── "Chơi tiếp": tiến độ server trả kèm `lastPlayedAt` (route
+     /users/me/games gắn lastPlayedAt = lastPlayedAt || updatedAt) nên
+     sắp xếp giảm dần theo field đó; bản ghi thiếu giờ thì coi như 0 và
+     giữ nguyên thứ tự tương đối. Ghép thẻ hiển thị theo gameId; game đã
+     gỡ khỏi thư viện (server gắn nhãn "Trò chơi đã gỡ", hoặc không còn
+     thẻ nào khớp id) thì BỎ QUA — rail này chỉ chứa game còn chơi được. */
+  const continueCards = useMemo(() => {
+    if (!userAuth?.user || !Array.isArray(recentProgress) || recentProgress.length === 0) return [];
+    const byId = new Map();
+    for (const c of searchPool) if (c.id) byId.set(c.id, c);
+    const sorted = [...recentProgress].sort((a, b) =>
+      (Date.parse(b.lastPlayedAt || "") || 0) - (Date.parse(a.lastPlayedAt || "") || 0));
+    const seen = new Set();
+    const out = [];
+    for (const p of sorted) {
+      const id = String(p.gameId || "");
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      if (p.name === "Trò chơi đã gỡ") continue;
+      const card = byId.get(id);
+      if (!card) continue;
+      out.push(card);
+      if (out.length >= 10) break;
+    }
+    return out;
+  }, [recentProgress, searchPool, userAuth?.user]);
+
   // Tổng số trò chơi đang chờ bé (học tập + thư giãn + nhập vai) cho câu chào.
   const gameCount = visibleGames.length + OFFLINE_GAMES.length + 1;
 
@@ -1218,6 +1305,68 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           </button>
         </div>
 
+        {/* ─────────── Ô TÌM KIẾM GAME ───────────
+            Nằm ngay dưới hero/lời chào (sau hàng nút tắt). Khối này
+            không thuộc .gq-scene/.gq-mhome nên hiện ở cả desktop lẫn
+            mobile; gõ từ khoá thì section kết quả hiện ngay bên dưới,
+            xoá từ khoá là trang chủ trở lại như cũ. */}
+        <div className="gq-searchbar">
+          <label className="gq-search">
+            <Search className="w-5 h-5" aria-hidden="true" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Tìm trò chơi… (ví dụ: toán, mê cung, xếp hình)"
+              aria-label="Tìm trò chơi"
+            />
+            {query && (
+              <button type="button" className="gq-search__x" onClick={() => setQuery("")} aria-label="Xoá tìm kiếm">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </label>
+        </div>
+
+        {/* ─────────── KẾT QUẢ TÌM KIẾM ─────────── */}
+        {searching && (
+          <section className="gq-sect" aria-label="Kết quả tìm kiếm">
+            <HomeSectionHead
+              icon={<Search className="w-5 h-5" />}
+              title="Kết quả tìm kiếm"
+              count={searchResults.length}
+              sub={<>Đang tìm “{query.trim()}” trong {searchPool.length} trò chơi của trang chủ</>}
+            />
+            {searchResults.length === 0 ? (
+              <EmptyState icon={<Search className="w-10 h-10 text-gray-400" />} title="Không tìm thấy trò chơi nào" subtitle="Bé thử từ ngắn hơn nhé — ví dụ “toán”, “xếp” hoặc “mê cung”." />
+            ) : (
+              <div className="gq-grid gq-board">
+                {searchResults.map(({ key, ...card }) => (
+                  <HomeGameCard key={key} {...card} />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ─────────── CHƠI TIẾP ───────────
+            Chỉ hiện khi đã đăng nhập và ghép được ít nhất một game còn
+            trong thư viện từ tiến độ chơi gần đây (continueCards). */}
+        {continueCards.length > 0 && (
+          <section className="gq-sect">
+            <HomeSectionHead
+              icon={<History className="w-5 h-5" />}
+              title="Chơi tiếp"
+              sub="Những trò bé vừa chơi — bấm vào để chơi tiếp ngay"
+            />
+            <HomeRail dataRail="continue">
+              {continueCards.map(({ key, ...card }) => (
+                <HomeGameCard key={key} {...card} />
+              ))}
+            </HomeRail>
+          </section>
+        )}
+
         {/* ─────────── HÔM NAY CỦA BÉ ─────────── */}
         <section className="gq-sect">
           <HomeSectionHead
@@ -1372,6 +1521,34 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             </button>
           </div>
         )}
+        {/* ─────────── CHÂN TRANG ───────────
+            Chỉ link tới route CÓ THẬT trong router (đã đối chiếu
+            src/lib/router.js): /, /categories, /lessons, /leaderboard,
+            /parent, /profile. "Hỗ trợ" phía học sinh không có route
+            riêng (là widget nổi trên trang) nên nhắc bằng chữ, không
+            gắn link chết. Mục Hồ sơ chỉ hiện khi đã đăng nhập như
+            mọi điểm đến cá nhân khác của trang. */}
+        <footer className="gq-footer">
+          <div className="gq-footer__brand">
+            <img className="gq-footer__mark" src={site.logoUrl || `${import.meta.env.BASE_URL}logo.svg`} alt="" />
+            <div>
+              <p className="gq-footer__name">{site.name || "EduPlay"}</p>
+              <p className="gq-footer__desc">Học mà chơi, chơi mà học — trò chơi và bài học vui nhộn cho bé mỗi ngày.</p>
+            </div>
+          </div>
+          <nav className="gq-footer__links" aria-label="Liên kết nhanh">
+            <button onClick={() => goTo("/")}>Trang chủ</button>
+            <button onClick={() => goTo("/categories")}>Danh mục</button>
+            <button onClick={() => goTo("/lessons")}>Bài học</button>
+            <button onClick={() => goTo("/leaderboard")}>Bảng xếp hạng</button>
+            <button onClick={() => goTo("/parent")}>Phụ huynh</button>
+            {userAuth?.user && <button onClick={() => goTo("/profile")}>Hồ sơ</button>}
+          </nav>
+          <p className="gq-footer__safe">
+            <ShieldCheck className="w-4 h-4" aria-hidden="true" />
+            <span>Môi trường học tập an toàn cho trẻ em: không quảng cáo, không liên kết lạ. Ba mẹ có thể theo dõi tiến độ của bé ở trang Phụ huynh. Cần giúp đỡ thì bấm nút <b>Hỗ trợ</b> ở góc trang nhé!</span>
+          </p>
+        </footer>
       </div>
 
       {/* ─────────── BOTTOM NAV (mobile) — component dùng chung với trang

@@ -697,6 +697,55 @@
   z-index: 1;
 }
 
+/* ─────────── Ô TÌM KIẾM GAME (dưới hero, trên các section) ───────────
+   Pill trắng bo tròn toàn phần như ô tìm ở trang Danh mục (.cat-search):
+   icon kính lúp + input trong suốt + nút xoá tròn khi có chữ. Hiện ở cả
+   desktop và mobile (khối nằm ngoài .gq-scene/.gq-mhome). */
+.gq-searchbar { margin: 2px 0 18px; }
+.gq-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 12px 18px;
+  box-shadow: var(--gq-shadow);
+  color: var(--gq-mute);
+  cursor: text;
+}
+.gq-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gq-ink);
+}
+.gq-search input::placeholder { color: #a7b3c6; font-weight: 600; }
+/* Ẩn nút xoá mặc định của input type=search — trang dùng nút xoá riêng
+   (.gq-search__x) cho đồng bộ diện mạo. */
+.gq-search input::-webkit-search-cancel-button { display: none; }
+.gq-search__x {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--gq-tile);
+  color: var(--gq-mute);
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+@media (hover: hover) {
+  .gq-search__x:hover { background: var(--gq-tile-hover); }
+}
+.gq-search__x:active { transform: scale(0.92); }
+
 /* ───────────────────────── SECTION ───────────────────────── */
 
 .gq-sect { margin-bottom: 18px; scroll-margin-top: 20px; }
@@ -1078,6 +1127,58 @@
 }
 .gq-login p { font-size: 14px; font-weight: 700; margin: 0; }
 .gq-login__face { font-size: 30px; line-height: 1; }
+
+/* ───────────────────────── CHÂN TRANG ─────────────────────────
+   Thẻ trắng bo tròn như .gq-board ở cuối trang: thương hiệu + mô tả,
+   hàng pill liên kết nhanh (chỉ route có thật) và dòng ghi chú an
+   toàn cho trẻ em. */
+.gq-footer {
+  margin-top: 26px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 22px;
+  box-shadow: 0 14px 30px rgba(22, 48, 94, 0.09);
+  padding: 20px clamp(16px, 3vw, 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.gq-footer__brand { display: flex; align-items: center; gap: 12px; }
+.gq-footer__mark { width: 44px; height: 44px; object-fit: contain; flex: 0 0 auto; }
+.gq-footer__name {
+  font-family: "Fredoka", "Be Vietnam Pro", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+.gq-footer__desc { margin: 2px 0 0; font-size: 13px; font-weight: 600; color: var(--gq-mute); }
+.gq-footer__links { display: flex; flex-wrap: wrap; gap: 8px; }
+.gq-footer__links button {
+  border: 1px solid var(--gq-line);
+  background: #fff;
+  color: var(--gq-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+@media (hover: hover) {
+  .gq-footer__links button:hover { background: var(--gq-tile); border-color: #d7e0ee; }
+}
+.gq-footer__links button:active { transform: translateY(1px); }
+.gq-footer__safe {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--gq-mute);
+}
+.gq-footer__safe svg { flex: 0 0 auto; margin-top: 1px; color: #16a34a; }
 
 /* nút "Xem tất cả" giữa lưới game */
 .gq-more {
@@ -1465,6 +1566,8 @@
 [data-theme="dark"] .gq-gift__card,
 [data-theme="dark"] .gq-reminder,
 [data-theme="dark"] .gq-login,
+[data-theme="dark"] .gq-search,
+[data-theme="dark"] .gq-footer,
 [data-theme="dark"] .gq-more {
   background: var(--card);
   color: var(--gq-ink);
@@ -1480,6 +1583,11 @@
 [data-theme="dark"] .gq-iconbtn--on { background: #ffd45e; }
 /* Chữ phụ / nhãn trên nền tối */
 [data-theme="dark"] .gq-todayhead__sub { color: var(--gq-mute); }
+[data-theme="dark"] .gq-search input::placeholder { color: var(--gq-mute); }
+[data-theme="dark"] .gq-footer__links button { background: var(--gq-tile); border-color: var(--gq-line); color: var(--gq-ink); }
+@media (hover: hover) {
+  [data-theme="dark"] .gq-footer__links button:hover { background: var(--gq-tile-hover); }
+}
 [data-theme="dark"] .gq-card__age,
 [data-theme="dark"] .gq-hcard__age { background: rgba(233, 238, 246, 0.12); color: #B9C6DA; }
 [data-theme="dark"] .gq-link:hover { background: rgba(233, 238, 246, 0.07); }
