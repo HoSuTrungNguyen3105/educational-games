@@ -12,7 +12,11 @@ import "./print.css";
  * sau) để không ảnh hưởng thao tác in ở trang khác.
  *
  * job: { kind: "teams", teams } | { kind: "honor", rows }
+ *    | { kind: "seating", showDate, teacher, note, columns }
  * rows của bảng vàng: [{ student, rank }] đã sắp xếp sẵn.
+ * columns của sơ đồ (đã theo thứ tự GÓC ĐANG XEM ở tab Chỗ ngồi):
+ * [{ label, color: { bg, border } | null, desks: [{ deskNo,
+ *    seats: [{ label, name|null, locked, pinned }] }] }]
  */
 export default function PrintSheet({ job, className, onDone }) {
   // Ghim onDone vào ref để effect chỉ chạy đúng 1 lần cho mỗi job in
@@ -42,7 +46,48 @@ export default function PrintSheet({ job, className, onDone }) {
   return createPortal(
     <div className="ctp-root" aria-hidden="true">
       <div className="ctp-sheet">
-        {job.kind === "teams" ? (
+        {job.kind === "seating" ? (
+          <>
+            <h1 className="ctp-title">Sơ đồ chỗ ngồi — Lớp {classLabel}</h1>
+            {job.showDate && <p className="ctp-date">{dateText}</p>}
+            {(job.teacher || job.note) && (
+              <p className="ctp-date">
+                {job.teacher && <>Giáo viên: {job.teacher}</>}
+                {job.teacher && job.note && " • "}
+                {job.note}
+              </p>
+            )}
+            <p className="ctp-board">BẢNG — PHÍA TRƯỚC LỚP</p>
+            <div className="ctp-seat-cols">
+              {job.columns.map((col) => (
+                <div key={col.label} className="ctp-seat-col">
+                  <p className="ctp-seat-col-title">{col.label}</p>
+                  {col.desks.map((desk) => (
+                    <div
+                      key={desk.deskNo}
+                      className="ctp-desk"
+                      style={col.color ? { borderColor: col.color.border, background: col.color.bg } : undefined}
+                    >
+                      <p className="ctp-desk-title">Bàn {desk.deskNo}</p>
+                      {desk.seats.map((seat) => (
+                        <p key={seat.label} className="ctp-seat-line">
+                          <span className="ctp-seat-label">{seat.label}:</span>{" "}
+                          {seat.locked ? (
+                            <i>[Khoá]</i>
+                          ) : seat.name ? (
+                            <b>{seat.name}{seat.pinned ? " (ghim)" : ""}</b>
+                          ) : (
+                            <span className="ctp-seat-empty">— trống —</span>
+                          )}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </>
+        ) : job.kind === "teams" ? (
           <>
             <h1 className="ctp-title">Bảng điểm thi đua — Lớp {classLabel}</h1>
             <p className="ctp-date">{dateText}</p>

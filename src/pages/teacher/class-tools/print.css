@@ -91,6 +91,66 @@
   padding: 24px 0;
 }
 
+/* ── Sơ đồ chỗ ngồi (tab Chỗ ngồi) ─────────────────────────────────── */
+.ctp-board {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  border: 1.5px solid #555;
+  border-radius: 6px;
+  padding: 5px 0;
+  margin: 0 0 12px;
+}
+
+.ctp-seat-cols {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.ctp-seat-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.ctp-seat-col-title {
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.ctp-desk {
+  border: 1.5px solid #888;
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  break-inside: avoid;
+}
+
+.ctp-desk-title {
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.ctp-seat-line {
+  font-size: 12px;
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ctp-seat-label {
+  color: #555;
+}
+
+.ctp-seat-empty {
+  color: #999;
+}
+
 @page {
   size: A4;
   margin: 14mm;
