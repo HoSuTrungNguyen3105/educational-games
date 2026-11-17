@@ -3,6 +3,7 @@ import { ClipboardList, Download, Pencil, Plus, RotateCcw, Star, Trash2, Upload 
 import { ConfirmModal, GhostButton, Input, Modal, Select } from "../../../components/ui";
 import { useConfirm } from "../../../hooks/useConfirm.js";
 import { genderFromWord, parseNameLine } from "../../../hooks/useClassRoster.js";
+import { GENDER_BADGE, GENDER_LABEL } from "./shared.js";
 
 /**
  * RosterPanel — panel "Danh sách lớp & Điểm" DÙNG CHUNG cho mọi tab của
@@ -19,12 +20,6 @@ import { genderFromWord, parseNameLine } from "../../../hooks/useClassRoster.js"
  * Nhập/xuất Excel bằng thư viện `xlsx` đã có trong dự án (dynamic import
  * như src/services/question-import/excel.parser.js).
  */
-
-const GENDER_BADGE = {
-  male: "bg-sky-100 text-sky-700 border-sky-200",
-  female: "bg-pink-100 text-pink-700 border-pink-200",
-};
-const GENDER_LABEL = { male: "Nam", female: "Nữ" };
 
 function studentToLine(s) {
   return s.gender ? `${s.name} - ${GENDER_LABEL[s.gender]}` : s.name;
