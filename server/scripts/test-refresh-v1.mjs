@@ -92,10 +92,13 @@ const badOrigin = await postRefresh("/api/v1/user/refresh", { cookie: raw0, orig
 check("v1 origin lạ: 403", badOrigin.status, 403);
 check("v1 origin lạ: status=false", badOrigin.body?.status, false);
 
-// ── 3. Cookie hợp lệ → 200 + đúng 4 field như ảnh ────────────────────────
+// ── 3. Cookie hợp lệ → 200 + 4 field gốc như ảnh + field refreshToken mới ─
+// Field `refreshToken` ở gốc JSON là đường cho client iOS (WebKit chặn
+// cookie bên thứ ba): client lưu token này và gửi lại qua header
+// `x-refresh-token`. 4 field gốc giữ nguyên không đổi.
 const ok1 = await postRefresh("/api/v1/user/refresh", { cookie: raw0, origin: GOOD_ORIGIN });
 check("v1 refresh: 200", ok1.status, 200);
-check("v1 refresh: đúng 4 field", Object.keys(ok1.body || {}).sort(), ["Authorization", "code", "msg", "status"]);
+check("v1 refresh: đúng 5 field (4 gốc + refreshToken)", Object.keys(ok1.body || {}).sort(), ["Authorization", "code", "msg", "refreshToken", "status"]);
 check("v1 refresh: status=true", ok1.body?.status, true);
 check("v1 refresh: code=200", ok1.body?.code, 200);
 check("v1 refresh: msg=refresh.success", ok1.body?.msg, "refresh.success");
@@ -108,6 +111,7 @@ check("v1 refresh: có Set-Cookie refresh mới", !!setCookieLine, true);
 check("v1 refresh: cookie ở Path=/api", /Path=\/api(;|$)/i.test(setCookieLine || ""), true);
 const raw1 = cookieValueFrom(ok1.setCookies);
 check("v1 refresh: cookie đã xoay vòng (khác cookie cũ)", !!raw1 && raw1 !== raw0, true);
+check("v1 refresh: body.refreshToken trùng token trong Set-Cookie", ok1.body?.refreshToken, raw1);
 
 // ── 4. Access token mới dùng được ở endpoint cần auth ────────────────────
 const newAccess = String(ok1.body?.Authorization || "").replace(/^Bearer\s+/i, "");
@@ -127,6 +131,7 @@ const legacy = await postRefresh("/api/auth/refresh", { cookie: rawLegacy, origi
 check("auth/refresh cũ: 200", legacy.status, 200);
 check("auth/refresh cũ: có Authorization", /^Bearer .+/.test(legacy.body?.Authorization || ""), true);
 check("auth/refresh cũ: vẫn có data.token", typeof legacy.body?.data?.token, "string");
+check("auth/refresh cũ: data.refreshToken trùng Set-Cookie", legacy.body?.data?.refreshToken, cookieValueFrom(legacy.setCookies));
 
 // ── 7. Cookie rác → 401 status:false ─────────────────────────────────────
 const garbage = await postRefresh("/api/v1/user/refresh", { cookie: "khong-phai-token", origin: GOOD_ORIGIN });
@@ -197,6 +202,113 @@ const staleNextTry = await postRefresh("/api/v1/user/refresh", { cookie: staleNe
 check("sau-grace: token kế tiếp cũng 401 (family đã thu hồi)", staleNextTry.status, 401);
 const staleFamRows = await getCollection("refresh_tokens").find({ userId: "user-refresh-stale" }).toArray();
 check("sau-grace: family bị xoá sạch khỏi DB", staleFamRows.length, 0);
+
+// ── Đường header/body cho iOS (WebKit chặn cookie bên thứ ba) ────────────
+// Mô phỏng iPhone: trình duyệt KHÔNG lưu/gửi cookie — client chỉ còn bản
+// refresh token trong localStorage (nhận từ body response) và gửi lại qua
+// header `x-refresh-token` (hoặc field `refreshToken` trong body JSON).
+// Thứ tự ưu tiên phía server: header → body → cookie (readRefreshToken).
+
+/** POST refresh với tuỳ chọn header token / body token / cookie độc lập nhau. */
+const postRefreshFlex = async (p, { cookie, headerToken, bodyToken, origin } = {}) => {
+  const res = await fetch(`${base}${p}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(cookie ? { Cookie: `${REFRESH_COOKIE_NAME}=${cookie}` } : {}),
+      ...(headerToken ? { "x-refresh-token": headerToken } : {}),
+      ...(origin ? { Origin: origin } : {}),
+    },
+    body: JSON.stringify(bodyToken ? { refreshToken: bodyToken } : {}),
+  });
+  return { status: res.status, body: await res.json().catch(() => null), setCookies: res.headers.getSetCookie() };
+};
+
+const postJson = async (p, payload) => {
+  const res = await fetch(`${base}${p}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return { status: res.status, body: await res.json().catch(() => null), setCookies: res.headers.getSetCookie() };
+};
+
+// ── 11. Register + login: body có data.refreshToken, cookie vẫn được set ─
+const reg = await postJson("/api/auth/register", {
+  username: "hs-ios-header", password: "matkhau123", name: "HS iOS Header",
+});
+check("register: 201", reg.status, 201);
+check("register: data.refreshToken là chuỗi khác rỗng", typeof reg.body?.data?.refreshToken === "string" && reg.body.data.refreshToken.length > 0, true);
+check("register: vẫn có data.token", typeof reg.body?.data?.token, "string");
+check("register: cookie refresh vẫn được set", !!cookieValueFrom(reg.setCookies), true);
+
+const login = await postJson("/api/auth/login", { username: "hs-ios-header", password: "matkhau123" });
+check("login: 200", login.status, 200);
+check("login: data.refreshToken là chuỗi khác rỗng", typeof login.body?.data?.refreshToken === "string" && login.body.data.refreshToken.length > 0, true);
+check("login: data.refreshToken trùng token trong Set-Cookie", login.body?.data?.refreshToken, cookieValueFrom(login.setCookies));
+
+// ── 12. Chuỗi refresh CHỈ bằng header, KHÔNG cookie (mô phỏng iOS) ──────
+// 3 vòng liên tiếp: mỗi vòng dùng refreshToken mới trong body response của
+// vòng trước — token không cập nhật là vòng sau trình token đã rotated.
+let hdrToken = login.body.data.refreshToken;
+for (let round = 1; round <= 3; round++) {
+  const r = await postRefreshFlex("/api/v1/user/refresh", { headerToken: hdrToken, origin: GOOD_ORIGIN });
+  check(`header-only vòng ${round}: 200`, r.status, 200);
+  check(`header-only vòng ${round}: có refreshToken mới khác cũ`, typeof r.body?.refreshToken === "string" && r.body.refreshToken !== hdrToken, true);
+  hdrToken = r.body.refreshToken;
+}
+
+// ── 13. Refresh legacy bằng header (không cookie) → 200 + token xoay ─────
+const legacyHdr = await postRefreshFlex("/api/auth/refresh", { headerToken: hdrToken, origin: GOOD_ORIGIN });
+check("legacy header-only: 200", legacyHdr.status, 200);
+check("legacy header-only: data.refreshToken mới khác cũ", typeof legacyHdr.body?.data?.refreshToken === "string" && legacyHdr.body.data.refreshToken !== hdrToken, true);
+hdrToken = legacyHdr.body.data.refreshToken;
+const legacyHdr2 = await postRefreshFlex("/api/auth/refresh", { headerToken: hdrToken, origin: GOOD_ORIGIN });
+check("legacy header-only vòng 2: 200", legacyHdr2.status, 200);
+hdrToken = legacyHdr2.body.data.refreshToken;
+
+// ── 14. Refresh bằng field refreshToken trong BODY (không header/cookie) ─
+const bodyOnly = await postRefreshFlex("/api/v1/user/refresh", { bodyToken: hdrToken, origin: GOOD_ORIGIN });
+check("body-only: 200", bodyOnly.status, 200);
+check("body-only: có refreshToken mới", typeof bodyOnly.body?.refreshToken === "string" && bodyOnly.body.refreshToken !== hdrToken, true);
+hdrToken = bodyOnly.body.refreshToken;
+
+// ── 15. Ưu tiên: header thắng cookie (cookie rác + header xịn → 200) ─────
+const prio = await postRefreshFlex("/api/v1/user/refresh", { headerToken: hdrToken, cookie: "cookie-rac-khong-dung", origin: GOOD_ORIGIN });
+check("ưu tiên header hơn cookie rác: 200", prio.status, 200);
+hdrToken = prio.body.refreshToken;
+
+// ── 16. Preflight CORS cho header x-refresh-token từ origin Pages ────────
+const preflight = await fetch(`${base}/api/v1/user/refresh`, {
+  method: "OPTIONS",
+  headers: {
+    Origin: GOOD_ORIGIN,
+    "Access-Control-Request-Method": "POST",
+    "Access-Control-Request-Headers": "x-refresh-token, content-type",
+  },
+});
+check("preflight: 200/204", [200, 204].includes(preflight.status), true);
+check("preflight: Allow-Origin phản chiếu origin Pages", preflight.headers.get("access-control-allow-origin"), GOOD_ORIGIN);
+check(
+  "preflight: Allow-Headers chứa x-refresh-token",
+  (preflight.headers.get("access-control-allow-headers") || "").toLowerCase().includes("x-refresh-token"),
+  true
+);
+
+// ── 17. Đăng xuất CHỈ bằng header → family bị thu hồi thật ───────────────
+const login2 = await postJson("/api/auth/login", { username: "hs-ios-header", password: "matkhau123" });
+const logoutToken = login2.body?.data?.refreshToken;
+const logout = await fetch(`${base}/api/auth/logout`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", "x-refresh-token": logoutToken },
+  body: "{}",
+});
+check("logout bằng header: 200", logout.status, 200);
+const afterLogout = await postRefreshFlex("/api/v1/user/refresh", { headerToken: logoutToken, origin: GOOD_ORIGIN });
+check("logout bằng header: refresh token cũ dùng lại → 401", afterLogout.status, 401);
+const iosUserId = login2.body?.data?.user?.id;
+const iosFamRows = await getCollection("refresh_tokens").find({ userId: iosUserId }).toArray();
+check("logout bằng header: family bị xoá sạch khỏi DB", iosFamRows.length, 0);
 
 server.close();
 if (mongod) await mongod.stop();
