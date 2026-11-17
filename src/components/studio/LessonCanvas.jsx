@@ -44,6 +44,10 @@ export default function LessonCanvas({
   mode = "static",
   selectedId = null, onSelect, onGeoChange, onGeoStart, onGeoEnd,
   renderElement, className = "",
+  // Tuỳ chọn: báo click lên một phần tử ở chế độ "play" (LessonPlayer nhúng
+  // ở trang Tạo bài học AI dùng để focus ô sửa tương ứng). Không truyền
+  // thì không gắn handler nào — hành vi cũ nguyên vẹn.
+  onElementClick = null,
 }) {
   const wrapRef = useRef(null);
   const [width, setWidth] = useState(0);
@@ -135,6 +139,7 @@ export default function LessonCanvas({
               <div
                 key={el.id}
                 onPointerDown={editable ? (e) => startDrag(e, el, "move") : undefined}
+                onClick={mode === "play" && onElementClick ? () => onElementClick(el) : undefined}
                 style={{
                   position: "absolute", left: el.x, top: el.y, width: el.w, height: el.h,
                   cursor: editable ? "move" : undefined,

@@ -491,6 +491,48 @@ export async function getCreditStatus() {
 }
 
 /**
+ * Soạn bài học bằng AI (AI_LESSON_CREATOR.md) — chỉ giáo viên/admin.
+ * Backend gọi model ở JSON mode, validate + chuyển về đúng schema
+ * `lessons` THẬT rồi trả BẢN NHÁP CHƯA LƯU; trang Tạo bài học AI cho
+ * giáo viên xem trước/sửa rồi mới lưu qua lessonService.create.
+ *
+ * @param {object} p
+ * @param {string} p.prompt    Yêu cầu soạn bài tự do của giáo viên.
+ * @param {string} p.subject   Môn học (đúng giá trị danh mục subjects).
+ * @param {number} p.gradeLevel Lớp 1–5.
+ * @param {"short"|"standard"|"deep"} [p.length] Độ dài bài học.
+ * @param {AbortSignal} [p.signal]
+ * @returns {Promise<{lesson: object, meta: {length: string, sections: number,
+ *   generatedQuestions: number, droppedQuestions: number,
+ *   quizReturned: number, warnings: string[]}}>}
+ */
+export async function generateLesson({ prompt, subject, gradeLevel, length, signal } = {}) {
+  if (!String(prompt || "").trim()) {
+    throw new AiServiceError("Bạn chưa nhập yêu cầu soạn bài.", { kind: "badRequest" });
+  }
+  if (!String(subject || "").trim()) {
+    throw new AiServiceError("Bạn chưa chọn môn học.", { kind: "badRequest" });
+  }
+  const grade = Number(gradeLevel);
+  if (!Number.isInteger(grade) || grade < 1 || grade > 5) {
+    throw new AiServiceError("Cấp học phải là lớp 1–5.", { kind: "badRequest" });
+  }
+  const json = await aiFetch("/api/ai/generate-lesson", {
+    body: {
+      prompt: String(prompt).trim().slice(0, 2000),
+      subject: String(subject).trim().slice(0, 100),
+      gradeLevel: grade,
+      length: ["short", "standard", "deep"].includes(length) ? length : "standard",
+    },
+    signal,
+  });
+  if (!json || typeof json !== "object" || !json.lesson || !Array.isArray(json.lesson.pages)) {
+    throw new AiServiceError("AI không trả về được bản nháp bài học. Hãy thử lại.", { kind: "badResponse" });
+  }
+  return { lesson: json.lesson, meta: json.meta || {} };
+}
+
+/**
  * Kiểm tra AI có sẵn sàng không (dùng cho trạng thái nút).
  * Endpoint này không cần token và không bao giờ trả về API key.
  */
