@@ -151,7 +151,7 @@ export default function StudioLessons({ showToast }) {
 
   return (
     <div>
-      <ManagementHeader title="Tạo bài học AI" subtitle="Soạn bài học tương tác: trang, câu hỏi và game — xuất bản cho học sinh học ngay trong EduPlay">
+      <ManagementHeader title="Tạo bài học" subtitle="Soạn bài học tương tác: trang, câu hỏi và game — xuất bản cho học sinh học ngay trong EduPlay">
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
           className="note-card px-3 py-2 text-sm border-ink/10 bg-paper2">
           <option value="all">Tất cả trạng thái</option>

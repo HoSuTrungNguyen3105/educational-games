@@ -193,7 +193,7 @@ export default function StudioEditor({ lessonId, showToast }) {
           <ArrowLeft className="w-4 h-4" /> Danh sách
         </button>
         <span className="studio-header-brand hidden xl:inline-flex items-center gap-1.5 font-display font-bold text-ink">
-          <Sparkles className="w-4.5 h-4.5" style={{ color: "#8B5CF6" }} /> Tạo bài học AI
+          <Sparkles className="w-4.5 h-4.5" style={{ color: "#8B5CF6" }} /> Tạo bài học
         </span>
         <input
           value={ed.doc.title}

@@ -87,7 +87,7 @@ const SECTIONS = [
       { id: "admin-categories", label: "Categories", icon: Tag, route: "/dashboard/categories", permission: "categories.manage" },
       { id: "admin-templates", label: "Templates", icon: Palette, route: "/dashboard/templates", permission: "templates.manage" },
       { id: "admin-birthday", label: "Trang sinh nhật", icon: Cake, route: "/dashboard/birthday", permission: "templates.edit" },
-      { id: "admin-lesson-creator", label: "Tạo bài học AI", icon: PenLine, route: "/dashboard/ai-lesson-creator", permission: null },
+      { id: "admin-lesson-creator", label: "Tạo bài học", icon: PenLine, route: "/dashboard/ai-lesson-creator", permission: null },
       { id: "admin-documents", label: "Soạn tài liệu", icon: FileText, route: "/dashboard/documents", permission: null },
       { id: "admin-document-templates", label: "Thư viện mẫu", icon: LayoutTemplate, route: "/dashboard/documents/templates", permission: null },
       { id: "admin-game-config", label: "Cấu hình game", icon: IconSettings, route: "/dashboard/game-config", permission: "games.manage" },
