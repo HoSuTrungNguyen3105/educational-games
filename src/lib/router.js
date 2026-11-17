@@ -20,6 +20,8 @@ const ROUTES = [
   // Tạo bài học AI (tách khỏi AI Studio cũ theo REFACTOR_AI_STUDIO.md):
   // danh sách bài học + editor soạn bài (API /api/lessons)
   { name: "admin-lesson-creator", pattern: "/dashboard/ai-lesson-creator" },
+  // Route tĩnh /generate PHẢI đứng trước pattern :lessonId (router khớp theo thứ tự).
+  { name: "admin-lesson-creator-generate", pattern: "/dashboard/ai-lesson-creator/generate" },
   { name: "admin-lesson-creator-edit", pattern: "/dashboard/ai-lesson-creator/:lessonId" },
   // AI Studio mới: trung tâm cấu hình Gia sư AI (RAG) — khung 3 tab
   // (Cấu hình / Đính chính / Kiểm thử), backend RAG nối ở bước sau.

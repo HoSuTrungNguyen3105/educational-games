@@ -8,6 +8,7 @@
 //
 //   /api/ai/chat               ← AiChatService
 //   /api/ai/quizzes/generate   ← AiQuizGenerationService
+//   /api/ai/generate-lesson    ← soạn bài học AI (AI_LESSON_CREATOR.md, chỉ đường trực tiếp)
 //   /api/ai/generate-question  ← AiQuestionService (bọc pipeline quiz, shape cũ)
 //   /api/ai/explain            ← AiExplainService (ngữ cảnh inline do route chấm sẵn)
 //   /api/ai/learning-analysis  ← AiLearningAnalysisService
@@ -24,8 +25,9 @@ import { groqComplete, groqCompleteJson } from "./aiGroqGateway.js";
 import {
   chatSystem, chatMessages, quizSystem, quizUser, explainSystem, explainUser,
   followUpMessage, analysisSystem, analysisUser, enforceLimit, cleanText,
-  studentSystemPrompt, adminSystemPrompt,
+  studentSystemPrompt, adminSystemPrompt, lessonSystem, lessonUser,
 } from "./aiPromptFactory.js";
+import { uid } from "../utils/id.js";
 import {
   computeLearningMetrics, fallbackNarrative, withinPeriod, validatePeriod,
   ANALYSIS_DISCLAIMER,
@@ -687,6 +689,335 @@ async function directExplain(body) {
   });
 }
 
+// ─────────────────────── Soạn bài học (AI Lesson Creator) ───────────────────────
+//
+// Đặc tả AI_LESSON_CREATOR.md: giáo viên nhập prompt → model trả JSON theo
+// schema ĐẦU RA CỦA ĐẶC TẢ (title/objectives[]/sections[]/quick_quiz[] với
+// correct_answer là VĂN BẢN đáp án) → hàm này validate + chuyển về đúng
+// schema `lessons` THẬT của dự án rồi trả BẢN NHÁP CHƯA LƯU cho client.
+// Endpoint KHÔNG tự ghi DB: giáo viên xem/sửa xong, client mới gọi
+// POST /api/lessons như bài thường. Không ghi ai_chat_logs — theo đúng
+// tiền lệ sinh câu hỏi (quiz), chỉ chat/playground mới ghi log.
+//
+// Ánh xạ (chi tiết ở báo cáo của đợt này):
+//   title → title; objectives[] → chuỗi nối "\n"; sections[] → pages[]
+//   (heading=phần tử title, content=text, example=text, key_takeaway=note);
+//   summary → trang "Tổng kết bài học" cuối phần nội dung; estimated_time
+//   → dòng đầu của description; quick_quiz[] → phần tử question ở các
+//   trang "Kiểm tra nhanh", correct_answer (văn bản) → id của option khớp.
+
+const LESSON_LENGTHS = {
+  short: { id: "short", label: "Ngắn gọn", sections: 3, quiz: 3 },
+  standard: { id: "standard", label: "Tiêu chuẩn", sections: 4, quiz: 5 },
+  deep: { id: "deep", label: "Chuyên sâu", sections: 6, quiz: 6 },
+};
+
+function normalizeLessonLength(raw) {
+  const v = String(raw ?? "").trim().toLowerCase();
+  if (["short", "ngắn gọn", "ngan gon", "ngan"].includes(v)) return LESSON_LENGTHS.short;
+  if (["deep", "chuyên sâu", "chuyen sau", "detailed", "long"].includes(v)) return LESSON_LENGTHS.deep;
+  return LESSON_LENGTHS.standard;
+}
+
+const LESSON_LIMITS = {
+  maxPromptLength: 2000,
+  maxTitleLength: 200,
+  maxObjectiveLength: 300,
+  maxObjectives: 6,
+  maxSectionHeadingLength: 200,
+  maxTextLength: 5000, // khớp trần props.text phía lessonService
+  maxSections: 8,
+  maxQuizQuestions: 10,
+  minQuizOptions: 2,
+  maxQuizOptions: 10, // khớp MAX_OPTIONS_PER_QUESTION phía lessonService
+  jsonRetryAttempts: 1,
+};
+
+// Khung canvas THẬT của Studio (LessonCanvas: 1280×720). Bố cục trang sinh
+// ra phải nằm trọn trong canvas vì lessonService validate hình học khi lưu.
+const LESSON_LAYOUT = { x: 80, w: 1120, contentTop: 140, bottom: 700, gap: 16 };
+
+/** Ước lượng chiều cao khối chữ theo độ dài nội dung (font tỉ lệ ~0,52em/ký tự). */
+function estimateTextHeight(text, fontSize, width) {
+  const charsPerLine = Math.max(12, Math.floor(width / (fontSize * 0.52)));
+  const lines = String(text).split("\n").reduce(
+    (n, line) => n + Math.max(1, Math.ceil(line.length / charsPerLine)), 0);
+  return Math.ceil(lines * fontSize * 1.3) + 24;
+}
+
+function lessonTextElement(type, text, fontSize, x, y, w, h, z, align) {
+  const props = { text, fontSize };
+  if (align) props.align = align;
+  return { id: uid("el"), type, x, y, w, h, z, props };
+}
+
+/** Một section → một trang: tiêu đề + content/example/key_takeaway xếp dọc. */
+function buildSectionPage(section) {
+  const elements = [
+    lessonTextElement("title", section.heading, 40, LESSON_LAYOUT.x, 36, LESSON_LAYOUT.w, 88, 0, "left"),
+  ];
+  const parts = [];
+  if (section.content) parts.push({ type: "text", text: section.content, fontSize: 24 });
+  if (section.example) parts.push({ type: "text", text: section.example, fontSize: 22 });
+  if (section.keyTakeaway) parts.push({ type: "note", text: section.keyTakeaway, fontSize: 20 });
+  const avail = LESSON_LAYOUT.bottom - LESSON_LAYOUT.contentTop
+    - LESSON_LAYOUT.gap * Math.max(0, parts.length - 1);
+  const heights = parts.map((p) => estimateTextHeight(p.text, p.fontSize, LESSON_LAYOUT.w));
+  let total = heights.reduce((a, b) => a + b, 0);
+  if (total > avail) {
+    const scale = avail / total;
+    for (let i = 0; i < heights.length; i += 1) {
+      heights[i] = Math.max(56, Math.floor(heights[i] * scale));
+    }
+    // Sau khi kẹp tối thiểu 56px vẫn có thể tràn: gọt bớt phần tử cao nhất.
+    total = heights.reduce((a, b) => a + b, 0);
+    let guard = 0;
+    while (total > avail && guard < 100) {
+      guard += 1;
+      let idx = -1;
+      for (let i = 0; i < heights.length; i += 1) {
+        if (heights[i] > 56 && (idx < 0 || heights[i] > heights[idx])) idx = i;
+      }
+      if (idx < 0) break;
+      const cut = Math.min(total - avail, heights[idx] - 56);
+      heights[idx] -= cut;
+      total -= cut;
+    }
+  }
+  let y = LESSON_LAYOUT.contentTop;
+  parts.forEach((p, i) => {
+    elements.push(lessonTextElement(p.type, p.text, p.fontSize,
+      LESSON_LAYOUT.x, y, LESSON_LAYOUT.w, heights[i], elements.length));
+    y += heights[i] + LESSON_LAYOUT.gap;
+  });
+  return { id: uid("page"), title: section.heading.slice(0, 200), elements };
+}
+
+function buildSummaryPage(summary) {
+  const h = Math.min(540, Math.max(140, estimateTextHeight(summary, 24, LESSON_LAYOUT.w)));
+  return {
+    id: uid("page"),
+    title: "Tổng kết bài học",
+    elements: [
+      lessonTextElement("title", "Tổng kết bài học", 40, LESSON_LAYOUT.x, 36, LESSON_LAYOUT.w, 88, 0, "left"),
+      lessonTextElement("text", summary, 24, LESSON_LAYOUT.x, LESSON_LAYOUT.contentTop, LESSON_LAYOUT.w, h, 1),
+    ],
+  };
+}
+
+/**
+ * correct_answer của đặc tả là VĂN BẢN đáp án — khớp về id của option theo
+ * đúng 3 tầng như pipeline quiz (nguyên văn → thường → squeeze). Không khớp
+ * đúng một option → null (câu bị loại, đếm vào meta.droppedQuestions).
+ */
+function resolveLessonCorrectOption(node, options) {
+  const answer = jsonText(node, "correct_answer");
+  if (answer == null || answer.trim() === "") return null;
+  let found = options.filter((o) => o.content === answer);
+  if (found.length === 0) {
+    const lower = answer.toLowerCase();
+    found = options.filter((o) => o.content.toLowerCase() === lower);
+  }
+  if (found.length === 0) {
+    const squeezed = squeeze(answer);
+    found = options.filter((o) => squeeze(o.content) === squeezed);
+  }
+  return found.length === 1 ? found[0].id : null;
+}
+
+/** Một node quick_quiz → props của phần tử question THẬT, hoặc null nếu câu không dùng được. */
+function convertQuizQuestion(node) {
+  if (node == null || typeof node !== "object" || Array.isArray(node)) return null;
+  const prompt = cleanText(jsonText(node, "question"), 1000);
+  if (!prompt) return null;
+  const rawOptions = Array.isArray(node.options) ? node.options : [];
+  const texts = [];
+  const seen = new Set();
+  for (const raw of rawOptions) {
+    const text = cleanText(raw == null ? "" : String(raw), 500);
+    if (!text) continue;
+    // Đáp án trùng nhau (sau squeeze) làm đáp án đúng mơ hồ — loại cả câu,
+    // cùng quy tắc với validateGeneratedQuestion của pipeline quiz.
+    if (!seen.add(squeeze(text))) return null;
+    texts.push(text);
+    if (texts.length > LESSON_LIMITS.maxQuizOptions) break;
+  }
+  if (texts.length < LESSON_LIMITS.minQuizOptions) return null;
+  const options = texts.map((content) => ({ id: uid("opt"), content }));
+  const correctAnswer = resolveLessonCorrectOption(node, options);
+  if (correctAnswer == null) return null;
+  const props = { prompt, qtype: "single", options, correctAnswer, points: 10 };
+  const explanation = cleanText(jsonText(node, "explanation"), 1000);
+  if (explanation) props.explanation = explanation;
+  return props;
+}
+
+/** Các câu hỏi → trang "Kiểm tra nhanh", tối đa 2 câu/trang (canvas 720px). */
+function buildQuizPages(questionPropsList) {
+  const pages = [];
+  for (let start = 0; start < questionPropsList.length; start += 2) {
+    const chunk = questionPropsList.slice(start, start + 2);
+    const title = pages.length === 0 ? "Kiểm tra nhanh" : "Kiểm tra nhanh (tiếp)";
+    const elements = [
+      lessonTextElement("title", title, 36, LESSON_LAYOUT.x, 32, LESSON_LAYOUT.w, 72, 0, "left"),
+    ];
+    chunk.forEach((props, i) => {
+      elements.push({
+        id: uid("el"),
+        type: "question",
+        x: 140, y: 120 + i * 292, w: 1000, h: 276, z: elements.length,
+        props,
+      });
+    });
+    pages.push({ id: uid("page"), title, elements });
+  }
+  return pages;
+}
+
+/**
+ * Validate + chuẩn hoá JSON thô của model về cấu trúc trung gian. Trả null
+ * khi thiếu trường bắt buộc cốt lõi (tiêu đề / không có section nào dùng
+ * được) — caller ném lỗi thân thiện, tuyệt đối không trả dữ liệu rác.
+ */
+function normalizeAiLesson(root) {
+  if (root == null || typeof root !== "object" || Array.isArray(root)) return null;
+  const title = cleanText(jsonText(root, "title"), LESSON_LIMITS.maxTitleLength);
+  if (!title) return null;
+
+  const sections = [];
+  const rawSections = Array.isArray(root.sections) ? root.sections : [];
+  for (const node of rawSections) {
+    if (sections.length >= LESSON_LIMITS.maxSections) break;
+    if (node == null || typeof node !== "object" || Array.isArray(node)) continue;
+    const heading = cleanText(jsonText(node, "heading"), LESSON_LIMITS.maxSectionHeadingLength);
+    const content = cleanText(jsonText(node, "content"), LESSON_LIMITS.maxTextLength);
+    if (!heading && !content) continue;
+    sections.push({
+      heading: heading || `Phần ${sections.length + 1}`,
+      content,
+      example: cleanText(jsonText(node, "example"), LESSON_LIMITS.maxTextLength),
+      keyTakeaway: cleanText(jsonText(node, "key_takeaway"), 1000),
+    });
+  }
+  if (sections.length === 0) return null;
+
+  let rawObjectives = root.objectives;
+  if (typeof rawObjectives === "string") rawObjectives = [rawObjectives];
+  const objectives = (Array.isArray(rawObjectives) ? rawObjectives : [])
+    .map((o) => cleanText(o == null ? "" : String(o), LESSON_LIMITS.maxObjectiveLength))
+    .filter(Boolean)
+    .slice(0, LESSON_LIMITS.maxObjectives);
+
+  const quizProps = [];
+  let droppedQuestions = 0;
+  const rawQuiz = Array.isArray(root.quick_quiz) ? root.quick_quiz : [];
+  for (const node of rawQuiz) {
+    if (quizProps.length >= LESSON_LIMITS.maxQuizQuestions) break;
+    const props = convertQuizQuestion(node);
+    if (props) quizProps.push(props);
+    else droppedQuestions += 1;
+  }
+
+  return {
+    title,
+    objectives,
+    estimatedTime: cleanText(jsonText(root, "estimated_time"), 100),
+    summary: cleanText(jsonText(root, "summary"), LESSON_LIMITS.maxTextLength),
+    sections,
+    quizProps,
+    droppedQuestions,
+    quizReturned: rawQuiz.length,
+  };
+}
+
+async function directGenerateLesson(body) {
+  const input = body != null && typeof body === "object" ? body : {};
+  const prompt = cleanText(typeof input.prompt === "string" ? input.prompt : "", LESSON_LIMITS.maxPromptLength);
+  if (!prompt) {
+    throw new AiBackendError("Vui lòng nhập yêu cầu soạn bài (prompt) cho AI.", { httpCode: 400, kind: "upstream" });
+  }
+  const subject = cleanText(typeof input.subject === "string" ? input.subject : "", 100);
+  if (!subject) {
+    throw new AiBackendError("Vui lòng chọn môn học cho bài học.", { httpCode: 400, kind: "upstream" });
+  }
+  const gradeMatch = String(input.gradeLevel ?? input.grade ?? "").match(/\d+/);
+  const grade = gradeMatch ? Number.parseInt(gradeMatch[0], 10) : NaN;
+  if (!Number.isInteger(grade) || grade < 1 || grade > 5) {
+    throw new AiBackendError("Cấp học phải là một lớp từ 1 đến 5.", { httpCode: 400, kind: "upstream" });
+  }
+  const length = normalizeLessonLength(input.length);
+
+  const userPrompt = enforceLimit(lessonUser({
+    prompt, subject, grade,
+    lengthLabel: length.label, sections: length.sections, quizCount: length.quiz,
+  }));
+
+  // JSON hỏng/không phải object → thử lại đúng 1 lượt như pipeline quiz.
+  let root = null;
+  for (let attempt = 0; attempt <= LESSON_LIMITS.jsonRetryAttempts; attempt += 1) {
+    const raw = await llmCompleteJson(lessonSystem(), [{ role: "user", content: userPrompt }]);
+    const parsed = extractJsonPayload(raw);
+    if (parsed != null && typeof parsed === "object" && !Array.isArray(parsed)) {
+      root = parsed;
+      break;
+    }
+    console.warn(`[ai] generate-lesson: JSON không hợp lệ ở lượt ${attempt + 1}, thử lại.`);
+  }
+  if (root == null) {
+    throw new AiBackendError(
+      "AI trả về dữ liệu không đúng định dạng bài học. Hãy thử lại, hoặc viết yêu cầu soạn bài cụ thể hơn.",
+      { httpCode: 502, kind: "badResponse" });
+  }
+
+  const normalized = normalizeAiLesson(root);
+  if (normalized == null) {
+    throw new AiBackendError(
+      "AI chưa soạn được bài học đúng cấu trúc (thiếu tiêu đề hoặc phần nội dung). Hãy thử lại với yêu cầu rõ ràng hơn.",
+      { httpCode: 502, kind: "badResponse" });
+  }
+
+  // subject/grade lấy từ LỰA CHỌN của giáo viên (request) — không tin bản
+  // echo của AI trong JSON trả về.
+  const pages = normalized.sections.map((s) => buildSectionPage(s));
+  if (normalized.summary) pages.push(buildSummaryPage(normalized.summary));
+  pages.push(...buildQuizPages(normalized.quizProps));
+
+  const warnings = ["Đây là bản nháp do AI soạn — hãy đọc lại nội dung trước khi lưu và xuất bản cho học sinh."];
+  if (normalized.droppedQuestions > 0) {
+    warnings.push(`${normalized.droppedQuestions} câu trắc nghiệm đã bị loại vì đáp án đúng không khớp với các phương án AI đưa ra.`);
+  }
+  if (normalized.sections.length < length.sections) {
+    warnings.push(`AI chỉ soạn được ${normalized.sections.length}/${length.sections} phần nội dung theo độ dài đã chọn.`);
+  }
+  if (normalized.quizProps.length === 0) {
+    warnings.push("AI không tạo được câu hỏi kiểm tra hợp lệ cho bài này.");
+  }
+
+  return {
+    lesson: {
+      title: normalized.title,
+      subject,
+      grade,
+      // Không có field thời lượng trong schema lessons: gộp vào description.
+      description: normalized.estimatedTime ? `Thời lượng dự kiến: ${normalized.estimatedTime}` : "",
+      // objectives của schema thật là MỘT chuỗi — nối mỗi mục tiêu một dòng
+      // (đúng cách normObjectives phía lessonService chuẩn hoá khi lưu).
+      objectives: normalized.objectives.join("\n"),
+      coverImage: "",
+      status: "draft",
+      pages,
+    },
+    meta: {
+      length: length.id,
+      sections: normalized.sections.length,
+      generatedQuestions: normalized.quizProps.length,
+      droppedQuestions: normalized.droppedQuestions,
+      quizReturned: normalized.quizReturned,
+      warnings,
+    },
+  };
+}
+
 // ─────────────────────── Phân tích học tập ───────────────────────
 
 const ANALYSIS_MAX_ITEM_LENGTH = 400;
@@ -814,6 +1145,7 @@ const DIRECT_OPS = {
   "/api/ai/playground/chat": { bucket: "chat", run: directPlaygroundChat },
   "/api/ai/explain": { bucket: "explain", run: directExplain },
   "/api/ai/quizzes/generate": { bucket: "quiz", run: directGenerateQuiz },
+  "/api/ai/generate-lesson": { bucket: "quiz", run: directGenerateLesson },
   "/api/ai/generate-question": { bucket: "quiz", run: directGenerateQuestionLegacy },
   "/api/ai/learning-analysis": { bucket: "analysis", run: directLearningAnalysis },
 };

@@ -29,6 +29,13 @@ import LessonElementView from "./LessonElementView.jsx";
 //     hoàn thành bài không có câu hỏi khi mở tới trang cuối).
 //   • `playedGameIds` — Set id phần tử game đã chơi trong phiên (badge).
 //   • `headerExtra` — nút/chip thêm ở header (điểm + trạng thái bài).
+//   • `embedded` — nhúng player vào một khung có sẵn (trang Tạo bài học
+//     AI): root chuyển từ `fixed inset-0` sang `absolute inset-0` trong
+//     khung relative của nơi dùng và TẮT phím tắt toàn cục (mũi tên/Esc)
+//     để không giành phím với trang chứa. Mặc định false = hành vi cũ.
+//   • `onElementClick(el)` — báo khi người dùng bấm vào một phần tử trên
+//     canvas (trang Tạo bài học AI dùng để đưa focus về ô sửa tương ứng).
+//     Không truyền = không gắn handler, hành vi cũ nguyên vẹn.
 
 const LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
 
@@ -159,6 +166,7 @@ function QuestionPlay({ el, state, onChange, checkAnswer }) {
 export default function LessonPlayer({
   lesson, gameById = {}, preview = false, checkAnswer, onPlayGame, onExit,
   initialAnswers = {}, onAnswerChecked, onPageChange, playedGameIds = null, headerExtra = null,
+  embedded = false, onElementClick = null,
 }) {
   const pages = useMemo(() => (Array.isArray(lesson?.pages) ? lesson.pages : []), [lesson]);
   const [pageIdx, setPageIdx] = useState(0);
@@ -200,6 +208,8 @@ export default function LessonPlayer({
   };
 
   useEffect(() => {
+    // Chế độ nhúng (embedded): không giành phím tắt toàn cục với trang chứa.
+    if (embedded) return undefined;
     const onKey = (e) => {
       if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
       if (e.key === "ArrowRight") setPageIdx((i) => Math.min(pages.length - 1, i + 1));
@@ -208,7 +218,7 @@ export default function LessonPlayer({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pages.length, onExit]);
+  }, [pages.length, onExit, embedded]);
 
   const renderElement = (el) => {
     if (el.type === "question") {
@@ -249,7 +259,7 @@ export default function LessonPlayer({
   };
 
   return (
-    <div className="fixed inset-0 z-[95] flex flex-col" style={{ background: "linear-gradient(180deg,#FFF6E7,#FFFBF2)" }}>
+    <div className={embedded ? "absolute inset-0 flex flex-col" : "fixed inset-0 z-[95] flex flex-col"} style={{ background: "linear-gradient(180deg,#FFF6E7,#FFFBF2)" }}>
       <header className="shrink-0 flex items-center gap-3 px-4 h-14 border-b border-[#E7D9BE] bg-white/70 backdrop-blur">
         <div className="min-w-0 flex-1">
           <p className="font-display font-bold text-ink truncate">{lesson?.title || "Bài học"}</p>
@@ -271,7 +281,7 @@ export default function LessonPlayer({
       <div className="flex-1 overflow-auto flex flex-col items-center px-3 py-4">
         <div className="w-full" style={{ maxWidth: 1024 }}>
           {page
-            ? <LessonCanvas page={page} gameById={gameById} mode="play" renderElement={renderElement} />
+            ? <LessonCanvas page={page} gameById={gameById} mode="play" renderElement={renderElement} onElementClick={onElementClick} />
             : <p className="text-center text-[#8A7C63] py-16">Bài học chưa có trang nào.</p>}
         </div>
 

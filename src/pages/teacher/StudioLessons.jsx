@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, Copy, Link2, Pencil, Trash2 } from "lucide-react";
+import { BarChart3, Copy, Link2, Pencil, Sparkles, Trash2 } from "lucide-react";
 import { navigate } from "../../lib/router.js";
 import { lessonService } from "../../services/lessonService.js";
 import { matchesQuery } from "../../lib/searchText.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import {
-  ConfirmModal, FormModal, GridCard, IconButton, ManagementHeader, ManagementTable,
+  ConfirmModal, FormModal, GridCard, IconButton, ManagementHeader, ManagementTable, PrimaryButton,
 } from "../../components/ui";
 import LessonProgressModal from "./studio/LessonProgressModal.jsx";
 import "./studio/studio.css";
@@ -152,6 +152,9 @@ export default function StudioLessons({ showToast }) {
   return (
     <div>
       <ManagementHeader title="Tạo bài học" subtitle="Soạn bài học tương tác: trang, câu hỏi và game — xuất bản cho học sinh học ngay trong EduPlay">
+        <PrimaryButton className="inline-flex items-center gap-2" onClick={() => navigate("/dashboard/ai-lesson-creator/generate")}>
+          <Sparkles className="w-4 h-4" /> Tạo bài học với AI
+        </PrimaryButton>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
           className="note-card px-3 py-2 text-sm border-ink/10 bg-paper2">
           <option value="all">Tất cả trạng thái</option>

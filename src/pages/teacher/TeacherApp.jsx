@@ -14,6 +14,7 @@ const TemplateManagement = lazy(() => import('./TemplateManagement.jsx'));
 const TemplateFormPage = lazy(() => import('./TemplateFormPage.jsx'));
 const BirthdayPageManagement = lazy(() => import('./BirthdayPageManagement.jsx'));
 const StudioLessons = lazy(() => import('./StudioLessons.jsx'));
+const AiLessonGenerator = lazy(() => import('./studio/AiLessonGenerator.jsx'));
 const StudioEditor = lazy(() => import('./StudioEditor.jsx'));
 const AiStudioPage = lazy(() => import('./AiStudioPage.jsx'));
 const DocumentStudio = lazy(() => import('./DocumentStudio.jsx'));
@@ -104,6 +105,7 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
         {page === "admin-template-edit" && <TemplateFormPage key={route.params.templateId} showToast={showToast} route={route} />}
         {page === "admin-birthday" && <BirthdayPageManagement showToast={showToast} />}
         {page === "admin-lesson-creator" && <StudioLessons showToast={showToast} />}
+        {page === "admin-lesson-creator-generate" && <AiLessonGenerator showToast={showToast} />}
         {page === "admin-lesson-creator-edit" && <StudioEditor key={route.params.lessonId} lessonId={route.params.lessonId} showToast={showToast} />}
         {page === "admin-ai-studio" && <AiStudioPage showToast={showToast} />}
         {/* Route cũ trước khi tách: render tạm đúng trang đích trong lúc

@@ -239,6 +239,36 @@ router.post("/explain", authenticate, requireAiEnabled, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/ai/generate-lesson — Tạo bài học AI (AI_LESSON_CREATOR.md).
+ * CHỈ giáo viên/admin: nhận { prompt, subject, gradeLevel, length } →
+ * AI soạn bài học hoàn chỉnh (JSON mode) → Backend validate + chuyển về
+ * đúng schema `lessons` THẬT → trả BẢN NHÁP CHƯA LƯU kèm meta (số câu
+ * quiz bị loại…). Endpoint này KHÔNG ghi DB: giáo viên xem trước/sửa ở
+ * trang Tạo bài học AI rồi mới lưu qua POST /api/lessons như bài thường.
+ * Chỉ hỗ trợ đường AI TRỰC TIẾP (Groq/Ollama Cloud) — chặn 503 tường minh
+ * như playground khi nhà cung cấp là AI Service Java.
+ */
+router.post("/generate-lesson", authenticate, requireRoles("teacher", "admin"), requireAiEnabled, async (req, res) => {
+  try {
+    if (aiProviderKind() === "ai-service") {
+      return sendError(res, "Tạo bài học bằng AI hiện chỉ hỗ trợ khi AI chạy ở đường trực tiếp (Groq/Ollama Cloud).", 503);
+    }
+    const { prompt, subject, gradeLevel, length } = req.body || {};
+    const data = await callAiBackend("/api/ai/generate-lesson", {
+      // Cắt độ dài ở route như mọi endpoint AI khác; chuẩn hoá enum/kiểu
+      // và validate nghiệp vụ nằm ở aiDirectService (directGenerateLesson).
+      prompt: typeof prompt === "string" ? prompt.slice(0, 2000) : prompt,
+      subject: typeof subject === "string" ? subject.slice(0, 100) : subject,
+      gradeLevel: gradeLevel ?? undefined,
+      length: typeof length === "string" ? length.slice(0, 32) : length,
+    }, req);
+    sendSuccess(res, data);
+  } catch (e) {
+    forwardError(res, e, "/api/ai/generate-lesson");
+  }
+});
+
 // ─────────────────────── Sinh câu hỏi (giáo viên) ─────────────────
 
 /** POST /api/ai/quizzes/generate — chỉ giáo viên/admin. */
