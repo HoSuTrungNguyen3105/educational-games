@@ -3,6 +3,7 @@ import { authenticate, requireRoles } from "../middleware/auth.js";
 import { createUser, listUsers, removeUser, removeUsersBulk, BULK_DELETE_MAX_IDS, resetPassword, updateUserRole, updateUser } from "../services/authService.js";
 import { getCheckinStatus, performCheckin } from "../services/checkinService.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
@@ -30,9 +31,11 @@ router.post("/me/check-in", async (req, res) => {
   }
 });
 
-router.get("/", requireRoles("teacher", "admin"), async (_req, res, next) => {
+router.get("/", requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const data = await listUsers();
+    // ?from=&to= (phân đoạn bản ghi cho dashboard) — không có thì giữ nguyên.
+    if (respondWithRange(req, res, data)) return;
     const pagination = buildPagination({ total: data.length });
     sendSuccess(res, data, "success", pagination);
   } catch (e) {

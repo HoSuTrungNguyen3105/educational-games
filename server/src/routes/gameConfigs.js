@@ -3,6 +3,7 @@ import * as gameService from "../services/gameService.js";
 import * as configStore from "../services/gameConfigStore.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
@@ -13,7 +14,9 @@ const router = Router();
  */
 router.get("/", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
-    sendSuccess(res, await configStore.list());
+    const data = await configStore.list();
+    if (respondWithRange(req, res, data)) return;
+    sendSuccess(res, data);
   } catch (e) {
     next(e);
   }

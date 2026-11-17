@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as lessonService from "../services/lessonService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError, buildPagination } from "../utils/response.js";
+import { respondWithPagedRange } from "../utils/rangeList.js";
 
 // Bài học EduPlay AI Studio (collection `lessons`, model trang/phần tử JSON).
 // Hai bề mặt tách bạch:
@@ -96,6 +97,10 @@ router.post("/published/:id/played", authenticate, async (req, res) => {
 router.get("/mine", authenticate, requireRoles("teacher", "admin"), async (req, res) => {
   try {
     const { search, status, page, perPage } = req.query;
+    // ?from=&to= (phân đoạn bản ghi cho dashboard): thu thập qua các trang
+    // page/perPage của service rồi cắt theo hợp đồng rangeList.
+    if (await respondWithPagedRange(req, res, (p, pp) =>
+      lessonService.listMyLessons(req.user.sub, { search, status, page: p, perPage: pp }))) return;
     const { items, total } = await lessonService.listMyLessons(req.user.sub, { search, status, page, perPage });
     sendSuccess(res, items, "success",
       buildPagination({ page, perPage, total, keyword: search || "" }));

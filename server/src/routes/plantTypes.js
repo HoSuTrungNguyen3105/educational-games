@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 import * as plantTypeService from "../services/plantTypeService.js";
 
 const router = Router();
@@ -8,6 +9,8 @@ const router = Router();
 router.get("/", async (req, res, next) => {
   try {
     const types = await plantTypeService.getAllPlantTypes();
+    // ?from=&to=: data là mảng types đã cắt (không có thì giữ shape { types }).
+    if (respondWithRange(req, res, types)) return;
     sendSuccess(res, { types });
   } catch (e) { next(e); }
 });

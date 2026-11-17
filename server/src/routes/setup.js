@@ -3,6 +3,7 @@ import * as setupService from "../services/setupService.js";
 import * as gameService from "../services/gameService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 import { parseBulkIds, runBulkDelete, bulkResultPayload } from "../utils/bulkDelete.js";
 import { record as audit, AUDIT } from "../services/auditService.js";
 
@@ -11,6 +12,7 @@ const router = Router();
 router.get("/templates", async (req, res, next) => {
   try {
     const data = await setupService.listTemplates();
+    if (respondWithRange(req, res, data)) return;
     const pagination = buildPagination({ total: data.length, keyword: req.query.keyword || "" });
     sendSuccess(res, data, "success", pagination);
   } catch (e) {
@@ -117,6 +119,7 @@ router.delete("/templates/:id", authenticate, requireRoles("teacher", "admin"), 
 router.get("/categories", async (req, res, next) => {
   try {
     const data = await setupService.listCategories();
+    if (respondWithRange(req, res, data)) return;
     const pagination = buildPagination({ total: data.length, keyword: req.query.keyword || "" });
     sendSuccess(res, data, "success", pagination);
   } catch (e) {
@@ -186,9 +189,10 @@ router.get("/games/:gameId/players", async (req, res, next) => {
   }
 });
 
-router.get("/subjects", async (_req, res, next) => {
+router.get("/subjects", async (req, res, next) => {
   try {
     const data = await setupService.listSubjects();
+    if (respondWithRange(req, res, data)) return;
     sendSuccess(res, data);
   } catch (e) {
     next(e);

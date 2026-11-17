@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as bankService from "../services/questionBankService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError, buildPagination } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 
 const router = Router();
 
@@ -13,6 +14,7 @@ router.get("/", async (req, res, next) => {
     const { search, subject, category, grade, limit } = req.query;
     const cap = Math.min(5000, Math.max(1, Number(limit) || 500));
     const questions = await bankService.listAll({ search, subject, category, grade, limit: cap });
+    if (respondWithRange(req, res, questions)) return;
     const pagination = buildPagination({ total: questions.length });
     sendSuccess(res, questions, "success", pagination);
   } catch (e) { next(e); }

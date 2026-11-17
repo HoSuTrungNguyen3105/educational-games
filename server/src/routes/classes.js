@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as classService from "../services/classService.js";
 import { verifyToken } from "../services/authService.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 
 const r = Router();
 
@@ -30,17 +31,19 @@ r.post("/", auth, requireTeacher, async (req, res) => {
 // List classes (teacher sees own, admin sees all)
 r.get("/", auth, async (req, res) => {
   try {
+    let classes;
     if (req.user.role === "admin") {
-      const classes = await classService.listClasses();
-      return sendSuccess(res, classes);
+      classes = await classService.listClasses();
+    } else if (req.user.role === "teacher") {
+      classes = await classService.getTeacherClasses(req.user.sub);
+    } else {
+      // Student: return own class if any
+      const cls = await classService.getStudentClass(req.user.sub);
+      classes = cls ? [cls] : [];
     }
-    if (req.user.role === "teacher") {
-      const classes = await classService.getTeacherClasses(req.user.sub);
-      return sendSuccess(res, classes);
-    }
-    // Student: return own class if any
-    const cls = await classService.getStudentClass(req.user.sub);
-    sendSuccess(res, cls ? [cls] : []);
+    // ?from=&to= (phân đoạn bản ghi cho dashboard) — không có thì giữ nguyên.
+    if (respondWithRange(req, res, classes)) return;
+    sendSuccess(res, classes);
   } catch (e) { sendError(res, e.message, 500); }
 });
 
@@ -57,6 +60,7 @@ r.get("/:id", auth, async (req, res) => {
 r.get("/:id/students", auth, async (req, res) => {
   try {
     const students = await classService.getClassStudents(req.params.id);
+    if (respondWithRange(req, res, students)) return;
     sendSuccess(res, students);
   } catch (e) { sendError(res, e.message, 500); }
 });

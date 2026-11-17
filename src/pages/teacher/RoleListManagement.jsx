@@ -163,7 +163,12 @@ export default function RoleListManagement({ user, showToast }) {
 
   const load = useCallback(() => {
     setError(null);
-    permissionService.rolesPaged({ page, perPage: PER_PAGE, keyword: debouncedKeyword })
+    // Phân trang bằng đoạn bản ghi ?from=&to= (hợp đồng rangeList phía
+    // server): trang p ↔ from = (p-1)*PER_PAGE+1, to = p*PER_PAGE. Server
+    // vẫn hỗ trợ page/perPage song song cho các caller khác.
+    const from = (page - 1) * PER_PAGE + 1;
+    const to = page * PER_PAGE;
+    permissionService.rolesPaged({ from, to, keyword: debouncedKeyword })
       .then((res) => {
         setRows(res?.data || []);
         setPagination(res?.pagination || null);

@@ -165,6 +165,10 @@ export async function list(filters = {}) {
   }
 
   const total = result.length;
+  // Đường dashboard lấy đoạn ?from=&to= tùy ý: route cần TOÀN BỘ danh sách
+  // đã lọc để tự cắt theo hợp đồng rangeList (trần 50 + clamp dưới đây là
+  // hành vi mặc định cho client không truyền from/to, giữ nguyên).
+  if (filters.rangeAll) return { items: result, total, from: 1, to: total };
   let from = Math.max(1, parseInt(filters.from) || 1);
   let to = parseInt(filters.to) || Math.min(from + 49, total);
   to = Math.min(to, total);

@@ -5,6 +5,7 @@ import * as classService from "../services/classService.js";
 import { verifyToken } from "../services/authService.js";
 import { getCollection } from "../db.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 import { parseBulkIds, runBulkDelete, bulkResultPayload } from "../utils/bulkDelete.js";
 
 const r = Router();
@@ -70,16 +71,20 @@ r.post("/", auth, requireTeacher, async (req, res) => {
 r.get("/", auth, async (req, res) => {
   try {
     const { classId, status } = req.query;
+    let assignments;
     if (req.user.role === "teacher" || req.user.role === "admin") {
-      const assignments = await assignmentService.listAssignments({
+      assignments = await assignmentService.listAssignments({
         classId, teacherId: req.user.sub, status,
       });
-      return sendSuccess(res, assignments);
+    } else {
+      // Student: get assignments from their class
+      const cls = await classService.getStudentClass(req.user.sub);
+      assignments = cls
+        ? await assignmentService.listAssignments({ classId: cls.id, status: "ACTIVE" })
+        : [];
     }
-    // Student: get assignments from their class
-    const cls = await classService.getStudentClass(req.user.sub);
-    if (!cls) return sendSuccess(res, []);
-    const assignments = await assignmentService.listAssignments({ classId: cls.id, status: "ACTIVE" });
+    // ?from=&to= (phân đoạn bản ghi cho dashboard) — không có thì giữ nguyên.
+    if (respondWithRange(req, res, assignments)) return;
     sendSuccess(res, assignments);
   } catch (e) { sendError(res, e.message, 500); }
 });
@@ -268,6 +273,7 @@ r.get("/:id/stats", auth, requireTeacher, async (req, res) => {
 r.get("/:id/submissions", auth, requireTeacher, async (req, res) => {
   try {
     const subs = await assignmentService.listSubmissions({ assignmentId: req.params.id });
+    if (respondWithRange(req, res, subs)) return;
     sendSuccess(res, subs);
   } catch (e) { sendError(res, e.message, 500); }
 });

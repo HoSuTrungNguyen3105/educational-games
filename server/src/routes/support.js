@@ -33,6 +33,7 @@ import {
 } from "../services/reportService.js";
 import { getRolePermissionsCached } from "../services/permissionService.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 import { parseBulkIds, runBulkDelete, bulkResultPayload } from "../utils/bulkDelete.js";
 
 const router = Router();
@@ -69,6 +70,7 @@ router.get("/tickets/assigned", authenticate, async (req, res, next) => {
     const data = (await hasAllAccess(req.user.role))
       ? await listTickets()
       : await listAssignedTickets(req.user.sub);
+    if (respondWithRange(req, res, data)) return;
     sendSuccess(res, data);
   } catch (e) { next(e); }
 });
@@ -91,9 +93,10 @@ router.patch("/tickets/assigned/:id", authenticate, async (req, res, next) => {
 });
 
 // ── Admin ───────────────────────────────────────────────────────────────
-router.get("/admin/tickets", authenticate, requireRoles("admin"), async (_req, res, next) => {
+router.get("/admin/tickets", authenticate, requireRoles("admin"), async (req, res, next) => {
   try {
     const data = await listTickets();
+    if (respondWithRange(req, res, data)) return;
     sendSuccess(res, data);
   } catch (e) { next(e); }
 });
@@ -149,9 +152,11 @@ router.post("/reports", authenticate, async (req, res) => {
   }
 });
 
-router.get("/admin/reports", authenticate, requireRoles("admin"), async (_req, res, next) => {
+router.get("/admin/reports", authenticate, requireRoles("admin"), async (req, res, next) => {
   try {
-    sendSuccess(res, await listReports());
+    const data = await listReports();
+    if (respondWithRange(req, res, data)) return;
+    sendSuccess(res, data);
   } catch (e) { next(e); }
 });
 

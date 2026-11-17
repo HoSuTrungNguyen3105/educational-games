@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as reminderService from "../services/reminderService.js";
 import { verifyToken } from "../services/authService.js";
 import { sendSuccess, sendError } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 
 const r = Router();
 
@@ -15,6 +16,7 @@ function auth(req, res, next) {
 r.get("/", auth, async (req, res) => {
   try {
     const reminders = await reminderService.getReminders(req.user.sub);
+    if (respondWithRange(req, res, reminders)) return;
     sendSuccess(res, reminders);
   } catch (e) { sendError(res, e.message, 500); }
 });

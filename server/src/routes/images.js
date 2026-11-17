@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
+import { parseRange, sliceRange, sendRangedList } from "../utils/rangeList.js";
 import {
   canAccessImage,
   claimUnownedImages,
@@ -173,10 +174,17 @@ router.post("/claim-unowned", authenticate, requireRoles("admin"), async (req, r
 router.get("/", authenticate, async (req, res, next) => {
   try {
     const folder = req.query.folder || "edu-game";
-    const page = Number(req.query.page) || 1;
-    const perPage = Math.min(Number(req.query.perPage) || 20, 100);
     const resources = await listAllResources(folder);
     const visible = await filterVisible(resources, req.user);
+    // ?from=&to= (phân đoạn bản ghi cho dashboard): data là mảng ảnh đã cắt
+    // theo hợp đồng rangeList. Không có from/to → giữ nguyên đường page/perPage.
+    const range = parseRange(req.query);
+    if (range.present) {
+      if (range.error) return sendError(res, range.error, 400);
+      return sendRangedList(res, sliceRange(visible, range), range, visible.length);
+    }
+    const page = Number(req.query.page) || 1;
+    const perPage = Math.min(Number(req.query.perPage) || 20, 100);
     const start = (page - 1) * perPage;
     sendSuccess(res, {
       images: visible.slice(start, start + perPage),

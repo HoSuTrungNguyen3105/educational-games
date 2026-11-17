@@ -2,6 +2,7 @@ import { Router } from "express";
 import { ObjectId } from "mongodb";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 import * as gameProgressService from "../services/gameProgressService.js";
 import { getCollection } from "../db.js";
 
@@ -198,6 +199,7 @@ adminRouter.get("/game-progress", async (req, res, next) => {
       ...p,
       gameName: gameNameMap[p.gameId] || p.gameName || p.gameId,
     }));
+    if (respondWithRange(req, res, enriched)) return;
     sendSuccess(res, enriched);
   } catch (e) {
     next(e);
