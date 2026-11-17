@@ -97,10 +97,8 @@ const SECTIONS = [
     id: "avatar",
     label: "Avatar & Pet",
     items: [
-      { id: "admin-avatar-items", label: "Avatar Items", icon: Shirt, route: "/dashboard/avatar-items", permission: null },
-      { id: "admin-avatar-template", label: "Avatar Template", icon: Move, route: "/dashboard/avatar-template", permission: null },
+      { id: "admin-avatar-items", label: "Avatar", icon: Shirt, route: "/dashboard/avatar-items", permission: null },
       { id: "admin-pet-catalog", label: "Danh mục Pet", icon: PawPrint, route: "/dashboard/pet-catalog", permission: null },
-      { id: "admin-body-custom", label: "Thân Avatar", icon: Move, route: "/dashboard/body-custom", permission: null },
       { id: "admin-plant-types", label: "Loại cây (Garden)", icon: Move, route: "/dashboard/plant-types", permission: null },
     ],
   },
