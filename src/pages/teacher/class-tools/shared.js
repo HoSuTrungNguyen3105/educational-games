@@ -24,6 +24,13 @@ export const AVATAR_COLORS = [
   { bg: "#FFEDD5", text: "#9A3412" },
 ];
 
+/** Tên rút gọn cho ô hẹp (lát vòng quay, ô chỗ ngồi): quá 16 ký tự thì lấy 2 từ cuối. */
+export function shortNameOf(name) {
+  const text = String(name ?? "");
+  if (text.length <= 16) return text;
+  return text.split(/\s+/).slice(-2).join(" ");
+}
+
 /** Hai chữ cái đầu của hai từ cuối trong họ tên (vd "Nguyễn Văn An" → "VA"). */
 export function initialsOf(name) {
   const words = String(name ?? "").trim().split(/\s+/).filter(Boolean);

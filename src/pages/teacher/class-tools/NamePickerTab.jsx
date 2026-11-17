@@ -7,6 +7,7 @@ import DiceRoller from "./DiceRoller.jsx";
 import CoinFlip from "./CoinFlip.jsx";
 import NumberDraw from "./NumberDraw.jsx";
 import { computeTargetRotation, pickOne, pickRandom } from "./randomUtils.js";
+import { shortNameOf } from "./shared.js";
 
 /**
  * NamePickerTab — tab "Gọi tên" của trang Công cụ lớp học.
@@ -41,11 +42,7 @@ function slicePath(cx, cy, r, a0, a1) {
   return `M ${cx} ${cy} L ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`;
 }
 
-function shortName(name) {
-  if (name.length <= 16) return name;
-  const words = name.split(/\s+/);
-  return words.slice(-2).join(" ");
-}
+const shortName = shortNameOf;
 
 const DARK_TEXT_ON = new Set(["#F4B942", "#38BDF8"]);
 

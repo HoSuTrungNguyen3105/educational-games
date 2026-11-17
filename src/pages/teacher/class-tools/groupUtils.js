@@ -89,6 +89,22 @@ export function distributeGroups({ students, groupCount, pinned = {}, excludedId
   return assignments;
 }
 
+/**
+ * Ghép cặp Think-Pair-Share cho tab Nề nếp: xáo trộn toàn bộ học sinh rồi
+ * ghép 2 em/cặp; sĩ số lẻ thì cặp cuối có 3 em (cặp đơn bị gộp vào cặp
+ * trước). Trả về mảng các nhóm (mỗi nhóm là mảng học sinh).
+ */
+export function makePairs(students, rng = Math.random) {
+  const shuffled = shuffleWith(Array.isArray(students) ? students : [], rng);
+  const pairs = [];
+  for (let i = 0; i < shuffled.length; i += 2) pairs.push(shuffled.slice(i, i + 2));
+  if (pairs.length > 1 && pairs[pairs.length - 1].length === 1) {
+    const lone = pairs.pop()[0];
+    pairs[pairs.length - 1].push(lone);
+  }
+  return pairs;
+}
+
 /** Thứ tự vai trò khi giao ngẫu nhiên (đúng thứ tự trong ảnh mẫu). */
 export const ROLE_ORDER = ["leader", "secretary", "reporter", "timer", "logistics", "critic"];
 
