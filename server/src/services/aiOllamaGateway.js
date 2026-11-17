@@ -45,8 +45,13 @@ function requireConfigured() {
   }
 }
 
-/** Dựng payload /api/chat: model, stream:false, messages, format, options, think. */
-function buildBody(system, messages, jsonMode) {
+/**
+ * Dựng payload /api/chat: model, stream:false, messages, format, options, think.
+ * `options.temperature` (chỉ Kiểm thử Gia sư AI truyền, để thử cấu hình
+ * nháp): số hữu hạn thì dùng thay giá trị cấu hình; vắng/không hợp lệ →
+ * giữ config.ollama.temperature như mọi lượt gọi khác.
+ */
+function buildBody(system, messages, jsonMode, options = {}) {
   const body = { model: config.ollama.model, stream: false, messages: [] };
   if (system && String(system).trim()) {
     body.messages.push({ role: "system", content: String(system) });
@@ -56,7 +61,11 @@ function buildBody(system, messages, jsonMode) {
     body.messages.push({ role: m.role, content: String(m.content) });
   }
   if (jsonMode) body.format = "json";
-  body.options = { temperature: config.ollama.temperature };
+  body.options = {
+    temperature: typeof options?.temperature === "number" && Number.isFinite(options.temperature)
+      ? options.temperature
+      : config.ollama.temperature,
+  };
   const think = thinkConfig();
   if (think.send) body.think = think.enabled;
   return body;
@@ -158,9 +167,9 @@ function extractContent(raw) {
   return String(text);
 }
 
-async function call(system, messages, jsonMode) {
+async function call(system, messages, jsonMode, options = {}) {
   requireConfigured();
-  const body = buildBody(system, messages, jsonMode);
+  const body = buildBody(system, messages, jsonMode, options);
   const thinkSent = "think" in body;
   const timeoutMs = config.aiBackend.timeoutMs;
 
@@ -184,14 +193,14 @@ async function call(system, messages, jsonMode) {
   }
 }
 
-/** Gửi hội thoại, nhận nội dung văn bản thuần. */
-export function ollamaComplete(system, messages) {
-  return call(system, messages, false);
+/** Gửi hội thoại, nhận nội dung văn bản thuần. `options` xem buildBody. */
+export function ollamaComplete(system, messages, options = {}) {
+  return call(system, messages, false, options);
 }
 
 /** Gọi LLM với format=json; nội dung trả về vẫn là dữ liệu KHÔNG đáng tin — caller phải validate. */
-export function ollamaCompleteJson(system, messages) {
-  return call(system, messages, true);
+export function ollamaCompleteJson(system, messages, options = {}) {
+  return call(system, messages, true, options);
 }
 
 /**

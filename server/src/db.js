@@ -639,7 +639,7 @@ async function _runHeavyInit(database) {
           answer: { bsonType: "string" },
           sources: { bsonType: "array" },
           conversationId: { bsonType: ["string", "null"] },
-          kind: { enum: ["chat", "admin_query"] },
+          kind: { enum: ["chat", "admin_query", "playground"] },
           queryType: { bsonType: ["string", "null"] },
           createdAt: { bsonType: "string" },
         },

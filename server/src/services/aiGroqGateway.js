@@ -53,12 +53,19 @@ async function requireConfigured() {
   return model;
 }
 
-/** Dựng payload /chat/completions: model, messages (system đầu tiên), temperature, response_format khi JSON. */
-function buildBody(model, system, messages, jsonMode) {
+/**
+ * Dựng payload /chat/completions: model, messages (system đầu tiên), temperature, response_format khi JSON.
+ * `options.temperature` (chỉ Kiểm thử Gia sư AI truyền, để thử cấu hình nháp):
+ * số hữu hạn thì dùng thay giá trị cấu hình; vắng/không hợp lệ → giữ
+ * config.groq.temperature như mọi lượt gọi khác.
+ */
+function buildBody(model, system, messages, jsonMode, options = {}) {
   const body = {
     model,
     messages: [],
-    temperature: config.groq.temperature,
+    temperature: typeof options?.temperature === "number" && Number.isFinite(options.temperature)
+      ? options.temperature
+      : config.groq.temperature,
   };
   if (system && String(system).trim()) {
     body.messages.push({ role: "system", content: String(system) });
@@ -201,9 +208,9 @@ function extractContent(raw) {
   return String(text);
 }
 
-async function call(system, messages, jsonMode) {
+async function call(system, messages, jsonMode, options = {}) {
   const model = await requireConfigured();
-  const body = buildBody(model, system, messages, jsonMode);
+  const body = buildBody(model, system, messages, jsonMode, options);
   const timeoutMs = config.aiBackend.timeoutMs;
 
   try {
@@ -223,9 +230,9 @@ async function call(system, messages, jsonMode) {
   }
 }
 
-/** Gửi hội thoại, nhận nội dung văn bản thuần. */
-export function groqComplete(system, messages) {
-  return call(system, messages, false);
+/** Gửi hội thoại, nhận nội dung văn bản thuần. `options` xem buildBody. */
+export function groqComplete(system, messages, options = {}) {
+  return call(system, messages, false, options);
 }
 
 /**
@@ -289,8 +296,8 @@ export async function groqCompleteWithTools(system, messages, tools) {
 }
 
 /** Gọi LLM với response_format=json_object; nội dung trả về vẫn là dữ liệu KHÔNG đáng tin — caller phải validate. */
-export function groqCompleteJson(system, messages) {
-  return call(system, messages, true);
+export function groqCompleteJson(system, messages, options = {}) {
+  return call(system, messages, true, options);
 }
 
 /**

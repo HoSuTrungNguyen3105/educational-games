@@ -18,6 +18,9 @@
 //    ở cuối directChat, sau khi answer đã hoàn thiện.
 //  - Lượt tra cứu quản trị (đợt #74, context.adminData có mặt) ghi
 //    kind="admin_query" kèm queryType; còn lại kind="chat".
+//  - Lượt KIỂM THỬ ở AI Studio (aiDirectService.directPlaygroundChat) ghi
+//    kind="playground": giáo viên/admin hỏi thử cấu hình nháp — tách bạch
+//    khỏi lịch sử hỏi thật của học sinh để trang Lịch sử lọc/xem riêng.
 //
 // Dữ liệu này KHÔNG bị xóa theo khi admin xóa user (cleanupUserRelatedData
 // ở authService cố ý không đụng tới): nó là lịch sử tra cứu của admin, và
@@ -95,7 +98,7 @@ export function buildChatLogFilter(f = {}) {
     filter.username = { $regex: escapeRe(String(f.username).trim().slice(0, 60)), $options: "i" };
   }
   if (f.role === "student" || f.role === "teacher" || f.role === "admin") filter.role = f.role;
-  if (f.kind === "chat" || f.kind === "admin_query") filter.kind = f.kind;
+  if (f.kind === "chat" || f.kind === "admin_query" || f.kind === "playground") filter.kind = f.kind;
   if (f.q) {
     const kw = escapeRe(String(f.q).trim().slice(0, 120));
     if (kw) filter.question = { $regex: kw, $options: "i" };
@@ -122,7 +125,7 @@ export function buildChatLogFilter(f = {}) {
  * @param {string} entry.answer     câu trả lời toàn văn như response trả
  * @param {Array<{title?: string}>|string[]} [entry.sources] nguồn bài học
  * @param {string|null} [entry.conversationId]
- * @param {"chat"|"admin_query"} [entry.kind]
+ * @param {"chat"|"admin_query"|"playground"} [entry.kind]
  * @param {string|null} [entry.queryType] loại tra cứu khi kind=admin_query
  * @returns {Promise<object|null>} document đã ghi, hoặc null khi lỗi/thiếu dữ liệu
  */
@@ -131,7 +134,7 @@ export async function recordChatLog(entry = {}) {
     const question = String(entry.question ?? "").slice(0, MAX_QUESTION_LENGTH);
     const answer = String(entry.answer ?? "");
     if (!entry.userId || question.trim() === "" || answer.trim() === "") return null;
-    const kind = entry.kind === "admin_query" ? "admin_query" : "chat";
+    const kind = entry.kind === "admin_query" || entry.kind === "playground" ? entry.kind : "chat";
     const sources = (Array.isArray(entry.sources) ? entry.sources : [])
       .map((s) => (typeof s === "string" ? s : s?.title))
       .filter((t) => typeof t === "string" && t.trim() !== "")
