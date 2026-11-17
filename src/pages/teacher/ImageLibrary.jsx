@@ -3,6 +3,7 @@ import { imageService } from "../../services/api.js";
 import { ConfirmModal, EmptyState, IconTrash, IconUpload, Loader, ManagementHeader, Modal, SearchInput, ViewToggle, useViewMode } from '../../components/ui';
 import { Image, Copy, X, FolderOpen, RefreshCw } from "lucide-react";
 import { useConfirm } from "../../hooks/useConfirm.js";
+import { rangeAll } from "../../lib/rangePagination.js";
 
 function formatBytes(bytes) {
   if (bytes < 1024) return bytes + " B";
@@ -39,7 +40,7 @@ export default function ImageLibrary({ user, showToast }) {
     setLoading(true);
     setError(null);
     try {
-      const data = await imageService.list({ folder, from: 1, to: 100 });
+      const data = await imageService.list(rangeAll());
       setImages(data.images || []);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }

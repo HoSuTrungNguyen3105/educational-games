@@ -15,7 +15,7 @@
 // giữ nguyên, chỉ đổi cách truyền tham số phân trang.
 
 /** Trần khoảng "lấy tất cả" — đủ lớn cho mọi danh sách quản trị hiện tại. */
-export const FULL_LIST_TO = 100000;
+export const FULL_LIST_TO = 10;
 
 /** { from, to } cho trang `page` (tính từ 1) với `pageSize` bản ghi/trang. */
 export function rangeForPage(page, pageSize = 10) {

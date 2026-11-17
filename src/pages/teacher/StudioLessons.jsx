@@ -9,6 +9,7 @@ import {
 } from "../../components/ui";
 import LessonProgressModal from "./studio/LessonProgressModal.jsx";
 import "./studio/studio.css";
+import { rangeAll } from "../../lib/rangePagination.js";
 
 // StudioLessons — danh sách bài học của giáo viên tại /dashboard/studio,
 // dùng đúng kit lưới dùng chung (ManagementTable + GridCard + usePagedList
@@ -70,7 +71,7 @@ export default function StudioLessons({ showToast }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await lessonService.listMine({ from: 1, to: 100 });
+      const res = await lessonService.listMine(rangeAll());
       setLessons(res?.data || []);
       setError("");
     } catch (e) {

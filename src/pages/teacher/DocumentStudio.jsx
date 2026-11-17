@@ -9,6 +9,7 @@ import {
   ConfirmModal, FormModal, GridCard, IconButton, ManagementHeader, ManagementTable,
 } from "../../components/ui";
 import DocumentUploadModal from "./documents/DocumentUploadModal.jsx";
+import { rangeAll } from "../../lib/rangePagination.js";
 
 // DocumentStudio — danh sách tài liệu của Teacher Document Studio tại
 // /dashboard/documents, dùng đúng kit lưới dùng chung (ManagementTable +
@@ -66,7 +67,7 @@ export default function DocumentStudio({ showToast }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await documentService.listMine({ from: 1, to: 100 });
+      const res = await documentService.listMine(rangeAll());
       setDocs(res?.data || []);
       setError("");
     } catch (e) {

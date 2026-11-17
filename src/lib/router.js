@@ -103,6 +103,7 @@ const ROUTES = [
 
   // ── Home ──
   { name: "home", pattern: "/" },
+  { name: "LearningPlatformWithAITutor", pattern: "/LearningPlatformWithAITutor" },
 ];
 
 // ─── Pattern Parser ────────────────────────────────────────────

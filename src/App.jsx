@@ -18,6 +18,7 @@ import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
 import MaintenanceBanner from "./components/MaintenanceBanner.jsx";
 import { GameVersionProvider } from "./components/GameVersionProvider.jsx";
 import { loadSiteConfig } from "./lib/siteConfig.js";
+import LearningPlatformWithAITutor from "./components/LearningPlatformWithAITutor.jsx";
 
 const USERNAME_SAFE = "abcdefghijklmnopqrstuvwxyz0123456789";
 const PASSWORD_SAFE = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
@@ -309,6 +310,7 @@ function App() {
     },
     "assignment-join": () => <AssignmentJoin userAuth={userAuth} />,
     "assignment-take": () => <AssignmentTake code={route.params?.code} />,
+    "LearningPlatformWithAITutor":() => <LearningPlatformWithAITutor />,
     // Bài học AI Studio (đợt 3): danh sách trong RouteShell như các trang
     // học sinh khác; trang học dùng LessonPlayer toàn màn hình (tự có
     // header + nút Đóng) nên không bọc RouteShell để tránh hai thanh đầu.
