@@ -1,0 +1,1 @@
+function e(e,t){let n=e?.props||{};return n.qtype===`fill`?String(t??``).trim().toLowerCase()===String(n.correctAnswer??``).trim().toLowerCase():t==null||n.correctAnswer==null||n.correctAnswer===``?!1:t===n.correctAnswer||String(t)===String(n.correctAnswer)}export{e as t};
