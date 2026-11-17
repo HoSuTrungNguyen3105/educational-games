@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "predeploy": "npm run build",
     "preview": "vite preview",
-    "deploy": "gh-pages -d dist",
+    "deploy": "gh-pages -d dist --dotfiles",
     "sync:games": "node scripts/sync-html-games.mjs",
     "games:build": "node scripts/build-offline-games.mjs && node scripts/build-parkour-tri-thuc.mjs && node scripts/build-parkour-fps.mjs && node scripts/build-parkour-offline.mjs && node scripts/build-fieldrunner.mjs",
     "games:test": "node scripts/test-offline-games.mjs",
