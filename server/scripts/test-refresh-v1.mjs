@@ -133,6 +133,71 @@ const garbage = await postRefresh("/api/v1/user/refresh", { cookie: "khong-phai-
 check("v1 cookie rác: 401", garbage.status, 401);
 check("v1 cookie rác: status=false", garbage.body?.status, false);
 
+// ── Ca grace period (fix lỗi mobile bị đá về login oan) ─────────────────
+// Bối cảnh: hai lượt refresh CHỒNG nhau dùng cùng một cookie (PWA + tab
+// trình duyệt cùng vòng 20 giây, hoặc retry khi mất response). Thiết kế cũ
+// coi token đã xoay bị trình lại là đánh cắp → thu hồi cả family, giết luôn
+// token mới của phía thắng. Nay: trong cửa sổ grace 60s + family còn token
+// active → cấp token "anh em"; ngoài grace → giữ nguyên hành vi bảo mật cũ.
+const { createHash } = await import("node:crypto");
+const seedUserWithToken = async (id) => {
+  await getCollection("users").insertOne({
+    id, username: id, name: id, role: "student", passwordHash: "x", coins: 0,
+    createdAt: new Date().toISOString(),
+  });
+  return issueRefreshToken({ id });
+};
+
+// ── 8. Hai refresh ĐỒNG THỜI cùng một token: cả hai 200, family còn sống ─
+const raceRaw = await seedUserWithToken("user-refresh-race");
+const [raceA, raceB] = await Promise.all([
+  postRefresh("/api/v1/user/refresh", { cookie: raceRaw, origin: GOOD_ORIGIN }),
+  postRefresh("/api/v1/user/refresh", { cookie: raceRaw, origin: GOOD_ORIGIN }),
+]);
+check("race: phía A 200", raceA.status, 200);
+check("race: phía B (thua cuộc đua) cũng 200 nhờ grace", raceB.status, 200);
+const raceNextA = cookieValueFrom(raceA.setCookies);
+const raceNextB = cookieValueFrom(raceB.setCookies);
+check("race: hai phía nhận hai cookie khác nhau", !!raceNextA && !!raceNextB && raceNextA !== raceNextB, true);
+const raceA2 = await postRefresh("/api/v1/user/refresh", { cookie: raceNextA, origin: GOOD_ORIGIN });
+check("race: token kế tiếp phía A refresh tiếp 200", raceA2.status, 200);
+const raceB2 = await postRefresh("/api/v1/user/refresh", { cookie: raceNextB, origin: GOOD_ORIGIN });
+check("race: token kế tiếp phía B refresh tiếp 200 (family còn sống)", raceB2.status, 200);
+
+// ── 9. Trình lại token cũ NGAY sau khi xoay (retry mất response) ─────────
+const retryRaw0 = await seedUserWithToken("user-refresh-retry");
+const win = await postRefresh("/api/v1/user/refresh", { cookie: retryRaw0, origin: GOOD_ORIGIN });
+check("retry: lượt thắng 200", win.status, 200);
+const winNext = cookieValueFrom(win.setCookies);
+const retry = await postRefresh("/api/v1/user/refresh", { cookie: retryRaw0, origin: GOOD_ORIGIN });
+check("retry: trình lại token cũ trong grace → 200", retry.status, 200);
+const retryNext = cookieValueFrom(retry.setCookies);
+check("retry: nhận cookie anh em (khác cookie phía thắng)", !!retryNext && retryNext !== winNext, true);
+const win2 = await postRefresh("/api/v1/user/refresh", { cookie: winNext, origin: GOOD_ORIGIN });
+check("retry: token phía thắng vẫn refresh tiếp 200 (không bị giết oan)", win2.status, 200);
+const retry2 = await postRefresh("/api/v1/user/refresh", { cookie: retryNext, origin: GOOD_ORIGIN });
+check("retry: token anh em refresh tiếp 200", retry2.status, 200);
+
+// ── 10. Trình lại token cũ SAU grace → reuse_detected + family chết ──────
+// Ca bảo mật bắt buộc giữ nguyên thiết kế cũ: backdate `updatedAt` của dòng
+// đã rotated ra ngoài cửa sổ grace (61 giây) rồi trình lại — phải 401 và
+// token kế tiếp của phía thắng cũng chết theo (family bị thu hồi sạch).
+const staleRaw0 = await seedUserWithToken("user-refresh-stale");
+const staleWin = await postRefresh("/api/v1/user/refresh", { cookie: staleRaw0, origin: GOOD_ORIGIN });
+check("sau-grace: lượt đầu 200", staleWin.status, 200);
+const staleNext = cookieValueFrom(staleWin.setCookies);
+const staleHash = createHash("sha256").update(staleRaw0).digest("hex");
+await getCollection("refresh_tokens").updateOne(
+  { tokenHash: staleHash },
+  { $set: { updatedAt: new Date(Date.now() - 61_000) } }
+);
+const staleReplay = await postRefresh("/api/v1/user/refresh", { cookie: staleRaw0, origin: GOOD_ORIGIN });
+check("sau-grace: trình lại token cũ → 401", staleReplay.status, 401);
+const staleNextTry = await postRefresh("/api/v1/user/refresh", { cookie: staleNext, origin: GOOD_ORIGIN });
+check("sau-grace: token kế tiếp cũng 401 (family đã thu hồi)", staleNextTry.status, 401);
+const staleFamRows = await getCollection("refresh_tokens").find({ userId: "user-refresh-stale" }).toArray();
+check("sau-grace: family bị xoá sạch khỏi DB", staleFamRows.length, 0);
+
 server.close();
 if (mongod) await mongod.stop();
 console.log(failed === 0 ? "\nALL PASS" : `\n${failed} CHECK(S) FAILED`);

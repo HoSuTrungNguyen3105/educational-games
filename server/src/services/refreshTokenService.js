@@ -12,6 +12,10 @@
  *     cookie thì vẫn vô dụng, cookie lấy được mà DB đã thu hồi thì cũng vô dụng.
  *   - Dùng lại token đã xoay vòng = dấu hiệu bị đánh cắp → thu hồi cả family
  *     (mọi phiên phát sinh từ lần đăng nhập đó), client buộc đăng nhập lại.
+ *     NGOẠI LỆ: token MỚI bị xoay trong cửa sổ grace (ROTATION_GRACE_MS) mà
+ *     family vẫn còn token active thì coi là đua/retry lành tính của chính
+ *     client (hai lượt refresh chồng nhau trên mobile) — cấp token "anh em"
+ *     trong cùng family, KHÔNG thu hồi. Xem `graceSiblingUser`.
  *
  * Xem update_refresh_token.md để biết toàn bộ yêu cầu nghiệp vụ.
  */
@@ -24,6 +28,28 @@ import { signToken } from "./authService.js";
 const COLLECTION = "refresh_tokens";
 /** Số phiên refresh đồng thời tối đa cho một user — chặn phình bảng khi client reset cookie. */
 const MAX_SESSIONS_PER_USER = 10;
+/**
+ * Cửa sổ khoan dung (grace) cho token VỪA bị xoay vòng — 60 giây.
+ *
+ * Vì sao tồn tại: trên mobile rất dễ có hai lượt refresh CHỒNG nhau dùng cùng
+ * một cookie (PWA và tab trình duyệt cùng chạy vòng refresh 20 giây trên
+ * Android dùng chung cookie jar; hoặc mạng di động làm mất response khiến
+ * client retry bằng cookie cũ). Nếu coi mọi lần trình lại token đã xoay là
+ * đánh cắp và thu hồi cả family, phía THẮNG cuộc đua cũng mất phiên oan —
+ * token mới của nó chết theo — và user bị đá về màn hình đăng nhập dù không
+ * có gì bất thường. Trong cửa sổ này, nếu family vẫn còn token active (chuỗi
+ * xoay vòng còn sống) thì cấp thêm một token "anh em" thay vì thu hồi.
+ * Ngoài cửa sổ: giữ nguyên kết luận đánh cắp → thu hồi cả family.
+ */
+const ROTATION_GRACE_MS = 60_000;
+/**
+ * Khi phía thua cuộc đua kiểm tra family, phía thắng có thể đã chiếu token cũ
+ * thành `rotated` nhưng CHƯA cấp xong token kế tiếp — family tạm thời không
+ * có token `active` nào. Chờ tối đa chừng này (kiểm lại mỗi
+ * GRACE_FAMILY_POLL_MS) trước khi kết luận family đã chết.
+ */
+const GRACE_FAMILY_WAIT_MS = 2_000;
+const GRACE_FAMILY_POLL_MS = 125;
 
 const hash = (raw) => crypto.createHash("sha256").update(raw).digest("hex");
 const newId = (prefix) => `${prefix}-${crypto.randomBytes(8).toString("hex")}`;
@@ -172,6 +198,52 @@ export async function issueRefreshToken(user, { familyId, meta } = {}) {
   return raw;
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Token đã xoay còn nằm trong cửa sổ grace không — tính từ `updatedAt` (thời điểm bị chiếu thành `rotated`). */
+function rotatedWithinGrace(row) {
+  const at = row.updatedAt instanceof Date ? row.updatedAt.getTime() : NaN;
+  if (!Number.isFinite(at)) return false;
+  const age = Date.now() - at;
+  return age >= 0 && age <= ROTATION_GRACE_MS;
+}
+
+/**
+ * Family còn token `active` nào không — dấu hiệu chuỗi xoay vòng còn sống và
+ * token kế tiếp đã tới tay phía thắng. Với `wait: true`, nếu chưa thấy thì chờ
+ * tối đa GRACE_FAMILY_WAIT_MS rồi mới kết luận (phía thắng có thể chưa cấp
+ * xong token kế tiếp — xem hằng số ở đầu file).
+ */
+async function familyHasActiveToken(col, familyId, { wait = false } = {}) {
+  const deadline = Date.now() + (wait ? GRACE_FAMILY_WAIT_MS : 0);
+  for (;;) {
+    const active = await col.findOne({ familyId, status: "active" }, { projection: { _id: 1 } });
+    if (active) return true;
+    if (Date.now() >= deadline) return false;
+    await sleep(GRACE_FAMILY_POLL_MS);
+  }
+}
+
+/**
+ * GRACE cho token vừa bị xoay vòng: đủ cả ba điều kiện — (1) mới bị xoay
+ * trong cửa sổ ROTATION_GRACE_MS, (2) bản thân token chưa hết hạn, (3) family
+ * vẫn còn token active — thì đây là đua/retry lành tính, trả về user để
+ * caller cấp một refresh token "anh em" trong cùng family. Thiếu bất kỳ điều
+ * kiện nào → null, caller giữ nguyên hành vi bảo mật cũ (thu hồi cả family).
+ */
+async function graceSiblingUser(col, row) {
+  if (!rotatedWithinGrace(row)) return null;
+  if (!(row.expiresAt instanceof Date) || row.expiresAt.getTime() <= Date.now()) return null;
+  if (!(await familyHasActiveToken(col, row.familyId, { wait: true }))) return null;
+  return getCollection("users").findOne({ id: row.userId });
+}
+
+/** Cấp refresh token "anh em" trong cùng family cho nhánh grace + access token mới. */
+async function issueGraceSibling(user, row) {
+  const refreshRaw = await issueRefreshToken(user, { familyId: row.familyId, meta: row.meta });
+  return { token: signToken(user), refreshRaw, userId: user.id };
+}
+
 /**
  * Đổi refresh token lấy access token mới, đồng thời xoay vòng refresh token.
  *
@@ -198,6 +270,12 @@ export async function rotateRefreshToken(raw) {
   }
 
   if (row.status === "rotated") {
+    /* Có thể là đua/retry lành tính trong cửa sổ grace (hai lượt refresh
+     * chồng nhau, hoặc client retry bằng cookie cũ khi response bị mất):
+     * cấp token anh em, KHÔNG thu hồi family. Ngoài grace → giữ nguyên kết
+     * luận đánh cắp như thiết kế gốc. */
+    const graceUser = await graceSiblingUser(col, row);
+    if (graceUser) return issueGraceSibling(graceUser, row);
     // Token này đã từng được dùng → ai đó đang phát lại bản cũ. Giết cả family.
     await revokeFamily(row.familyId, "reuse_detected");
     const err = new Error("Refresh token đã bị thu hồi");
@@ -237,6 +315,17 @@ export async function rotateRefreshToken(raw) {
     { returnDocument: "after" }
   );
   if (!claimed) {
+    /* Thua claim = một request khác vừa chiếm token này trong tích tắc (hai
+     * lượt refresh chồng nhau trên mobile). Đọc lại dòng mới nhất: nếu nó VỪA
+     * bị xoay trong cửa sổ grace và family còn sống → xử lí grace như nhánh
+     * `rotated` ở trên thay vì thu hồi cả family oan. Lưu ý phải dùng dòng
+     * mới đọc — bản `row` ở đây là ảnh chụp TRƯỚC khi phía thắng xoay, nên
+     * `updatedAt` của nó không phản ánh thời điểm xoay vừa xảy ra. */
+    const fresh = await col.findOne({ _id: row._id });
+    if (fresh && fresh.status === "rotated") {
+      const graceUser = await graceSiblingUser(col, fresh);
+      if (graceUser) return issueGraceSibling(graceUser, fresh);
+    }
     await revokeFamily(row.familyId, "reuse_detected");
     const err = new Error("Refresh token đã bị thu hồi");
     err.code = "reuse_detected";
