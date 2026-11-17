@@ -29,28 +29,65 @@ export function saveAuth(auth) { return setAuth(auth); }
 export function clearAuth() { stopSessionRefreshLoop(); clearTokenAuth(); }
 
 /**
+ * Một lần POST tới endpoint refresh. Không bao giờ ném lỗi: mất mạng / hết số
+ * lần thử lại thì trả `{ status: 0, json: null }` (0 = không có response).
+ */
+async function postRefreshEndpoint(path) {
+  try {
+    const res = await fetchWithRetry(
+      `${API_BASE}${path}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+        // Cookie chỉ đi kèm khi fetch bật credentials.
+        credentials: "include",
+      },
+      // Cold start (503) thì chờ; 401 nghĩa là token bị thu hồi → retry cũng vô ích.
+      2
+    );
+    let json = null;
+    try { json = await res.json(); } catch { /* body rỗng / không phải JSON */ }
+    return { status: res.status, json };
+  } catch {
+    return { status: 0, json: null };
+  }
+}
+
+/** HTTP status của response CUỐI CÙNG trong chuỗi refresh gần nhất; 0 = không có response (mất mạng). */
+let lastRefreshStatus = 0;
+
+/**
+ * Chuỗi refresh THỐNG NHẤT cho mọi đường (chủ động ensureFreshAccessToken,
+ * reactive 401 trong apiFetch, vòng lặp 20 giây): thử endpoint v1 trước; v1
+ * từ chối dứt khoát (401/403) thì fallback ĐÚNG MỘT LẦN sang endpoint cũ
+ * /auth/refresh — tất cả nằm trong cùng một lượt single-flight.
+ *
+ * Vì sao cần fallback: các phiên đăng nhập TRƯỚC khi có endpoint v1 giữ
+ * cookie refresh ở `Path=/api/auth`; trình duyệt chỉ gửi cookie đó tới
+ * /api/auth/* nên /api/v1/user/refresh không nhận được cookie và trả 401
+ * "Không có refresh token" dù phiên vẫn còn sống. Endpoint cũ khớp path
+ * cookie cũ, và refresh thành công ở đó được server set lại cookie với
+ * `Path=/api` ⇒ từ lần sau v1 chạy thẳng. Đây chỉ là bước chuyển đổi —
+ * gỡ fallback được khi mọi phiên cũ đã hết hạn tự nhiên.
+ */
+async function refreshSession() {
+  let r = await postRefreshEndpoint("/v1/user/refresh");
+  if (r.status === 401 || r.status === 403) {
+    r = await postRefreshEndpoint("/auth/refresh");
+  }
+  lastRefreshStatus = r.status;
+  return r.json;
+}
+
+/**
  * Đổi access token mới nhờ cookie refresh. Chỉ MỘT request chạy tại một thời điểm
  * (single-flight trong authToken) và không bao giờ lặp lại vô hạn: thất bại là
  * trả `null`, caller tự quyết (thử lại 1 lần rồi coi như phiên đã kết thúc).
  */
 export async function refreshAccessToken() {
   try {
-    return await refreshOnce(async () => {
-      const res = await fetchWithRetry(
-        `${API_BASE}/auth/refresh`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: "{}",
-          // Cookie chỉ đi kèm khi fetch bật credentials.
-          credentials: "include",
-        },
-        // Cold start (503) thì chờ; 401 nghĩa là token bị thu hồi → retry cũng vô ích.
-        2
-      );
-      if (!res.ok) return null;
-      return await res.json();
-    });
+    return await refreshOnce(refreshSession);
   } catch {
     return null; // mất mạng / backend chết — không ném để không phá luồng gọi
   }
@@ -81,48 +118,24 @@ export async function ensureFreshAccessToken() {
 // An toàn: vẫn qua single-flight `refreshOnce` của authToken nên interval
 // không bao giờ chạy song song với một refresh khác trong cùng tab; token
 // mới được refreshOnce tự ghi vào authToken (đọc từ field `Authorization` ở
-// gốc JSON — đúng shape của endpoint v1).
+// gốc JSON — đúng shape của endpoint v1). Tick dùng CHUNG refreshAccessToken()
+// nên cũng được hưởng fallback /auth/refresh cho phiên cũ — xem refreshSession().
 const SESSION_REFRESH_INTERVAL_MS = 20_000;
 let sessionRefreshTimer = null;
-/** HTTP status của lần gọi v1 trong tick hiện tại; 0 = không có response (mất mạng). */
-let lastV1RefreshStatus = 0;
-
-async function refreshAccessTokenV1() {
-  try {
-    return await refreshOnce(async () => {
-      const res = await fetchWithRetry(
-        `${API_BASE}/v1/user/refresh`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: "{}",
-          credentials: "include",
-        },
-        // Cold start (503) thì chờ một nhịp; 401/403 là từ chối dứt khoát, retry vô ích.
-        2
-      ).catch(() => null);
-      lastV1RefreshStatus = res?.status ?? 0;
-      if (!res?.ok) return null;
-      return await res.json();
-    });
-  } catch {
-    return null; // mất mạng / backend chết — tick tự quyết theo lastV1RefreshStatus
-  }
-}
 
 async function sessionRefreshTick() {
   if (!getToken()) { stopSessionRefreshLoop(); return; }
-  lastV1RefreshStatus = 0;
-  const token = await refreshAccessTokenV1();
+  lastRefreshStatus = 0;
+  const token = await refreshAccessToken();
   if (token) return;
-  // Server từ chối DỨT KHOÁT (401 = cookie thiếu/hết hạn/bị thu hồi; 403 =
-  // origin không được phép) ⇒ phiên thật sự đã kết thúc: dọn phiên đúng như
-  // nhánh 401 của apiFetch. Mất mạng / 503 / 5xx thì KHÔNG đăng xuất — giữ
-  // phiên và thử lại ở chu kỳ 20 giây sau, tránh đá người dùng oan khi mạng
-  // chập chờn. (Nếu refresh đang chạy dở là của transport /auth/refresh cũ
-  // thì status không được ghi ở đây — tick coi như lỗi tạm thời, và nhánh
-  // 401 của apiFetch vẫn là nơi dọn phiên như trước.)
-  if (lastV1RefreshStatus === 401 || lastV1RefreshStatus === 403) {
+  // Chỉ dọn phiên khi chuỗi refresh bị từ chối DỨT KHOÁT ở response cuối
+  // (401 = cookie thiếu/hết hạn/bị thu hồi; 403 = origin không được phép) —
+  // tức cả v1 lẫn fallback /auth/refresh đều đã từ chối. Cú 401 đầu tiên của
+  // v1 với phiên cũ (cookie Path=/api/auth) KHÔNG tới được đây vì fallback
+  // đã cứu và set lại cookie Path=/api. Mất mạng / 503 / 5xx thì KHÔNG đăng
+  // xuất — giữ phiên và thử lại ở chu kỳ 20 giây sau, tránh đá người dùng
+  // oan khi mạng chập chờn.
+  if (lastRefreshStatus === 401 || lastRefreshStatus === 403) {
     stopSessionRefreshLoop();
     clearAuth();
     window.dispatchEvent(new Event("edu-auth-expired"));
