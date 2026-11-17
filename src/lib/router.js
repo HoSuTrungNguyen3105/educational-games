@@ -57,6 +57,9 @@ const ROUTES = [
   { name: "admin-coins",     pattern: "/dashboard/coins" },
   { name: "admin-daily-tasks", pattern: "/dashboard/daily-tasks" },
   { name: "admin-classes", pattern: "/dashboard/classes" },
+  // Công cụ lớp học (gọi tên, điểm thi đua tại lớp…): dữ liệu roster lưu
+  // localStorage máy giáo viên, không qua API.
+  { name: "admin-class-tools", pattern: "/dashboard/class-tools" },
   { name: "admin-class-students", pattern: "/dashboard/classes/:classId/students" },
   { name: "admin-assignments", pattern: "/dashboard/assignments" },
   { name: "admin-assignment-new", pattern: "/dashboard/assignments/new" },
