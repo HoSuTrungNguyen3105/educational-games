@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Minh họa phiếu luyện viết đoạn văn">
+  <rect width="1200" height="675" rx="34" fill="#fffbeb"/>
+  <rect x="64" y="60" width="1072" height="555" rx="18" fill="#ffffff" stroke="#fde68a" stroke-width="3"/>
+  <text x="104" y="140" font-family="Georgia, serif" font-size="38" font-weight="700" fill="#92400e">LUYỆN VIẾT ĐOẠN VĂN</text>
+  <text x="106" y="178" font-family="Arial, sans-serif" font-size="21" fill="#b45309">Tiếng Việt 3 · Kể về một việc tốt em đã làm</text>
+
+  <!-- lined paper -->
+  <rect x="170" y="226" width="560" height="300" rx="10" fill="#fffdf5" stroke="#d6d3d1" stroke-width="3"/>
+  <g stroke="#fde68a" stroke-width="4">
+    <path d="M170 286h560M170 346h560M170 406h560M170 466h560"/>
+  </g>
+  <path d="M226 226v300" stroke="#fca5a5" stroke-width="3"/>
+  <g stroke="#a8a29e" stroke-width="8" stroke-linecap="round">
+    <path d="M252 264h380M252 324h420M252 384h350M252 444h400"/>
+  </g>
+  <text x="252" y="252" font-family="Arial, sans-serif" font-size="19" font-weight="700" fill="#92400e">Đoạn văn mẫu</text>
+
+  <!-- red scarf -->
+  <path d="M820 300c60-26 130-26 190 0l-14 44c-52-20-110-20-162 0Z" fill="#dc2626"/>
+  <path d="M996 344l16 74-34 8-12-66Z" fill="#b91c1c"/>
+  <path d="M838 344l-10 66 32 8 10-62Z" fill="#b91c1c"/>
+
+  <!-- pencil -->
+  <g transform="rotate(24 880 480)">
+    <rect x="866" y="420" width="26" height="120" rx="6" fill="#f59e0b"/>
+    <path d="M866 540h26l-13 34Z" fill="#fcd9b8"/>
+    <path d="M874 562l5 12 5-12Z" fill="#44403c"/>
+    <rect x="866" y="420" width="26" height="18" rx="6" fill="#fca5a5"/>
+  </g>
+
+  <text x="104" y="580" font-family="Arial, sans-serif" font-size="20" fill="#d6d3d1">EduPlay Document Studio · Writing Practice</text>
+</svg>

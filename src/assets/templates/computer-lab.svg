@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Minh họa phòng máy tính của trường">
+  <rect width="1200" height="675" rx="34" fill="#f1f5f9"/>
+  <rect x="64" y="60" width="1072" height="555" rx="18" fill="#ffffff" stroke="#cbd5e1" stroke-width="3"/>
+  <text x="104" y="140" font-family="Arial, sans-serif" font-size="38" font-weight="700" fill="#334155">PHÒNG MÁY TÍNH</text>
+  <text x="106" y="178" font-family="Arial, sans-serif" font-size="21" fill="#64748b">Tin học 5 · Bài 8: Tìm kiếm thông tin trên Internet</text>
+
+  <!-- monitor -->
+  <rect x="330" y="230" width="540" height="330" rx="14" fill="#334155"/>
+  <rect x="352" y="252" width="496" height="252" rx="8" fill="#f8fafc"/>
+  <!-- browser bar -->
+  <rect x="352" y="252" width="496" height="42" rx="8" fill="#e2e8f0"/>
+  <circle cx="378" cy="273" r="7" fill="#94a3b8"/><circle cx="402" cy="273" r="7" fill="#94a3b8"/><circle cx="426" cy="273" r="7" fill="#94a3b8"/>
+  <rect x="452" y="260" width="330" height="26" rx="13" fill="#ffffff"/>
+  <!-- search box -->
+  <rect x="412" y="330" width="376" height="52" rx="26" fill="#ffffff" stroke="#0e7490" stroke-width="3"/>
+  <circle cx="446" cy="356" r="11" fill="none" stroke="#0e7490" stroke-width="4"/>
+  <path d="M454 364l12 12" stroke="#0e7490" stroke-width="4" stroke-linecap="round"/>
+  <text x="486" y="364" font-family="Arial, sans-serif" font-size="21" fill="#64748b">thời tiết ngày mai…</text>
+  <!-- result lines -->
+  <g stroke="#cbd5e1" stroke-width="8" stroke-linecap="round">
+    <path d="M412 424h300M412 456h340M412 488h260"/>
+  </g>
+  <rect x="576" y="560" width="48" height="26" fill="#334155"/>
+  <rect x="500" y="586" width="200" height="10" rx="5" fill="#94a3b8"/>
+
+  <!-- side icons: mouse + book -->
+  <rect x="920" y="330" width="54" height="86" rx="26" fill="#e2e8f0" stroke="#94a3b8" stroke-width="3"/>
+  <path d="M947 344v24" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+  <path d="M180 470c40-14 76-12 112 4v-84c-36-16-72-18-112-4Z" fill="#ecfeff" stroke="#0e7490" stroke-width="3"/>
+  <path d="M292 474v-84" stroke="#0e7490" stroke-width="3"/>
+
+  <text x="104" y="580" font-family="Arial, sans-serif" font-size="20" fill="#94a3b8">EduPlay Document Studio · Computer Lab</text>
+</svg>

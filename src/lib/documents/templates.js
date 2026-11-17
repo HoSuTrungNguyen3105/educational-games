@@ -1,4 +1,4 @@
-// templates.js — Điểm vào tương thích cho thư viện 20 mẫu tài liệu.
+// templates.js — Điểm vào tương thích cho thư viện 30 mẫu tài liệu.
 //
 // Toàn bộ dữ liệu mẫu nằm trong templateCatalog.js. File này giữ lại các
 // tên API cũ (templateSourceFor + hai hằng mẫu đầu tiên) để các màn hình

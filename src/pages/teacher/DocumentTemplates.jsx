@@ -114,9 +114,9 @@ export default function DocumentTemplates({ showToast }) {
   return (
     <div className="tpl-library">
       <section className="tpl-library-hero">
-        <h1>Thư viện 20 mẫu tài liệu giảng dạy</h1>
+        <h1>Thư viện {WORD_TEMPLATES.length + POWERPOINT_TEMPLATES.length} mẫu tài liệu giảng dạy</h1>
         <p>
-          10 mẫu Word và 10 mẫu PowerPoint được thiết kế riêng cho giáo viên Việt Nam.
+          {WORD_TEMPLATES.length} mẫu Word và {POWERPOINT_TEMPLATES.length} mẫu PowerPoint được thiết kế riêng cho giáo viên Việt Nam.
           Mỗi mẫu có nội dung minh họa thực tế, xem trước trực tiếp và mở ra chỉnh sửa
           ngay ở cả chế độ HTML/CSS lẫn JSON.
         </p>

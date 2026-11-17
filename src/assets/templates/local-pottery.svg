@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Minh họa làng gốm Bát Tràng">
+  <rect width="1200" height="675" rx="34" fill="#faf6ef"/>
+  <rect x="64" y="60" width="1072" height="555" rx="18" fill="#fffdf7" stroke="#ddd3bd" stroke-width="3"/>
+  <text x="104" y="140" font-family="Georgia, serif" font-size="38" font-weight="700" fill="#6b4f2a">LÀNG GỐM BÁT TRÀNG</text>
+  <text x="106" y="178" font-family="Arial, sans-serif" font-size="21" fill="#7c6a4d">Lịch sử và Địa lí 4 · Vùng Đồng bằng Bắc Bộ</text>
+
+  <!-- ground -->
+  <rect x="140" y="512" width="920" height="6" rx="3" fill="#e7dcc4"/>
+
+  <!-- big vase, blue pattern -->
+  <path d="M470 300c-34 14-52 44-52 84 0 58 30 96 52 128h120c22-32 52-70 52-128 0-40-18-70-52-84 10-10 14-20 14-32H456c0 12 4 22 14 32Z" fill="#f8fafc" stroke="#365f91" stroke-width="4"/>
+  <path d="M418 384h224" stroke="#365f91" stroke-width="4"/>
+  <path d="M428 330c30 14 44-12 74 0s44-12 74 0" fill="none" stroke="#365f91" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="530" cy="440" r="30" fill="none" stroke="#365f91" stroke-width="5"/>
+  <path d="M530 418v44M508 440h44" stroke="#365f91" stroke-width="4"/>
+
+  <!-- small bowl -->
+  <path d="M700 452h190c0 34-26 60-60 60h-70c-34 0-60-26-60-60Z" fill="#fdf2e3" stroke="#9a6a35" stroke-width="4"/>
+  <path d="M700 452h190" stroke="#9a6a35" stroke-width="4"/>
+  <path d="M724 478c24 10 36-6 60 0s36-6 58-2" fill="none" stroke="#c2410c" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- potter wheel -->
+  <ellipse cx="795" cy="330" rx="86" ry="18" fill="#d6c6a8"/>
+  <path d="M762 330h66l8 54h-82Z" fill="#b0894f"/>
+  <rect x="742" y="392" width="106" height="12" rx="6" fill="#8a6a35"/>
+
+  <!-- kiln -->
+  <path d="M930 512V392c0-40 26-64 52-64s52 24 52 64v120Z" fill="#e8ded0" stroke="#9a6a35" stroke-width="4"/>
+  <path d="M958 512v-66a24 24 0 0 1 48 0v66Z" fill="#57534e"/>
+  <path d="M982 300c-8-18 8-24 0-44" stroke="#a8a29e" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <text x="104" y="580" font-family="Arial, sans-serif" font-size="20" fill="#b3a284">EduPlay Document Studio · Bat Trang Pottery</text>
+</svg>
