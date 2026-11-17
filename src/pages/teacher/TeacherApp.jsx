@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { navigate } from '../../lib/router.js'
 import TeacherLayout from './TeacherLayout.jsx'
 import { Loader, Toast } from '../../components/ui'
@@ -34,12 +34,10 @@ const AssignmentCreate = lazy(() => import('./AssignmentCreate.jsx'));
 const AssignmentEdit = lazy(() => import('./AssignmentEdit.jsx'));
 const AssignmentDetail = lazy(() => import('./AssignmentDetail.jsx'));
 const AssignmentList = lazy(() => import('./AssignmentList.jsx'));
-const AvatarItemManagement = lazy(() => import('./AvatarItemManagement.jsx'));
-const AvatarTemplateEditor = lazy(() => import('./AvatarTemplateEditor.jsx'));
+const AvatarManagement = lazy(() => import('./AvatarManagement.jsx'));
 const PetCatalogManagement = lazy(() => import('./PetCatalogManagement.jsx'));
 const UploadItems = lazy(() => import('./UploadItems.jsx'));
 const PlantTypeManagement = lazy(() => import('./PlantTypeManagement.jsx'));
-const BodyCustomImport = lazy(() => import('./BodyCustomImport.jsx'));
 const ImageLibrary = lazy(() => import('./ImageLibrary.jsx'));
 const ReminderManagement = lazy(() => import('./ReminderManagement.jsx'));
 const AiStudentAnalysisPage = lazy(() => import('./AiStudentAnalysisPage.jsx'));
@@ -63,6 +61,18 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
   const goLibrary = () => navigate("/dashboard/library");
 
   const page = route.name;
+
+  /* Hai route cũ của trang Avatar đã gộp vào /dashboard/avatar-items:
+   * thay URL (replace, không thêm history) về route chuẩn kèm ?tab= tương
+   * ứng để link cũ/bookmark mở đúng tab thay vì 404. Trong lúc chờ thay URL,
+   * khối render bên dưới vẫn hiện trang gộp với defaultTab đúng tab đó. */
+  useEffect(() => {
+    if (page === "admin-avatar-template") {
+      window.location.replace("#/dashboard/avatar-items?tab=template");
+    } else if (page === "admin-body-custom") {
+      window.location.replace("#/dashboard/avatar-items?tab=body");
+    }
+  }, [page]);
 
   const content = (
     <Suspense fallback={<div className="p-12 flex items-center justify-center"><Loader label="Đang tải dữ liệu..." /></div>}>
@@ -101,11 +111,11 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
         {page === "admin-assignment-new" && <AssignmentCreate />}
         {page === "admin-assignment-edit" && <AssignmentEdit assignmentId={route.params?.assignmentId} />}
         {page === "admin-assignment-detail" && <AssignmentDetail assignmentId={route.params?.assignmentId} />}
-        {page === "admin-avatar-items" && <AvatarItemManagement showToast={showToast} />}
-        {page === "admin-avatar-template" && <AvatarTemplateEditor showToast={showToast} />}
+        {page === "admin-avatar-items" && <AvatarManagement showToast={showToast} />}
+        {page === "admin-avatar-template" && <AvatarManagement showToast={showToast} defaultTab="template" />}
         {page === "admin-pet-catalog" && <PetCatalogManagement showToast={showToast} />}
         {page === "admin-plant-types" && <PlantTypeManagement showToast={showToast} />}
-        {page === "admin-body-custom" && <BodyCustomImport showToast={showToast} />}
+        {page === "admin-body-custom" && <AvatarManagement showToast={showToast} defaultTab="body" />}
         {page === "admin-images" && <ImageLibrary user={user} showToast={showToast} />}
         {page === "admin-upload-items" && <UploadItems showToast={showToast} />}
         {page === "admin-reminders" && <ReminderManagement showToast={showToast} />}

@@ -52,9 +52,13 @@ const ROUTES = [
   { name: "admin-assignment-edit", pattern: "/dashboard/assignments/:assignmentId/edit" },
   { name: "admin-assignment-detail", pattern: "/dashboard/assignments/:assignmentId" },
   { name: "admin-avatar-items", pattern: "/dashboard/avatar-items" },
+  // Route cũ của trang Avatar đã gộp — giữ để link cũ không 404; TeacherApp
+  // chuyển hướng về /dashboard/avatar-items?tab=template.
   { name: "admin-avatar-template", pattern: "/dashboard/avatar-template" },
   { name: "admin-pet-catalog", pattern: "/dashboard/pet-catalog" },
   { name: "admin-plant-types", pattern: "/dashboard/plant-types" },
+  // Route cũ của trang Avatar đã gộp — giữ để link cũ không 404; TeacherApp
+  // chuyển hướng về /dashboard/avatar-items?tab=body.
   { name: "admin-body-custom", pattern: "/dashboard/body-custom" },
   { name: "admin-images", pattern: "/dashboard/images" },
   { name: "admin-upload-items", pattern: "/dashboard/upload-items" },

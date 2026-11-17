@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GhostButton, IconCheck, ManagementHeader, PrimaryButton, StatGrid } from '../../components/ui';
+import { GhostButton, IconCheck, PrimaryButton, StatGrid } from '../../components/ui';
 import { Ban, BookOpen, Check, Layers, Lightbulb, Palette, PersonStanding, RotateCcw, X } from 'lucide-react';
 import {
   KID_LAYERS, kidAllTabs, kidApplyBody, kidBodies, kidBodySlots, kidCatalogStats, kidDefaults,
@@ -36,7 +36,9 @@ function ItemThumb({ cfg, id, selected, onClick }) {
   );
 }
 
-export default function AvatarItemManagement({ showToast }) {
+/* Panel tab "Vật phẩm" của trang gộp AvatarManagement — trước đây là trang
+ * riêng /dashboard/avatar-items. onSwitchTab do trang gộp truyền xuống. */
+export default function AvatarItemManagement({ showToast, onSwitchTab }) {
   const [state, setState] = useState(() => kidDefaults());
   const [tab, setTab] = useState('body');
 
@@ -85,8 +87,6 @@ export default function AvatarItemManagement({ showToast }) {
 
   return (
     <div className="space-y-4">
-      <ManagementHeader subtitle="Dùng chung với modal Tùy chỉnh Avatar ở #/profile" title="Avatar Items" />
-
       <div className="note-card p-3 text-xs text-ink/60 flex items-start gap-2">
         <Lightbulb className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" />
         <span>
@@ -245,7 +245,7 @@ export default function AvatarItemManagement({ showToast }) {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <GhostButton onClick={() => window.location.hash = '#/dashboard/body-custom'}>
+        <GhostButton onClick={() => onSwitchTab?.('body')}>
           Xem Thân Avatar
         </GhostButton>
         <PrimaryButton onClick={copyDataPath}>

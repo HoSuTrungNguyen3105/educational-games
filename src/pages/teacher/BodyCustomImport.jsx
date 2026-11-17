@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ManagementHeader, GhostButton, PrimaryButton } from '../../components/ui';
+import { GhostButton, PrimaryButton } from '../../components/ui';
 import { kidPresets, kidPreset, renderKid } from '../../lib/dressUpCatalog.js';
 
 const DATA_FILE = 'src/games/_shared/lib/dressUpAvatarData.js';
@@ -42,7 +42,9 @@ function BodyCard({ preview, onCopy, copied }) {
   );
 }
 
-export default function BodyCustomImport({ showToast }) {
+/* Panel tab "Thân Avatar" của trang gộp AvatarManagement — trước đây là trang
+ * riêng /dashboard/body-custom. onSwitchTab do trang gộp truyền xuống. */
+export default function BodyCustomImport({ showToast, onSwitchTab }) {
   const [copied, setCopied] = useState(null);
   /* Danh sách thân lấy thẳng từ data (BODIES.slug/hint) → thêm body mới trong
    * dressUpAvatarData.js là trang này có thẻ mới ngay, không phải sửa UI. */
@@ -71,8 +73,6 @@ export default function BodyCustomImport({ showToast }) {
 
   return (
     <div className="space-y-4">
-      <ManagementHeader subtitle="Thân và các lớp phụ kiện của avatar" title="Thân Avatar" />
-
       <div className="note-card p-3 text-xs text-ink/60">
         Chỉ tham khảo — dữ liệu nằm trong file mã nguồn (dressUpAvatarData.js), muốn thay đổi phải sửa file rồi build lại.
       </div>
@@ -120,7 +120,7 @@ export default function BodyCustomImport({ showToast }) {
       </div>
 
       <div className="flex gap-2">
-        <GhostButton onClick={() => window.location.hash = '#/dashboard/avatar-items'}>
+        <GhostButton onClick={() => onSwitchTab?.('items')}>
           Xem Avatar Items
         </GhostButton>
         <PrimaryButton onClick={() => copy(DATA_FILE)}>
