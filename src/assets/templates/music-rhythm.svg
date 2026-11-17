@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Minh họa nhịp 2/4 và nhạc cụ gõ">
+  <rect width="1200" height="675" rx="34" fill="#fdf4f6"/>
+  <rect x="64" y="60" width="1072" height="555" rx="18" fill="#ffffff" stroke="#f3c6d3" stroke-width="3"/>
+  <text x="104" y="140" font-family="Arial, sans-serif" font-size="38" font-weight="700" fill="#8c2f4a">NHỊP 2/4 VÀ NHẠC CỤ GÕ</text>
+  <text x="106" y="178" font-family="Arial, sans-serif" font-size="21" fill="#a35d74">Âm nhạc 3 · Phách mạnh — phách nhẹ</text>
+
+  <!-- staff lines -->
+  <g stroke="#e8b7c5" stroke-width="4">
+    <path d="M150 300h560M150 336h560M150 372h560M150 408h560"/>
+  </g>
+  <!-- notes -->
+  <g fill="#8c2f4a">
+    <ellipse cx="240" cy="390" rx="20" ry="14" transform="rotate(-16 240 390)"/>
+    <ellipse cx="360" cy="372" rx="20" ry="14" transform="rotate(-16 360 372)"/>
+    <ellipse cx="480" cy="390" rx="20" ry="14" transform="rotate(-16 480 390)"/>
+    <ellipse cx="600" cy="354" rx="20" ry="14" transform="rotate(-16 600 354)"/>
+  </g>
+  <g stroke="#8c2f4a" stroke-width="6" stroke-linecap="round">
+    <path d="M259 384V292M379 366V274M499 384V292M619 348V256"/>
+  </g>
+  <text x="170" y="272" font-family="Georgia, serif" font-size="44" font-weight="700" fill="#8c2f4a">2/4</text>
+  <!-- beat marks -->
+  <text x="222" y="470" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#8c2f4a">MẠNH</text>
+  <text x="348" y="470" font-family="Arial, sans-serif" font-size="24" fill="#a35d74">nhẹ</text>
+  <text x="462" y="470" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#8c2f4a">MẠNH</text>
+  <text x="588" y="470" font-family="Arial, sans-serif" font-size="24" fill="#a35d74">nhẹ</text>
+
+  <!-- drum -->
+  <ellipse cx="880" cy="330" rx="110" ry="30" fill="#fdf4f6" stroke="#8c2f4a" stroke-width="5"/>
+  <path d="M770 330v110a110 30 0 0 0 220 0V330" fill="#c4506e"/>
+  <path d="M770 376l110 34 110-34M770 440l110-34 110 34" stroke="#f3c6d3" stroke-width="5" fill="none"/>
+  <ellipse cx="880" cy="440" rx="110" ry="30" fill="#a03a56"/>
+  <!-- sticks -->
+  <path d="M806 300 736 214" stroke="#b0894f" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="730" cy="206" r="14" fill="#8c2f4a"/>
+  <path d="M954 300l70-86" stroke="#b0894f" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="1030" cy="206" r="14" fill="#8c2f4a"/>
+
+  <text x="104" y="580" font-family="Arial, sans-serif" font-size="20" fill="#c99aa9">EduPlay Document Studio · Music Rhythm</text>
+</svg>

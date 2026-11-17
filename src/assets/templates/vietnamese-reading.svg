@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Minh họa cây đa đầu làng">
+  <rect width="1200" height="675" rx="34" fill="#f7f5ef"/>
+  <rect x="64" y="60" width="1072" height="555" rx="18" fill="#fffdf7" stroke="#d6cdb8" stroke-width="3"/>
+  <text x="104" y="140" font-family="Georgia, serif" font-size="38" font-weight="700" fill="#44403c">CÂY ĐA ĐẦU LÀNG</text>
+  <text x="106" y="178" font-family="Arial, sans-serif" font-size="21" fill="#78716c">Tiếng Việt 5 · Bài đọc hiểu</text>
+
+  <!-- ground -->
+  <path d="M140 520h920" stroke="#d6cdb8" stroke-width="6" stroke-linecap="round"/>
+  <!-- trunk -->
+  <path d="M560 520c-6-70-4-120 6-170l26 0c10 50 12 100 6 170Z" fill="#78716c"/>
+  <!-- aerial roots -->
+  <g stroke="#a8a29e" stroke-width="5" stroke-linecap="round">
+    <path d="M470 380c-4 50-2 92 4 140"/>
+    <path d="M690 380c4 50 2 92-4 140"/>
+    <path d="M520 400c-2 40 0 80 4 120"/>
+    <path d="M640 400c2 40 0 80-4 120"/>
+  </g>
+  <!-- canopy -->
+  <ellipse cx="580" cy="300" rx="240" ry="86" fill="#4d7c0f"/>
+  <ellipse cx="430" cy="322" rx="130" ry="58" fill="#65a30d"/>
+  <ellipse cx="730" cy="322" rx="130" ry="58" fill="#3f6212"/>
+  <!-- bench under tree -->
+  <rect x="500" y="492" width="160" height="12" rx="6" fill="#92400e"/>
+  <rect x="516" y="504" width="10" height="18" fill="#78716c"/>
+  <rect x="634" y="504" width="10" height="18" fill="#78716c"/>
+
+  <!-- text lines like a book page, right side -->
+  <g stroke="#d6d3d1" stroke-width="9" stroke-linecap="round">
+    <path d="M880 300h180M880 336h160M880 372h176M880 408h140"/>
+  </g>
+  <rect x="872" y="248" width="196" height="40" rx="8" fill="#f5efe2"/>
+  <text x="888" y="275" font-family="Arial, sans-serif" font-size="19" font-weight="700" fill="#57534e">Đọc hiểu</text>
+
+  <text x="104" y="580" font-family="Arial, sans-serif" font-size="20" fill="#a8a29e">EduPlay Document Studio · Vietnamese Reading</text>
+</svg>
