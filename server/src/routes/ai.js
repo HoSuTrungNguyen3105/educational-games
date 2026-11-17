@@ -26,7 +26,7 @@ import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 import * as questionService from "../services/questionService.js";
 import { isOn } from "../services/systemConfigService.js";
-import { callAiBackend, aiBackendHealth, AiBackendError, getAiInferenceStatus } from "../services/aiBackendService.js";
+import { callAiBackend, aiBackendHealth, AiBackendError, getAiInferenceStatus, aiProviderKind } from "../services/aiBackendService.js";
 import { listChatLogs, deleteChatLogs } from "../services/aiChatLogService.js";
 import { computeLearningMetrics, topicDisplayName, MIN_QUESTIONS_PER_TOPIC } from "../services/aiLearningMetrics.js";
 import { getAiCreditStatus } from "../services/aiUsageService.js";
@@ -165,6 +165,42 @@ router.post("/chat", authenticate, requireAiEnabled, async (req, res) => {
     sendSuccess(res, data);
   } catch (e) {
     forwardError(res, e, "/api/ai/chat");
+  }
+});
+
+/**
+ * POST /api/ai/playground/chat — Kiểm thử Gia sư AI ở trang AI Studio
+ * (Tab "Kiểm thử RAG"). CHỈ giáo viên/admin: thử cấu hình NHÁP của Tab
+ * Cấu hình (systemPrompt/temperature/công tắc) trên ĐÚNG pipeline chat
+ * thật — truy xuất bài học đã xuất bản theo từ khoá (không phải vector
+ * RAG), prompt gia sư + ràng buộc an toàn của chatSystem, model/rate
+ * limit hiện hành. Response kèm `sources` chi tiết (điểm khớp từ khoá
+ * thật) và cờ `refused` khi guardrail phạm vi chặn ở tầng Backend.
+ * Chỉ hỗ trợ đường AI TRỰC TIẾP (Groq/Ollama Cloud): đường AI Service
+ * Java không có thao tác này nên chặn tường minh bằng 503 trung thực
+ * thay vì chuyển tiếp một path không tồn tại.
+ */
+router.post("/playground/chat", authenticate, requireRoles("teacher", "admin"), requireAiEnabled, async (req, res) => {
+  try {
+    if (aiProviderKind() === "ai-service") {
+      return sendError(res, "Kiểm thử Gia sư AI hiện chỉ hỗ trợ khi AI chạy ở đường trực tiếp (Groq/Ollama Cloud).", 503);
+    }
+    const { message, history, config } = req.body || {};
+    const data = await callAiBackend("/api/ai/playground/chat", {
+      message: typeof message === "string" ? message.slice(0, 2000) : message,
+      history: Array.isArray(history)
+        ? history.slice(-10).map((h) => ({
+            role: h?.role === "assistant" ? "assistant" : "user",
+            content: String(h?.content || "").slice(0, 1000),
+          }))
+        : undefined,
+      // Cấu hình nháp được aiDirectService chuẩn hoá lại (kẹp độ dài/kiểu/
+      // khoảng temperature) — route chỉ chuyển tiếp, không tin client.
+      config: config && typeof config === "object" ? config : undefined,
+    }, req);
+    sendSuccess(res, data);
+  } catch (e) {
+    forwardError(res, e, "/api/ai/playground/chat");
   }
 });
 

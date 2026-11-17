@@ -32,7 +32,15 @@ const KIND_OPTIONS = [
   { value: "", label: "Mọi loại lượt" },
   { value: "chat", label: "Chat thường" },
   { value: "admin_query", label: "Tra cứu quản trị" },
+  { value: "playground", label: "Kiểm thử AI Studio" },
 ];
+
+/** Nhãn hiển thị cho từng loại lượt — lượt kiểm thử ở AI Studio (playground) tách bạch khỏi chat thật của học sinh. */
+function kindLabel(kind) {
+  if (kind === "admin_query") return "Tra cứu quản trị";
+  if (kind === "playground") return "Kiểm thử AI Studio";
+  return "Chat thường";
+}
 
 /** ISO → "HH:mm DD/MM/YYYY" (giờ máy người xem). */
 function fmtTime(iso) {
@@ -188,7 +196,7 @@ export default function AiChatHistoryPage({ showToast }) {
                           r.kind === "admin_query" ? "bg-gold/25 text-ink" : "bg-teal/15 text-ink"
                         }`}
                       >
-                        {r.kind === "admin_query" ? "Tra cứu quản trị" : "Chat thường"}
+                        {kindLabel(r.kind)}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm text-ink truncate">{r.question}</span>
@@ -225,7 +233,7 @@ export default function AiChatHistoryPage({ showToast }) {
             <p className="text-[11px] text-[#8A7C63] mb-3">
               {selected.username || selected.userId} · {roleLabel(selected.role)}
               {selected.grade ? ` · Lớp ${selected.grade}` : ""} · {fmtTime(selected.createdAt)} ·{" "}
-              {selected.kind === "admin_query" ? "Tra cứu quản trị" : "Chat thường"}
+              {kindLabel(selected.kind)}
               {selected.queryType ? ` (${selected.queryType})` : ""}
             </p>
             <p className="text-[11px] font-mono uppercase text-[#8A7C63] mb-1">Câu hỏi</p>

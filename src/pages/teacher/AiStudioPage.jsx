@@ -6,6 +6,8 @@ import {
   GhostButton, Input, ManagementHeader, PrimaryButton, Select, ToggleSwitch,
 } from "../../components/ui";
 import { setupService } from "../../services/setupService.js";
+import { playgroundChat } from "../../services/aiApi.js";
+import AiMarkdown from "../../components/ai/AiMarkdown.jsx";
 
 /* AiStudioPage — trang AI Studio MỚI ở /dashboard/ai-studio (nhóm AI),
  * xây theo REFACTOR_AI_STUDIO.md Bước 2: trung tâm cấu hình hành vi Gia sư
@@ -13,9 +15,15 @@ import { setupService } from "../../services/setupService.js";
  *   • config     — Cấu hình Gia sư AI (prompt & guardrails)
  *   • override   — Đính chính kiến thức (Knowledge Override)
  *   • playground — Kiểm thử RAG
- * Đợt này CHỈ dựng khung giao diện: chưa có backend RAG/embedding nên mọi
- * nút Lưu/Gửi đều báo rõ "sẽ nối backend ở bước tiếp theo" — không giả vờ
- * đã lưu, không sinh câu trả lời AI giả, không bịa chunk/score mẫu.
+ * Trạng thái nối backend:
+ *   • Tab Kiểm thử ĐÃ nối backend thật (POST /api/ai/playground/chat):
+ *     câu hỏi chạy qua đúng pipeline của AI Bạn Học — truy xuất đoạn bài
+ *     học ĐÃ XUẤT BẢN theo TỪ KHOÁ (hệ thống chưa có vector/embedding)
+ *     + model đang cấu hình — kèm cấu hình NHÁP của Tab 1 gửi theo từng
+ *     lượt thử. Nguồn hiển thị dưới câu trả lời là dữ liệu truy xuất thật;
+ *     "điểm khớp" là điểm từ khoá, không phải độ tương đồng vector.
+ *   • Tab Cấu hình + Đính chính vẫn là khung: nút Lưu báo rõ "sẽ nối
+ *     backend ở bước tiếp theo" — không giả vờ đã lưu.
  * (Trang tạo bài học cũ đã tách sang /dashboard/ai-lesson-creator.)
  * Tab đồng bộ qua ?tab= trên hash như trang Avatar gộp. */
 
@@ -104,8 +112,9 @@ export default function AiStudioPage({ showToast }) {
     return () => clearTimeout(t);
   }, [notice]);
 
-  /* Mọi hành động cần backend (Lưu cấu hình, Lưu đính chính, Gửi câu hỏi
-   * kiểm thử) đều đi qua đây: báo rõ chưa nối backend, KHÔNG giả vờ đã lưu. */
+  /* Các hành động CHƯA nối backend (Lưu cấu hình ở Tab 1, Lưu đính chính
+   * ở Tab 2) đều đi qua đây: báo rõ chưa nối backend, KHÔNG giả vờ đã lưu.
+   * (Tab Kiểm thử đã có backend thật — xem submitQuestion ở dưới.) */
   const notifyPending = useCallback(() => {
     setNotice(PENDING_MSG);
     showToast?.(PENDING_MSG);
@@ -164,15 +173,56 @@ export default function AiStudioPage({ showToast }) {
    * bản ghi thật (kèm nút Sửa/Xoá như khung render bên dưới) từ API. */
   const overrideRecords = [];
 
-  // ── Tab 3: Kiểm thử RAG ──
+  // ── Tab 3: Kiểm thử Gia sư AI (ĐÃ nối backend thật) ──
   const [draft, setDraft] = useState("");
-  /* Khung hội thoại: bước sau backend RAG sẽ trả tin nhắn kèm sources
-   * [{ label, score }] để render dưới mỗi câu trả lời của AI. */
-  const chatMessages = [];
+  /* Hội thoại kiểm thử: tin nhắn AI kèm `sources` THẬT từ backend (bài học
+   * + đoạn trích + điểm khớp từ khoá) và cờ `refused` khi guardrail phạm
+   * vi chặn ở tầng backend. */
+  const [pgMessages, setPgMessages] = useState([]);
+  const [pgSending, setPgSending] = useState(false);
+  const [pgError, setPgError] = useState("");
+  const pgIdRef = useRef(0);
+  const nextPgId = () => { pgIdRef.current += 1; return pgIdRef.current; };
 
-  const submitQuestion = (e) => {
+  /* Cấu hình NHÁP lấy từ state của Tab 1 (cùng cấp trang nên Tab 3 dùng
+   * chung bản nháp, không cần lưu trữ): cấp học gửi nhãn hiển thị để
+   * backend thay biến {cap_hoc}; "Mặc định toàn hệ thống" thì không gửi. */
+  const buildPlaygroundConfig = useCallback(() => ({
+    systemPrompt: prompt,
+    temperature,
+    strictScope: guardrails.scopeOnly,
+    requireCitation: guardrails.requireCitation,
+    refuseOffTopic: guardrails.refuseOffTopic,
+    level: LEVEL_OPTIONS.find((o) => o.value === cfgLevel && o.value !== "default")?.label,
+    subject: cfgSubject || undefined,
+  }), [prompt, temperature, guardrails, cfgLevel, cfgSubject]);
+
+  const submitQuestion = async (e) => {
     e?.preventDefault();
-    notifyPending();
+    const text = draft.trim();
+    if (!text || pgSending) return;
+    const history = pgMessages.map((m) => ({ role: m.role, content: m.text }));
+    setPgMessages((prev) => [...prev, { id: nextPgId(), role: "user", text }]);
+    setDraft("");
+    setPgError("");
+    setPgSending(true);
+    try {
+      const res = await playgroundChat({ message: text, history, config: buildPlaygroundConfig() });
+      setPgMessages((prev) => [...prev, {
+        id: nextPgId(),
+        role: "assistant",
+        text: res.answer,
+        sources: Array.isArray(res.sources) ? res.sources : [],
+        refused: res.refused === true,
+        refusalReason: res.refusalReason || null,
+      }]);
+    } catch (err) {
+      /* Lỗi trung thực từ backend (AI tắt/chưa cấu hình/hết hạn mức…) —
+       * hiển thị nguyên văn thông điệp server, không bịa câu trả lời. */
+      setPgError(err?.message || "Không gửi được câu hỏi kiểm thử. Hãy thử lại.");
+    } finally {
+      setPgSending(false);
+    }
   };
 
   return (
@@ -182,14 +232,17 @@ export default function AiStudioPage({ showToast }) {
         subtitle="Trung tâm cấu hình hành vi Gia sư AI (RAG) và quản lý tri thức ưu tiên"
       />
 
-      {/* Banner trung thực trạng thái: đợt này chỉ dựng khung giao diện. */}
+      {/* Banner trung thực trạng thái: Tab Kiểm thử đã nối backend thật;
+          Tab Cấu hình + Đính chính vẫn là khung chờ nối lưu trữ. */}
       <div className="note-card px-4 py-3 flex items-start gap-2.5">
         <Info className="w-4.5 h-4.5 shrink-0 mt-0.5 text-[#8A7C63]" />
         <p className="text-sm text-ink/75">
-          <strong className="text-ink">Khung giao diện Bước 2.</strong>{" "}
-          Trang này mới dựng khung để chốt bố cục — backend RAG (lưu cấu hình, tạo embedding
-          cho bản ghi đính chính, truy xuất khi kiểm thử) sẽ được nối ở bước tiếp theo.
-          Các nút Lưu / Gửi hiện chỉ hiển thị thông báo, chưa lưu hay gửi dữ liệu thật.
+          <strong className="text-ink">Tab Kiểm thử đã nối backend thật.</strong>{" "}
+          Câu hỏi kiểm thử chạy qua đúng pipeline của AI Bạn Học — truy xuất đoạn bài học
+          đã xuất bản theo <strong className="text-ink">từ khoá</strong> (hệ thống chưa có
+          vector/embedding) + model đang cấu hình — kèm cấu hình nháp ở Tab Cấu hình.
+          Riêng nút Lưu ở Tab Cấu hình và Tab Đính chính vẫn là khung, sẽ nối lưu trữ
+          ở bước tiếp theo.
         </p>
       </div>
 
@@ -364,58 +417,114 @@ export default function AiStudioPage({ showToast }) {
           <div>
             <h2 className="font-display font-bold text-ink">Kiểm thử Gia sư AI</h2>
             <p className="text-xs text-ink/55 mt-0.5">
-              Hỏi thử ngay sau khi chỉnh System Prompt hoặc thêm nội dung đính chính,
-              để kiểm tra AI trả lời có đúng giáo trình không.
+              Hỏi thử với cấu hình nháp ở Tab Cấu hình (System Prompt, Temperature, công tắc
+              kiểm soát) — áp dụng ngay cho từng lượt thử, chưa cần lưu. Câu trả lời do model
+              thật trả, dùng các đoạn bài học đã xuất bản truy xuất theo từ khoá.
             </p>
           </div>
 
           <div className="rounded-2xl border border-ink/10 bg-paper2/60 min-h-[260px] p-4 flex flex-col gap-3">
-            {chatMessages.length === 0 ? (
+            {pgMessages.length === 0 && !pgSending ? (
               <div className="flex-1 grid place-items-center text-center py-8">
                 <div>
                   <MessagesSquare className="w-9 h-9 mx-auto text-ink/30" />
                   <p className="font-display font-semibold text-ink mt-2">Chưa có tin nhắn nào</p>
                   <p className="text-sm text-ink/55 mt-1 max-w-md mx-auto">
-                    Nhập câu hỏi bên dưới để kiểm thử. Backend RAG chưa được nối
-                    nên câu hỏi hiện chưa gửi đi được.
+                    Nhập câu hỏi bên dưới để kiểm thử. Bên dưới mỗi câu trả lời sẽ hiện
+                    các đoạn bài học thật mà hệ thống đã truy xuất cho câu hỏi đó.
                   </p>
                 </div>
               </div>
             ) : (
-              chatMessages.map((m) => (
-                <div key={m.id} className={m.role === "user" ? "self-end max-w-[85%]" : "self-start max-w-[85%]"}>
-                  <div className={`rounded-2xl px-3.5 py-2.5 text-sm ${
-                    m.role === "user" ? "bg-ink text-paper" : "bg-white border border-ink/10 text-ink"
-                  }`}>
-                    {m.text}
-                  </div>
-                  {m.role === "assistant" && Array.isArray(m.sources) && m.sources.length > 0 && (
-                    <div className="mt-1.5 space-y-1">
-                      {m.sources.map((s, i) => (
-                        <p key={i} className="text-[11px] text-ink/55 font-mono">
-                          Nguồn: {s.label} · Score: {s.score}
-                        </p>
-                      ))}
+              <>
+                {pgMessages.map((m) => (
+                  <div key={m.id} className={m.role === "user" ? "self-end max-w-[85%]" : "self-start max-w-[92%]"}>
+                    <div className={`rounded-2xl px-3.5 py-2.5 text-sm ${
+                      m.role === "user" ? "bg-ink text-paper" : "bg-white border border-ink/10 text-ink"
+                    }`}>
+                      {m.role === "assistant" ? <AiMarkdown>{m.text}</AiMarkdown> : m.text}
                     </div>
-                  )}
-                </div>
-              ))
+                    {m.role === "assistant" && m.refused && (
+                      <p className="mt-1.5 inline-block rounded-full bg-gold/25 px-2.5 py-1 text-[11px] font-semibold text-ink">
+                        Guardrail đã chặn ở backend: công tắc “Chỉ trả lời trong phạm vi bài học”
+                        đang bật và không truy xuất được đoạn bài học nào — model không được gọi.
+                      </p>
+                    )}
+                    {m.role === "assistant" && !m.refused && Array.isArray(m.sources) && m.sources.length === 0 && (
+                      <p className="mt-1.5 text-[11px] text-ink/55">
+                        Không truy xuất được đoạn bài học nào cho câu hỏi này — câu trả lời
+                        không dựa trên tài liệu bài học đã xuất bản.
+                      </p>
+                    )}
+                    {m.role === "assistant" && Array.isArray(m.sources) && m.sources.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        {m.sources.map((s, i) => (
+                          <div key={i} className="rounded-xl border border-ink/10 bg-white/70 px-3 py-2.5">
+                            <p className="text-xs font-semibold text-ink">
+                              Nguồn: Bài “{s.title}”
+                              {(s.subject || s.grade) && (
+                                <span className="font-normal text-ink/55">
+                                  {" "}· {[s.subject, s.grade ? `lớp ${s.grade}` : null].filter(Boolean).join(" · ")}
+                                </span>
+                              )}
+                              {typeof s.score === "number" && (
+                                <span className="ml-2 rounded-full bg-teal/15 px-2 py-0.5 font-mono text-[11px] text-ink">
+                                  Điểm khớp từ khoá: {s.score}
+                                </span>
+                              )}
+                            </p>
+                            {((s.matchedPhrases?.length || 0) > 0 || (s.matchedKeywords?.length || 0) > 0) && (
+                              <p className="mt-1 text-[11px] text-ink/55">
+                                Đã khớp: {[...(s.matchedPhrases || []), ...(s.matchedKeywords || [])].join(", ")}
+                              </p>
+                            )}
+                            {Array.isArray(s.excerpts) && s.excerpts.map((ex, j) => (
+                              <div key={j} className="mt-1.5 border-l-2 border-ink/15 pl-2.5">
+                                <p className="text-xs text-ink/75 leading-relaxed">{ex.text}</p>
+                                {typeof ex.score === "number" && (
+                                  <p className="text-[11px] font-mono text-ink/45">Điểm đoạn: {ex.score}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {pgSending && (
+                  <div className="self-start max-w-[85%]">
+                    <div className="rounded-2xl px-3.5 py-2.5 text-sm bg-white border border-ink/10 text-ink/55">
+                      Gia sư AI đang trả lời…
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
+          {pgError && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+              <p className="text-sm text-red-800">{pgError}</p>
+            </div>
+          )}
+
           <form onSubmit={submitQuestion} className="flex gap-2 items-start">
-            <Input value={draft} onChange={setDraft} full
-              placeholder="Nhập câu hỏi kiểm thử, VD: Vì sao lá cây có màu xanh?" />
-            <PrimaryButton type="submit" className="flex items-center gap-2 !px-4 !py-2.5 text-sm shrink-0">
-              <Send className="w-4 h-4" /> Gửi
+            <Input value={draft} onChange={setDraft} full disabled={pgSending}
+              placeholder="Nhập câu hỏi kiểm thử, VD: Tử số và mẫu số là gì?" />
+            <PrimaryButton type="submit" disabled={pgSending} className="flex items-center gap-2 !px-4 !py-2.5 text-sm shrink-0">
+              <Send className="w-4 h-4" /> {pgSending ? "Đang gửi…" : "Gửi"}
             </PrimaryButton>
           </form>
 
           <div className="rounded-2xl border border-dashed border-ink/15 px-4 py-3">
-            <p className="text-[11px] font-mono uppercase text-[#8A7C63]">Nguồn trích dẫn & độ tương đồng (Score)</p>
+            <p className="text-[11px] font-mono uppercase text-[#8A7C63]">Nguồn & điểm khớp — đọc sao cho đúng</p>
             <p className="text-sm text-ink/55 mt-1">
-              Sau khi backend RAG được nối, mỗi câu trả lời ở trên sẽ hiển thị ngay bên dưới:
-              đoạn tài liệu (chunk) mà AI đã dùng và độ tương đồng (score) của chunk đó.
+              Nguồn là các đoạn văn bản THẬT trong bài học đã xuất bản, được truy xuất bằng
+              khớp từ khoá trên chính câu hỏi (cùng cơ chế AI Bạn Học đang dùng cho học sinh).
+              Điểm khớp là điểm từ khoá: cụm 2 từ khớp = 2 điểm, từ đơn khớp = 1 điểm, đoạn
+              phải đạt tối thiểu 2 điểm mới được dùng. Hệ thống hiện chưa có vector/embedding
+              nên điểm này KHÔNG phải độ tương đồng ngữ nghĩa.
             </p>
           </div>
         </div>

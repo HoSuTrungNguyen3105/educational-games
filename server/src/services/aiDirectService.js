@@ -30,7 +30,7 @@ import {
   computeLearningMetrics, fallbackNarrative, withinPeriod, validatePeriod,
   ANALYSIS_DISCLAIMER,
 } from "./aiLearningMetrics.js";
-import { buildChatContext } from "./aiChatContext.js";
+import { buildChatContext, searchLessonMaterials, vietnamNowText } from "./aiChatContext.js";
 import { recordChatLog } from "./aiChatLogService.js";
 import { getEffectiveGroqModel } from "./aiModelConfig.js";
 import { config } from "../config.js";
@@ -46,6 +46,9 @@ import { clientIp as clientIpOf } from "../utils/clientIp.js";
 // hành vi nghiệp vụ.
 const llmComplete = (system, messages) =>
   config.ollama.provider === "groq" ? groqComplete(system, messages) : ollamaComplete(system, messages);
+/** Như llmComplete nhưng kèm options cho gateway (hiện chỉ temperature — Kiểm thử Gia sư AI dùng để thử cấu hình nháp). */
+const llmCompleteWithOptions = (system, messages, options) =>
+  config.ollama.provider === "groq" ? groqComplete(system, messages, options) : ollamaComplete(system, messages, options);
 const llmCompleteJson = (system, messages) =>
   config.ollama.provider === "groq" ? groqCompleteJson(system, messages) : ollamaCompleteJson(system, messages);
 
@@ -256,6 +259,186 @@ async function directChat(body, req) {
       ? context.materials.map((m) => omitNulls({ title: m.title, subject: m.subject, grade: m.grade }))
       : undefined,
   });
+}
+
+// ─────────────── Kiểm thử Gia sư AI (AI Studio — playground) ───────────────
+//
+// POST /api/ai/playground/chat — giáo viên/admin THỬ cấu hình nháp của Tab
+// "Cấu hình Gia sư AI" (AI Studio) trước khi có cơ chế lưu chính thức.
+// Dùng lại ĐÚNG pipeline của chat thật: cùng module truy xuất bài học đã
+// xuất bản theo từ khoá (aiChatContext.searchLessonMaterials — KHÔNG phải
+// vector RAG/embedding, hệ thống chưa có hạ tầng đó), cùng prompt gia sư
+// (chatSystem — gồm các ràng buộc an toàn cứng: an toàn học sinh, chống
+// gian lận, không bịa dữ kiện/nguồn), cùng gateway/model/rate limit.
+//
+// Khác chat thật ở 3 điểm có chủ đích:
+//  - Truy xuất chạy với `detailed: true` để response trả kèm điểm khớp từ
+//    khoá THẬT (cụm 2 từ = 2 điểm, từ đơn = 1 điểm) + từ/cụm đã khớp + điểm
+//    từng đoạn — cho admin đối chiếu vì sao đoạn đó được chọn. Đây không
+//    phải độ tương đồng vector.
+//  - `config` là BẢN NHÁP từ Tab 1 (chưa lưu ở đâu): systemPrompt nháp được
+//    CHÈN THÊM vào cuối prompt hệ thống như "chỉ thị hành vi bổ sung" (đã
+//    thay biến {ten_mon_hoc}/{cap_hoc}/{ten_bai_hoc}) và TUYỆT ĐỐI không
+//    ghi đè các Nguyên tắc bắt buộc của chatSystem khi xung đột; temperature
+//    nháp được truyền xuống gateway; các công tắc áp dụng như dưới đây.
+//  - Công tắc phạm vi (strictScope) chốt ở TẦNG BACKEND: bật mà truy xuất
+//    không có đoạn nào → trả thông điệp từ chối theo khuôn, KHÔNG gọi model
+//    (không để model tự kỷ luật rồi bịa nội dung ngoài bài). requireCitation
+//    và refuseOffTopic áp dụng ở tầng chỉ thị prompt.
+// Lượt kiểm thử ghi vào ai_chat_logs với kind="playground" — tách bạch
+// khỏi lịch sử hỏi thật của học sinh (kind="chat"/"admin_query").
+
+/** Trần temperature của bản nháp — khớp thanh trượt Tab 1 của AI Studio (0.0–0.5). */
+const PLAYGROUND_TEMPERATURE_MAX = 0.5;
+
+/** Thông điệp từ chối theo khuôn khi strictScope bật mà không có ngữ cảnh bài học. */
+const STRICT_SCOPE_REFUSAL =
+  "Câu hỏi này nằm ngoài phạm vi các đoạn bài học đã xuất bản mà hệ thống truy xuất được, "
+  + "và cấu hình đang bật chế độ “Chỉ trả lời trong phạm vi bài học hiện tại” nên Gia sư AI "
+  + "không trả lời bằng kiến thức ngoài bài. Hãy thử câu hỏi thuộc nội dung bài học đã xuất "
+  + "bản, hoặc tắt công tắc phạm vi ở Tab Cấu hình rồi kiểm thử lại.";
+
+/** Chuẩn hoá cấu hình nháp từ client — mọi field đều tuỳ chọn, sai kiểu thì bỏ qua. */
+function normalizePlaygroundConfig(raw) {
+  const cfg = raw && typeof raw === "object" ? raw : {};
+  const text = (v, max) => {
+    if (typeof v !== "string") return null;
+    const s = v.trim();
+    return s === "" ? null : s.slice(0, max);
+  };
+  let temperature;
+  if (typeof cfg.temperature === "number" && Number.isFinite(cfg.temperature)) {
+    temperature = Math.max(0, Math.min(PLAYGROUND_TEMPERATURE_MAX, cfg.temperature));
+  }
+  return {
+    systemPrompt: typeof cfg.systemPrompt === "string" && cfg.systemPrompt.trim() !== ""
+      ? cleanText(cfg.systemPrompt, 4000) || null
+      : null,
+    temperature,
+    strictScope: cfg.strictScope === true,
+    requireCitation: cfg.requireCitation === true,
+    refuseOffTopic: cfg.refuseOffTopic === true,
+    level: text(cfg.level, 40),
+    subject: text(cfg.subject, 80),
+  };
+}
+
+/** Thay biến soạn sẵn của Tab 1 ({ten_mon_hoc}, {cap_hoc}, {ten_bai_hoc}) bằng giá trị thật của lượt thử. */
+function applyPromptVariables(text, { subject, level, lessonTitle }) {
+  return text
+    .replaceAll("{ten_mon_hoc}", subject || "môn học")
+    .replaceAll("{cap_hoc}", level || "cấp học hiện tại")
+    .replaceAll("{ten_bai_hoc}", lessonTitle || "bài học hiện tại");
+}
+
+/** Khối chỉ thị cấu hình nháp chèn CUỐI system prompt — bổ sung, không thay thế ràng buộc cứng. */
+function playgroundConfigSection(cfg, materials) {
+  const lines = ["\nCẤU HÌNH ĐANG KIỂM THỬ (AI Studio — bản nháp do giáo viên/quản trị viên soạn để THỬ, chưa phải cấu hình chính thức):"];
+  const scope = [
+    cfg.level ? "cấp học " + cfg.level : null,
+    cfg.subject ? "môn " + cfg.subject : null,
+  ].filter(Boolean).join(", ");
+  if (scope) lines.push("- Phạm vi cấu hình đang thử: " + scope + ".");
+  if (cfg.systemPrompt) {
+    lines.push("- CHỈ THỊ HÀNH VI BỔ SUNG từ bản nháp (áp dụng cho lượt kiểm thử này; nếu xung đột "
+      + "với các Nguyên tắc bắt buộc ở trên — đặc biệt an toàn với học sinh, chống gian lận, không "
+      + "bịa dữ kiện/nguồn — thì Nguyên tắc bắt buộc thắng):");
+    lines.push(applyPromptVariables(cfg.systemPrompt, {
+      subject: cfg.subject,
+      level: cfg.level,
+      lessonTitle: materials[0]?.title ?? null,
+    }));
+  }
+  if (cfg.strictScope) {
+    lines.push("- Công tắc “Chỉ trả lời trong phạm vi bài học hiện tại” ĐANG BẬT: chỉ trả lời dựa trên "
+      + "TÀI LIỆU BÀI HỌC LIÊN QUAN ở trên; phần nào tài liệu không có thì nói rõ tài liệu chưa có "
+      + "phần đó, không dùng kiến thức ngoài bài.");
+  }
+  if (cfg.requireCitation) {
+    lines.push("- Công tắc “Bắt buộc trích dẫn nguồn” ĐANG BẬT: mỗi ý trả lời dựa trên tài liệu phải "
+      + "kèm nguồn theo mẫu (Nguồn: bài “<tên bài học>”) ngay sau ý đó. Bài học trong hệ thống không "
+      + "đính số trang vào đoạn truy xuất — trích TÊN BÀI, không bịa số trang hay mốc thời gian.");
+  }
+  if (cfg.refuseOffTopic) {
+    lines.push("- Công tắc “Từ chối câu hỏi ngoài lề” ĐANG BẬT: nếu câu hỏi không liên quan tới môn "
+      + "học/bài học trong ngữ cảnh trên, hãy từ chối nhẹ nhàng và mời hỏi nội dung trong giáo trình.");
+  }
+  return lines.join("\n") + "\n";
+}
+
+/** Ghi log lượt kiểm thử (kind="playground") — tự nuốt lỗi như directChat. */
+function logPlaygroundTurn(req, { question, answer, materials }) {
+  try {
+    void recordChatLog({
+      userId: req?.user?.sub,
+      username: req?.user?.username ?? null,
+      role: req?.user?.role || null,
+      grade: null,
+      classId: null,
+      question,
+      answer,
+      sources: materials,
+      conversationId: null,
+      kind: "playground",
+    }).catch(() => {});
+  } catch { /* ghi log không bao giờ được làm hỏng lượt kiểm thử */ }
+}
+
+async function directPlaygroundChat(body, req) {
+  const message = normalizeChatMessage(body.message);
+  const history = normalizeChatHistory(body.history);
+  const cfg = normalizePlaygroundConfig(body.config);
+  const displayName = (req?.user?.name && String(req.user.name).trim())
+    || (req?.user?.username && String(req.user.username).trim()) || null;
+
+  // Truy xuất bằng ĐÚNG module chat thật dùng, trên bài học ĐÃ XUẤT BẢN.
+  // Lỗi đọc dữ liệu phụ bị nuốt như buildChatContext: thiếu ngữ cảnh thì
+  // vẫn xử lý tiếp (strictScope sẽ tự chốt ở bước sau).
+  let materials = [];
+  try {
+    materials = await searchLessonMaterials(message, { detailed: true });
+  } catch (e) {
+    console.warn(`[ai] Không truy xuất được bài học cho playground: ${e?.message || e}`);
+  }
+
+  // Nguồn trả về client: dữ liệu truy xuất THẬT kèm điểm khớp từ khoá.
+  const sources = materials.map((m) => omitNulls({
+    title: m.title,
+    subject: m.subject,
+    grade: m.grade,
+    score: m.score,
+    matchedKeywords: m.matchedKeywords?.length ? m.matchedKeywords : undefined,
+    matchedPhrases: m.matchedPhrases?.length ? m.matchedPhrases : undefined,
+    excerpts: (m.excerpts || []).map((text, i) => ({ text, score: m.excerptScores?.[i] ?? null })),
+  }));
+
+  // Guardrail phạm vi ở tầng Backend: bật strictScope mà không có đoạn
+  // nào khớp → từ chối theo khuôn, KHÔNG gọi model.
+  if (cfg.strictScope && materials.length === 0) {
+    logPlaygroundTurn(req, { question: message, answer: STRICT_SCOPE_REFUSAL, materials: [] });
+    return { answer: STRICT_SCOPE_REFUSAL, refused: true, refusalReason: "strict_scope_no_context", sources: [] };
+  }
+
+  const promptCtx = {
+    dateTimeText: vietnamNowText(),
+    modelName: (config.ollama.provider === "groq" ? await getEffectiveGroqModel() : config.ollama.model) || null,
+    modelProvider: config.ollama.provider === "groq" ? "Groq" : "Ollama",
+    materials,
+  };
+  const system = chatSystem(displayName, cfg.subject, null, promptCtx)
+    + playgroundConfigSection(cfg, materials);
+  const messages = chatMessages(history, message);
+  const answer = await llmCompleteWithOptions(system, messages,
+    cfg.temperature != null ? { temperature: cfg.temperature } : {});
+
+  let cleaned = stripLeadingQuotes(String(answer).trim());
+  let truncated = false;
+  if (cleaned.length > CHAT_MAX_ANSWER_LENGTH) {
+    cleaned = cleaned.substring(0, CHAT_MAX_ANSWER_LENGTH) + "\n\n(AI Service đã cắt nội dung vì quá dài.)";
+    truncated = true;
+  }
+  logPlaygroundTurn(req, { question: message, answer: cleaned, materials });
+  return { answer: cleaned, refused: false, truncated, sources };
 }
 
 // ─────────────────────── Sinh câu hỏi ───────────────────────
@@ -628,6 +811,7 @@ async function directLearningAnalysis(body, req) {
 
 const DIRECT_OPS = {
   "/api/ai/chat": { bucket: "chat", run: directChat },
+  "/api/ai/playground/chat": { bucket: "chat", run: directPlaygroundChat },
   "/api/ai/explain": { bucket: "explain", run: directExplain },
   "/api/ai/quizzes/generate": { bucket: "quiz", run: directGenerateQuiz },
   "/api/ai/generate-question": { bucket: "quiz", run: directGenerateQuestionLegacy },

@@ -276,6 +276,50 @@ export async function chat({ message, subject, topic, conversationId, history = 
 }
 
 /**
+ * Kiểm thử Gia sư AI ở trang AI Studio (Tab "Kiểm thử RAG") — CHỈ giáo
+ * viên/admin. Gửi kèm `config` là BẢN NHÁP của Tab Cấu hình (chưa lưu ở
+ * đâu) để backend thử đúng cấu hình đó trên pipeline chat thật: truy
+ * xuất bài học đã xuất bản theo từ khoá + model hiện hành.
+ *
+ * @param {object}  p
+ * @param {string}  p.message
+ * @param {Array<{role:"user"|"assistant", content:string}>} [p.history]
+ * @param {object} [p.config] { systemPrompt?, temperature?, strictScope?,
+ *   requireCitation?, refuseOffTopic?, level?, subject? }
+ * @param {AbortSignal} [p.signal]
+ * @returns {Promise<{answer: string, refused: boolean, refusalReason?: string,
+ *   truncated?: boolean, sources: Array<{title: string, subject: string|null,
+ *   grade: number|null, score: number, matchedKeywords?: string[],
+ *   matchedPhrases?: string[], excerpts: Array<{text: string, score: number|null}>}>}>}
+ *   `score` là điểm khớp TỪ KHOÁ của cơ chế truy xuất (cụm 2 từ = 2 điểm,
+ *   từ đơn = 1 điểm) — không phải độ tương đồng vector.
+ */
+export async function playgroundChat({ message, history = [], config, signal } = {}) {
+  const text = String(message || "").trim();
+  if (!text) {
+    throw new AiServiceError("Bạn chưa nhập câu hỏi.", { kind: "badRequest" });
+  }
+  if (text.length > 2000) {
+    throw new AiServiceError("Câu hỏi quá dài (tối đa 2000 ký tự).", { kind: "badRequest" });
+  }
+
+  const trimmed = history.slice(-10).map((h) => ({
+    role: h.role === "assistant" ? "assistant" : "user",
+    content: String(h.content || "").slice(0, 1000),
+  }));
+
+  const json = await aiFetch("/api/ai/playground/chat", {
+    body: { message: text, history: trimmed, config: config || undefined },
+    signal,
+  });
+
+  if (!json || typeof json.answer !== "string" || !json.answer.trim()) {
+    throw new AiServiceError("AI không trả lời được. Hãy thử lại.", { kind: "badResponse" });
+  }
+  return json;
+}
+
+/**
  * Phân tích kết quả học tập.
  *
  * `studentId` là TUỲ CHỌN và KHÔNG ĐƯỢC TIN: học sinh chỉ xem được chính mình, giáo viên

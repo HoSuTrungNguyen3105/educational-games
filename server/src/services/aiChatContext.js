@@ -170,6 +170,23 @@ export function matchScore(text, keywords, phrases) {
   return score;
 }
 
+/**
+ * Chi tiết khớp của một đoạn văn: cùng cách tính điểm với matchScore (cụm
+ * 2 từ = 2 điểm, từ đơn = 1 điểm) nhưng kèm DANH SÁCH từ/cụm đã khớp thật.
+ * Dùng cho Kiểm thử Gia sư AI (AI Studio) để hiển thị minh bạch vì sao một
+ * đoạn được truy xuất — đây là điểm khớp TỪ KHOÁ, không phải độ tương đồng
+ * vector/embedding. Hàm thuần để test.
+ */
+export function matchDetails(text, keywords, phrases) {
+  const hay = String(text || "").toLowerCase();
+  const matchedKeywords = [];
+  const matchedPhrases = [];
+  let score = 0;
+  for (const p of phrases) if (hay.includes(p)) { score += 2; matchedPhrases.push(p); }
+  for (const k of keywords) if (hay.includes(k)) { score += 1; matchedKeywords.push(k); }
+  return { score, keywords: matchedKeywords, phrases: matchedPhrases };
+}
+
 const TEXT_ELEMENT_TYPES = new Set(["title", "text", "note"]);
 
 /**
@@ -198,9 +215,15 @@ function collapseWs(text) {
 
 /**
  * Tìm tối đa 2 bài học đã xuất bản liên quan nhất tới câu hỏi.
- * @returns {Promise<Array<{title, subject, grade, excerpts: string[]}>>}
+ * `options.detailed` (chỉ Kiểm thử Gia sư AI ở AI Studio dùng): mỗi kết quả
+ * kèm thêm `score` (tổng điểm khớp từ khoá của bài), `matchedKeywords`,
+ * `matchedPhrases` (từ/cụm THẬT đã khớp) và `excerptScores` (điểm của từng
+ * đoạn trích, thẳng hàng theo chỉ số với `excerpts`). Đường chat thường
+ * KHÔNG truyền cờ này — shape trả về giữ nguyên như cũ.
+ * @returns {Promise<Array<{title, subject, grade, excerpts: string[]>>>}
  */
-export async function searchLessonMaterials(message) {
+export async function searchLessonMaterials(message, options = {}) {
+  const detailed = options?.detailed === true;
   const keywords = extractKeywords(message);
   const phrases = extractPhrases(message);
   if (keywords.length === 0 && phrases.length === 0) return [];
@@ -222,26 +245,51 @@ export async function searchLessonMaterials(message) {
   const scored = [];
   for (const lesson of lessons) {
     const chunks = lessonTextChunks(lesson)
-      .map((text) => ({ text, score: matchScore(text, keywords, phrases) }))
+      .map((text) => {
+        const base = { text, score: matchScore(text, keywords, phrases) };
+        // Chi tiết khớp chỉ tính khi caller cần hiển thị (playground) —
+        // đường chat thường giữ nguyên chi phí và shape như cũ.
+        if (detailed) {
+          const d = matchDetails(text, keywords, phrases);
+          base.matchedKeywords = d.keywords;
+          base.matchedPhrases = d.phrases;
+        }
+        return base;
+      })
       .filter((c) => c.score >= 2)
       // Hoà điểm thì ưu tiên đoạn DÀI hơn: tiêu đề/mô tả ngắn không được
       // chiếm suất trích dẫn của đoạn nội dung thật.
       .sort((a, b) => b.score - a.score || b.text.length - a.text.length);
     if (chunks.length === 0) continue;
-    scored.push({
+    const top = chunks.slice(0, MAX_EXCERPTS_PER_LESSON);
+    const entry = {
       lesson,
       total: chunks.reduce((s, c) => s + c.score, 0),
-      excerpts: chunks.slice(0, MAX_EXCERPTS_PER_LESSON)
-        .map((c) => collapseWs(c.text).slice(0, MAX_EXCERPT_CHARS)),
-    });
+      excerpts: top.map((c) => collapseWs(c.text).slice(0, MAX_EXCERPT_CHARS)),
+    };
+    if (detailed) {
+      entry.excerptScores = top.map((c) => c.score);
+      entry.matchedKeywords = [...new Set(chunks.flatMap((c) => c.matchedKeywords || []))];
+      entry.matchedPhrases = [...new Set(chunks.flatMap((c) => c.matchedPhrases || []))];
+    }
+    scored.push(entry);
   }
   scored.sort((a, b) => b.total - a.total);
-  return scored.slice(0, MAX_MATERIAL_LESSONS).map(({ lesson, excerpts }) => ({
-    title: lesson.title,
-    subject: lesson.subject ?? null,
-    grade: lesson.grade ?? null,
-    excerpts,
-  }));
+  return scored.slice(0, MAX_MATERIAL_LESSONS).map((entry) => {
+    const out = {
+      title: entry.lesson.title,
+      subject: entry.lesson.subject ?? null,
+      grade: entry.lesson.grade ?? null,
+      excerpts: entry.excerpts,
+    };
+    if (detailed) {
+      out.score = entry.total;
+      out.matchedKeywords = entry.matchedKeywords;
+      out.matchedPhrases = entry.matchedPhrases;
+      out.excerptScores = entry.excerptScores;
+    }
+    return out;
+  });
 }
 
 // ─────────── Danh tính theo vai trò + khối lớp (update_features.md) ───────────
