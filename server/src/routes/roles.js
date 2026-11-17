@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { listRolesPaged } from "../services/permissionService.js";
 import { sendSuccess, buildPagination } from "../utils/response.js";
+import { respondWithPagedRange } from "../utils/rangeList.js";
 
 const router = Router();
 
@@ -14,6 +15,12 @@ router.use(authenticate);
 router.get("/", requireRoles("admin", "teacher"), async (req, res, next) => {
   try {
     const q = req.query || {};
+    // ?from=&to= (phân đoạn bản ghi): hỗ trợ song song kiểu page/perPage cũ —
+    // thu thập qua listRolesPaged rồi cắt theo hợp đồng rangeList.
+    if (await respondWithPagedRange(req, res, async (p, pp) => {
+      const r = await listRolesPaged({ ...q, page: p, perPage: pp });
+      return { items: r.data, total: r.total };
+    })) return;
     const { data, total, page, perPage } = await listRolesPaged(q);
     sendSuccess(res, data, "success", buildPagination({
       page,

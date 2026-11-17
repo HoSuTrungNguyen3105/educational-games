@@ -4,6 +4,7 @@ import * as questionService from "../services/questionService.js";
 import * as gameVersionService from "../services/gameVersionService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
+import { parseRange, sliceRange, sendRangedList } from "../utils/rangeList.js";
 import { parseBulkIds, runBulkDelete, bulkResultPayload } from "../utils/bulkDelete.js";
 import { record as audit, AUDIT } from "../services/auditService.js";
 
@@ -28,6 +29,15 @@ router.post("/answer", async (req, res, next) => {
 
 router.get("/", async (req, res, next) => {
   try {
+    // ?from=&to= theo hợp đồng rangeList (dashboard quản lí game): tham số
+    // không hợp lệ → 400; hợp lệ → cắt đúng đoạn trên toàn bộ danh sách đã
+    // lọc. Không có from/to → giữ nguyên đường cũ (service tự cắt mặc định).
+    const range = parseRange(req.query);
+    if (range.present) {
+      if (range.error) return sendError(res, range.error, 400);
+      const { items, total } = await gameService.list({ ...req.query, rangeAll: true });
+      return sendRangedList(res, sliceRange(items, range), range, total);
+    }
     const { items, total, from, to } = await gameService.list(req.query);
     const pagination = buildPagination({
       page: req.query.page, perPage: req.query.per_page, total,

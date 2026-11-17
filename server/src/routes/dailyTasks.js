@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 import {
   getDailyTasks,
   getUserDailyStatus,
@@ -19,8 +20,12 @@ const router = Router();
 
 // ── Public / Auth ──
 
-router.get("/", async (_req, res, next) => {
-  try { sendSuccess(res, await getDailyTasks()); } catch (e) { next(e); }
+router.get("/", async (req, res, next) => {
+  try {
+    const data = await getDailyTasks();
+    if (respondWithRange(req, res, data)) return;
+    sendSuccess(res, data);
+  } catch (e) { next(e); }
 });
 
 router.get("/me", authenticate, async (req, res, next) => {
@@ -59,8 +64,12 @@ router.get("/admin/stats", authenticate, requireRoles("admin"), async (_req, res
   try { sendSuccess(res, await getAdminStats()); } catch (e) { next(e); }
 });
 
-router.get("/admin/progress", authenticate, requireRoles("admin"), async (_req, res, next) => {
-  try { sendSuccess(res, await getAllUsersProgress()); } catch (e) { next(e); }
+router.get("/admin/progress", authenticate, requireRoles("admin"), async (req, res, next) => {
+  try {
+    const data = await getAllUsersProgress();
+    if (respondWithRange(req, res, data)) return;
+    sendSuccess(res, data);
+  } catch (e) { next(e); }
 });
 
 router.post("/admin/reset", authenticate, requireRoles("admin"), async (req, res, next) => {

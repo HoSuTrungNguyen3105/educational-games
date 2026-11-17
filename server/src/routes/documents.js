@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as documentService from "../services/documentService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError, buildPagination } from "../utils/response.js";
+import { respondWithPagedRange } from "../utils/rangeList.js";
 
 // Tài liệu giáo viên — Teacher Document Studio (collection `documents`).
 // Chỉ có MỘT bề mặt: giáo viên/admin, chỉ chủ sở hữu (service kiểm tra
@@ -18,6 +19,10 @@ function handleError(res, e) {
 router.get("/mine", authenticate, requireRoles("teacher", "admin"), async (req, res) => {
   try {
     const { search, docType, page, perPage } = req.query;
+    // ?from=&to= (phân đoạn bản ghi cho dashboard): thu thập qua các trang
+    // page/perPage của service rồi cắt theo hợp đồng rangeList.
+    if (await respondWithPagedRange(req, res, (p, pp) =>
+      documentService.listMyDocuments(req.user.sub, { search, docType, page: p, perPage: pp }))) return;
     const { items, total } = await documentService.listMyDocuments(req.user.sub, { search, docType, page, perPage });
     sendSuccess(res, items, "success",
       buildPagination({ page, perPage, total, keyword: search || "" }));

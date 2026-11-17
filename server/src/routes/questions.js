@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as questionService from "../services/questionService.js";
 import { authenticate, optionalAuth, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError, buildPagination } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 import { parseBulkQuestionItems, runBulkDeleteQuestions, bulkResultPayload } from "../utils/bulkDelete.js";
 
 const router = Router();
@@ -23,6 +24,7 @@ router.get("/", optionalAuth, async (req, res, next) => {
     const questions = await questionService.listAll({ limit: 500 });
     const isAdmin = req.user && (req.user.role === "teacher" || req.user.role === "admin");
     const safe = stripQuestions(questions, { includeCorrectAnswer: isAdmin });
+    if (respondWithRange(req, res, safe)) return;
     const pagination = buildPagination({ total: safe.length });
     sendSuccess(res, safe, "success", pagination);
   } catch (e) {
@@ -36,6 +38,7 @@ router.get("/game/:gameId", optionalAuth, async (req, res, next) => {
     const questions = await questionService.listByGame(req.params.gameId, { inputMode });
     const isAdmin = req.user && (req.user.role === "teacher" || req.user.role === "admin");
     const safe = stripQuestions(questions, { includeCorrectAnswer: isAdmin });
+    if (respondWithRange(req, res, safe)) return;
     const pagination = buildPagination({ total: safe.length });
     sendSuccess(res, safe, "success", pagination);
   } catch (e) {

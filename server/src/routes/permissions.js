@@ -13,6 +13,7 @@ import {
   PERMISSION_CATALOG,
 } from "../services/permissionService.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
+import { respondWithRange, respondWithPagedRange } from "../utils/rangeList.js";
 import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
@@ -26,6 +27,12 @@ router.use(authenticate);
 router.get("/", requireRoles("admin", "teacher"), async (req, res, next) => {
   try {
     const q = req.query || {};
+    // ?from=&to= (phân đoạn bản ghi): hỗ trợ song song kiểu page/perPage cũ —
+    // thu thập qua listPermissionsPaged rồi cắt theo hợp đồng rangeList.
+    if (await respondWithPagedRange(req, res, async (p, pp) => {
+      const r = await listPermissionsPaged({ ...q, page: p, perPage: pp });
+      return { items: r.data, total: r.total };
+    })) return;
     const { data, total, page, perPage } = await listPermissionsPaged(q);
     sendSuccess(res, data, "success", buildPagination({
       page,
@@ -67,9 +74,10 @@ router.get("/catalog", requireRoles("admin", "teacher"), (_req, res) => {
 });
 
 // GET /api/permissions/roles — list roles + account counts + matrix
-router.get("/roles", requireRoles("admin", "teacher"), async (_req, res, next) => {
+router.get("/roles", requireRoles("admin", "teacher"), async (req, res, next) => {
   try {
     const data = await listRoles();
+    if (respondWithRange(req, res, data)) return;
     sendSuccess(res, data, "success", buildPagination({ total: data.length }));
   } catch (e) {
     next(e);

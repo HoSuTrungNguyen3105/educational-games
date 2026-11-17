@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError, sendCreated } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 import { getCollection } from "../db.js";
 import { renderItemParts } from "../lib/avatarRenderer.js";
 
@@ -310,6 +311,9 @@ router.get("/items", async (req, res, next) => {
       );
     }
     const tmpl = await getCollection(TEMPLATE).findOne({ _id: "default" });
+    // ?from=&to=: data là mảng items đã cắt (không có thì giữ nguyên object
+    // gồm items + categories + template như cũ).
+    if (respondWithRange(req, res, items)) return;
     sendSuccess(res, {
       items,
       categories: CATEGORIES,

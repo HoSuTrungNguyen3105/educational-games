@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as resultService from "../services/resultService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError, buildPagination } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 
 const router = Router();
 
@@ -20,6 +21,7 @@ router.delete("/orphans", authenticate, requireRoles("admin"), async (req, res, 
 router.get("/", async (req, res, next) => {
   try {
     const data = await resultService.listAll();
+    if (respondWithRange(req, res, data)) return;
     const pagination = buildPagination({ total: data.length });
     sendSuccess(res, data, "success", pagination);
   } catch (e) {
@@ -30,6 +32,7 @@ router.get("/", async (req, res, next) => {
 router.get("/game/:gameId", async (req, res, next) => {
   try {
     const data = await resultService.listByGame(req.params.gameId);
+    if (respondWithRange(req, res, data)) return;
     const pagination = buildPagination({ total: data.length });
     sendSuccess(res, data, "success", pagination);
   } catch (e) {

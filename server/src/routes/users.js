@@ -5,6 +5,7 @@ import { getCheckinStatus, performCheckin } from "../services/checkinService.js"
 import * as petService from "../services/petService.js";
 import * as petCatalog from "../services/petCatalog.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
@@ -32,147 +33,11 @@ router.post("/me/check-in", async (req, res) => {
   }
 });
 
-// ── Thú cưng của chính mình ─────────────────────────────────────────────
-// Trước đây là router riêng /api/pet — đã GỘP vào đây theo chỉ đạo của
-// Nguyên (pet là dữ liệu của hồ sơ người dùng, không cần API riêng).
-// Logic giữ nguyên ở services/petService.js + services/petCatalog.js;
-// trạng thái "nurture" (cấp/EXP/tâm tính) nằm ở collection `userPets`, còn
-// `look` (bộ đồ DressUp app vẽ) đọc từ `users.pet` — petService.serialize
-// trả kèm cả hai như endpoint cũ.
-//
-//   GET  /api/users/me/pet        pet hiện tại + `look` (tự tạo nếu chưa có)
-//   PUT  /api/users/me/pet        đổi tên / loài / màu / trang phục legacy
-//   POST /api/users/me/pet/exp    cộng EXP khi trả lời đúng (game gọi)
-//   POST /api/users/me/pet/mood   đổi tâm tính
-//   POST /api/users/me/pet/reset  đặt lại mặc định
-router.get("/me/pet", async (req, res, next) => {
-  try {
-    const pet = await petService.getByUser(req.user.sub);
-    // `look` = bộ đồ DressUp trong hồ sơ — diện mạo thật mà app vẽ.
-    sendSuccess(res, petService.serialize(pet, await petService.getLook(req.user.sub)));
-  } catch (e) {
-    next(e);
-  }
-});
-
-router.put("/me/pet", async (req, res, next) => {
-  try {
-    const result = await petService.updateLook(req.user.sub, req.body || {});
-    if (!result.ok) {
-      return sendError(res, result.errors?.join("; ") || "Dữ liệu không hợp lệ", 400);
-    }
-    sendSuccess(res, result.pet);
-  } catch (e) {
-    next(e);
-  }
-});
-
-router.post("/me/pet/exp", async (req, res, next) => {
-  try {
-    const { amount, correct, wrong } = req.body || {};
-    const result = await petService.addExp(
-      req.user.sub,
-      Number(amount) || 0,
-      { correct: Number(correct) || 0, wrong: Number(wrong) || 0 }
-    );
-    sendSuccess(res, result);
-  } catch (e) {
-    next(e);
-  }
-});
-
-router.post("/me/pet/mood", async (req, res, next) => {
-  try {
-    const result = await petService.setMood(req.user.sub, req.body?.mood);
-    if (!result.ok) return sendError(res, result.errors?.join("; ") || "mood không hợp lệ", 400);
-    sendSuccess(res, result.pet);
-  } catch (e) {
-    next(e);
-  }
-});
-
-router.post("/me/pet/reset", async (req, res, next) => {
-  try {
-    const result = await petService.reset(req.user.sub);
-    sendSuccess(res, result.pet);
-  } catch (e) {
-    next(e);
-  }
-});
-
-// ── ADMIN: quản lý danh mục thú cưng (giáo viên + quản trị) ─────────────
-// Trước đây là /api/pet/admin/* — gộp vào /api/users/admin/pet-catalog.
-//   GET    /api/users/admin/pet-catalog              toàn bộ danh mục + số pet đang dùng
-//   POST   /api/users/admin/pet-catalog/reset        khôi phục danh mục mặc định
-//   POST   /api/users/admin/pet-catalog/:kind        thêm loài / màu / trang phục
-//   PUT    /api/users/admin/pet-catalog/:kind/:id    sửa
-//   DELETE /api/users/admin/pet-catalog/:kind/:id    xoá (tự dọn pet đang dùng)
-const petCatalogAdmin = [requireRoles("teacher", "admin")];
-
-/**
- * Toàn bộ danh mục cho trang admin, kèm `usage` = số pet đang dùng mỗi mục
- * để admin biết xoá đi sẽ ảnh hưởng bao nhiêu người trước khi bấm nút.
- */
-router.get("/admin/pet-catalog", ...petCatalogAdmin, async (_req, res, next) => {
-  try {
-    await petCatalog.ensureLoaded();
-    const [species, colors, outfits] = [
-      petCatalog.listSpecies(),
-      petCatalog.listColors(),
-      petCatalog.listOutfits(),
-    ];
-
-    const usage = {};
-    for (const s of species) usage[`species:${s.id}`] = await petCatalog.countPetsUsing("species", s.id);
-    for (const c of colors) usage[`color:${c.id}`] = await petCatalog.countPetsUsing("color", c.id);
-    for (const o of outfits) usage[`outfit:${o.id}`] = await petCatalog.countPetsUsing("outfit", o.id);
-
-    sendSuccess(res, {
-      species, colors, outfits,
-      slots: petCatalog.SLOTS,
-      slotLabels: petCatalog.SLOT_LABEL,
-      moods: petCatalog.MOOD_LIST,
-      usage,
-    });
-  } catch (e) { next(e); }
-});
-
-/** Khôi phục danh mục mặc định — xoá sạch collection rồi seed lại. */
-// Đặt TRƯỚC `/:kind` để "reset" không bị nuốt vào :kind.
-router.post("/admin/pet-catalog/reset", ...petCatalogAdmin, async (_req, res, next) => {
-  try {
-    const result = await petCatalog.resetToSeed();
-    sendSuccess(res, result);
-  } catch (e) { next(e); }
-});
-
-router.post("/admin/pet-catalog/:kind", ...petCatalogAdmin, async (req, res, next) => {
-  try {
-    const result = await petCatalog.createItem(req.params.kind, req.body || {});
-    if (!result.ok) return sendError(res, result.errors?.join("; ") || "Không tạo được", 400);
-    sendSuccess(res, result.item);
-  } catch (e) { next(e); }
-});
-
-router.put("/admin/pet-catalog/:kind/:id", ...petCatalogAdmin, async (req, res, next) => {
-  try {
-    const result = await petCatalog.updateItem(req.params.kind, req.params.id, req.body || {});
-    if (!result.ok) return sendError(res, result.errors?.join("; ") || "Không cập nhật được", 400);
-    sendSuccess(res, result.item);
-  } catch (e) { next(e); }
-});
-
-router.delete("/admin/pet-catalog/:kind/:id", ...petCatalogAdmin, async (req, res, next) => {
-  try {
-    const result = await petCatalog.deleteItem(req.params.kind, req.params.id);
-    if (!result.ok) return sendError(res, result.errors?.join("; ") || "Không xoá được", 400);
-    sendSuccess(res, { deleted: req.params.id, affectedPets: result.affectedPets || 0 });
-  } catch (e) { next(e); }
-});
-
-router.get("/", requireRoles("teacher", "admin"), async (_req, res, next) => {
+router.get("/", requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
     const data = await listUsers();
+    // ?from=&to= (phân đoạn bản ghi cho dashboard) — không có thì giữ nguyên.
+    if (respondWithRange(req, res, data)) return;
     const pagination = buildPagination({ total: data.length });
     sendSuccess(res, data, "success", pagination);
   } catch (e) {

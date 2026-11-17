@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
+import { respondWithRange } from "../utils/rangeList.js";
 import * as examResultService from "../services/examResultService.js";
 
 const router = Router();
@@ -39,6 +40,7 @@ adminRouter.use(requireRoles("teacher", "admin"));
 adminRouter.get("/exam-results", async (req, res, next) => {
   try {
     const list = await examResultService.listAll({ limit: req.query.limit });
+    if (respondWithRange(req, res, list)) return;
     sendSuccess(res, list);
   } catch (e) {
     next(e);
