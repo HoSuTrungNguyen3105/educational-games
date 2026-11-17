@@ -18,9 +18,9 @@ import PageStrip from "./studio/PageStrip.jsx";
 import ImagePickerModal from "./studio/ImagePicker.jsx";
 import "./studio/studio.css";
 
-// StudioEditor — trang soạn bài học của EduPlay AI Studio
-// (/dashboard/studio/:lessonId, trong TeacherLayout như mọi trang quản
-// trị khác — xem ghi chú layout ở báo cáo đợt 2).
+// StudioEditor — trang soạn bài học của trang Tạo bài học AI
+// (/dashboard/ai-lesson-creator/:lessonId, render toàn màn hình không
+// sidebar — xem STANDALONE_EDITORS ở TeacherApp).
 // Bố cục bám Phần B đặc tả: header (§5.1) · rail + thư viện trái
 // (§5.2/5.3) · canvas giữa (§5.4) · panel thuộc tính phải (§5.5) ·
 // dải trang dưới (§5.6) · thanh trạng thái (§5.7).
@@ -107,8 +107,8 @@ export default function StudioEditor({ lessonId, showToast }) {
       if (bypassRef.current) { bypassRef.current = false; return; }
       if (!edRef.current?.dirty) return;
       const h = window.location.hash;
-      if (!h.startsWith(`#/dashboard/studio/${lessonId}`)) {
-        window.location.hash = `#/dashboard/studio/${lessonId}`;
+      if (!h.startsWith(`#/dashboard/ai-lesson-creator/${lessonId}`)) {
+        window.location.hash = `#/dashboard/ai-lesson-creator/${lessonId}`;
         leaveGuard(h);
       }
     };
@@ -117,8 +117,8 @@ export default function StudioEditor({ lessonId, showToast }) {
   }, [lessonId, leaveGuard]);
 
   const goBack = () => {
-    if (!ed.dirty) { navigate("/dashboard/studio"); return; }
-    leaveGuard("#/dashboard/studio");
+    if (!ed.dirty) { navigate("/dashboard/ai-lesson-creator"); return; }
+    leaveGuard("#/dashboard/ai-lesson-creator");
   };
 
   // Undo/redo bằng phím (bỏ qua khi đang gõ trong ô nhập).
@@ -193,7 +193,7 @@ export default function StudioEditor({ lessonId, showToast }) {
           <ArrowLeft className="w-4 h-4" /> Danh sách
         </button>
         <span className="studio-header-brand hidden xl:inline-flex items-center gap-1.5 font-display font-bold text-ink">
-          <Sparkles className="w-4.5 h-4.5" style={{ color: "#8B5CF6" }} /> AI Studio
+          <Sparkles className="w-4.5 h-4.5" style={{ color: "#8B5CF6" }} /> Tạo bài học AI
         </span>
         <input
           value={ed.doc.title}

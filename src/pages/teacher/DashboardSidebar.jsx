@@ -19,6 +19,7 @@ import {
   Move,
   Image,
   Lock,
+  PenLine,
   Sparkles,
   History,
   Cake,
@@ -68,6 +69,7 @@ const SECTIONS = [
     id:"AI",
     label: "AI",
     items : [
+            { id: "admin-ai-studio", label: "AI Studio", icon: Sparkles, route: "/dashboard/ai-studio", permission: null },
             { id: "admin-ai-analysis", label: "Phân tích AI", icon: Sparkles, route: "/dashboard/ai-analysis", permission: "reports.view" },
             // Lịch sử hỏi AI chỉ ADMIN xem (API chốt requireRoles admin).
             // reports.delete là quyền giáo viên KHÔNG có trong bảng tĩnh —
@@ -85,7 +87,7 @@ const SECTIONS = [
       { id: "admin-categories", label: "Categories", icon: Tag, route: "/dashboard/categories", permission: "categories.manage" },
       { id: "admin-templates", label: "Templates", icon: Palette, route: "/dashboard/templates", permission: "templates.manage" },
       { id: "admin-birthday", label: "Trang sinh nhật", icon: Cake, route: "/dashboard/birthday", permission: "templates.edit" },
-      { id: "admin-studio", label: "AI Studio", icon: Sparkles, route: "/dashboard/studio", permission: null },
+      { id: "admin-lesson-creator", label: "Tạo bài học AI", icon: PenLine, route: "/dashboard/ai-lesson-creator", permission: null },
       { id: "admin-documents", label: "Soạn tài liệu", icon: FileText, route: "/dashboard/documents", permission: null },
       { id: "admin-document-templates", label: "Thư viện mẫu", icon: LayoutTemplate, route: "/dashboard/documents/templates", permission: null },
       { id: "admin-game-config", label: "Cấu hình game", icon: IconSettings, route: "/dashboard/game-config", permission: "games.manage" },
