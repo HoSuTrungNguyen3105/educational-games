@@ -1122,9 +1122,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             <CheckinCard state={checkinState} onCheckedIn={handleCheckedIn} className="gq-checkin--mobile" />
           )}
 
-          <button className="gq-mbanner" onClick={handleRandomPlay} aria-label="Chơi ngay">
-            <img src={`${import.meta.env.BASE_URL}banner.png`} alt="" />
-          </button>
         </div>
 
         {/* ─────────── KHUNG CẢNH: HEADER + HERO trên nền tranh ───────────
