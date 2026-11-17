@@ -19,6 +19,8 @@ import SupportRequestWidget from '../components/support/SupportRequestWidget.jsx
 import { PetAvatar } from '../components/PetAvatar.jsx'
 import { usePet, moodLabel } from '../pet/petApi.js'
 import DailyGiftModal from '../components/home/DailyGiftModal.jsx'
+import CheckinCard from '../components/home/CheckinCard.jsx'
+import { useCheckin } from '../hooks/useCheckin.js'
 import { useKidSettings, ageBandLabel } from '../lib/kidSettings.js'
 import { useScrollLock } from '../hooks/useScrollLock.js'
 import { requestNotificationPermission, onForegroundMessage, getPushSupportStatus } from '../firebase/messaging.js'
@@ -373,6 +375,18 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
   // phủ của sheet → bấm xong không thấy phản hồi gì, nhất là với khách.
   const [cacheMsg, setCacheMsg] = useState("");
   const pet = usePet();
+
+  // Điểm danh mỗi ngày: chỉ học sinh mới tải trạng thái + thấy thẻ (server
+  // cho mọi tài khoản đăng nhập, nhưng UI chốt cho học sinh). Lỗi tải thì
+  // hook giữ status=null và CheckinCard tự ẩn.
+  const checkinState = useCheckin(userAuth?.user?.role === "student");
+  // Điểm danh xong server trả số xu MỚI → cập nhật luôn pill ví trên header.
+  const handleCheckedIn = useCallback((result) => {
+    if (typeof result?.coins === "number") {
+      setUserCoins(result.coins);
+      setWalletLoaded(true);
+    }
+  }, []);
 
   // Sheet menu đang mở thì khoá cuộn trang nền (chuẩn chung của app;
   // hộp quà tự khoá trong DailyGiftModal, modal nhập mã qua Modal dùng chung).
@@ -1101,6 +1115,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             ))}
           </div>
 
+          {/* Điểm danh mỗi ngày — bản mobile (bản desktop nằm dưới playbar,
+              dùng chung state checkinState). Chỉ học sinh. */}
+          {userAuth?.user?.role === "student" && (
+            <CheckinCard state={checkinState} onCheckedIn={handleCheckedIn} className="gq-checkin--mobile" />
+          )}
+
           <button className="gq-mbanner" onClick={handleRandomPlay} aria-label="Chơi ngay">
             <img src={`${import.meta.env.BASE_URL}banner.png`} alt="" />
           </button>
@@ -1304,7 +1324,6 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             <span className="gq-play__lbl">Chơi ngay</span>
           </button>
         </div>
-
         {/* ─────────── Ô TÌM KIẾM GAME ───────────
             Nằm ngay dưới hero/lời chào (sau hàng nút tắt). Khối này
             không thuộc .gq-scene/.gq-mhome nên hiện ở cả desktop lẫn
@@ -1365,6 +1384,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               ))}
             </HomeRail>
           </section>
+
+        {/* ─────────── ĐIỂM DANH MỖI NGÀY ───────────
+            Ngay dưới khối hero/playbar, chỉ học sinh đã đăng nhập. Bản
+            mobile nằm trong .gq-mhome; bản này ẩn ở ≤820px (CSS). */}
+        {userAuth?.user?.role === "student" && (
+          <CheckinCard state={checkinState} onCheckedIn={handleCheckedIn} className="gq-checkin--desktop" />
         )}
 
         {/* ─────────── HÔM NAY CỦA BÉ ─────────── */}
