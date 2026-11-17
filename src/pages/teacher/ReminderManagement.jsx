@@ -3,6 +3,7 @@ import { Bell, Smartphone } from "lucide-react";
 import { reminderService } from "../../services/api.js";
 import { ConfirmModal, EmptyState, GridCard, GridToolbar, IconAdd, IconBell, IconCheckCircle, IconEdit, IconTrash, Loader, ToggleSwitch, useViewMode } from '../../components/ui';
 import { matchesQuery } from "../../lib/searchText.js";
+import { rangeAll } from "../../lib/rangePagination.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import DateTimePicker from "../../components/DateTimePicker.jsx";
 import VibratePatternPicker from "../../components/VibratePatternPicker.jsx";
@@ -63,8 +64,9 @@ export default function ReminderManagement({ showToast }) {
 
   const load = useCallback(async () => {
     try {
-      const data = await reminderService.list();
-      setReminders(data || []);
+      // Lọc/hiển thị toàn bộ nhắc nhở ở client → from/to "lấy tất cả".
+      const res = await reminderService.list(rangeAll());
+      setReminders(res.items || []);
     } catch (e) {
       showToast?.("Lỗi tải danh sách nhắc nhở", "error");
     } finally {

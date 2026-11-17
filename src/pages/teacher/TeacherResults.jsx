@@ -4,6 +4,7 @@ import { StampToken, StatusBadge, Loader, ErrorState, EmptyState, ViewToggle, us
 import { BarChart3, Download } from 'lucide-react'
 import { rankMedal } from '../../lib/utils.js'
 import { exportCsv } from '../../lib/exportCsv.js'
+import { rangeAll } from '../../lib/rangePagination.js'
 
 export default function TeacherResults({ gameId, onBack }) {
   const [game, setGame] = useState(null);
@@ -12,7 +13,8 @@ export default function TeacherResults({ gameId, onBack }) {
 
   const load = useCallback(() => {
     setResults(null); setError(null);
-    Promise.all([gameService.get(gameId), resultService.listByGame(gameId)]).then(([g, r]) => { setGame(g); setResults(r); }).catch(e => setError(e.message || "Lỗi tải kết quả"));
+    // Bảng xếp hạng + xuất CSV cần toàn bộ kết quả của game → from/to "lấy tất cả".
+    Promise.all([gameService.get(gameId), resultService.listByGame(gameId, rangeAll())]).then(([g, r]) => { setGame(g); setResults(r.items); }).catch(e => setError(e.message || "Lỗi tải kết quả"));
   }, [gameId]);
   useEffect(() => { load(); }, [load]);
 

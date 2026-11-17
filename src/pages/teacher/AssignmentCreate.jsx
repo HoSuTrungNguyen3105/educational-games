@@ -58,7 +58,7 @@ export default function AssignmentCreate() {
     setQuestionsLoading(true);
     setQuestionsError('');
     try {
-      const qs = await questionBankService.list({ limit: 5000 });
+      const qs = await questionBankService.list({ from: 1, to: 5000 });
       setAllQuestions(Array.isArray(qs) ? qs.filter(q => q && q.id) : []);
     } catch (err) {
       setAllQuestions([]);

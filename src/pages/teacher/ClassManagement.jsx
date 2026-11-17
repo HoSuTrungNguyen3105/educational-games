@@ -7,6 +7,7 @@ import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
 import { usePagedList } from '../../hooks/usePagedList.js';
 import { matchesQuery } from '../../lib/searchText.js';
+import { rangeAll } from '../../lib/rangePagination.js';
 
 // Form sửa lớp: KHÔNG cho sửa `code` — mã lớp là khoá để học sinh tham gia
 // lớp (route /join tra lớp theo code), sửa mã sẽ làm mã cũ đang phát cho học
@@ -52,7 +53,8 @@ export default function ClassManagement({ showToast } = {}) {
   async function loadClasses() {
     setClasses(null);
     setError(null);
-    try { setClasses(await classService.list()); }
+    // Lọc + phân trang phía client trên toàn bộ danh sách → from/to "lấy tất cả".
+    try { const res = await classService.list(rangeAll()); setClasses(res.items); }
     catch (e) { setError(e.message || 'Lỗi tải danh sách lớp'); }
   }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../../services/api.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import { matchesQuery } from "../../lib/searchText.js";
+import { rangeAll } from "../../lib/rangePagination.js";
 import {
   GridCard,
   ManagementHeader, ManagementTable, Modal, ConfirmModal,
@@ -62,8 +63,11 @@ export default function PlantTypeManagement({ showToast }) {
     setTypes(null);
     setError(null);
     try {
-      const data = await apiFetch("/plant-types");
-      setTypes(data.types || []);
+      // Tìm kiếm phía client trên toàn bộ loại cây → from/to "lấy tất cả";
+      // có range thì server trả data là MẢNG types (không còn bọc { types }).
+      const { from, to } = rangeAll();
+      const res = await apiFetch(`/plant-types?from=${from}&to=${to}`, { _withPagination: true });
+      setTypes(res?.data || []);
     } catch (e) { setError(e.message); }
   }, []);
 

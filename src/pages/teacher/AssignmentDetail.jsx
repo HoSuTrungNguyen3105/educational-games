@@ -7,6 +7,7 @@ import AssignmentWorksheet from './AssignmentWorksheet.jsx';
 import { ConfirmModal, IconBack, IconChart, IconCheck, IconEdit, IconUsers, SearchInput, ViewToggle, cardGridClass, tableWrapClass, useViewMode } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
+import { rangeAll } from '../../lib/rangePagination.js';
 import { DressUpAvatarSmall } from '../../components/avatar/DressUpAvatar.jsx';
 
 export default function AssignmentDetail({ assignmentId }) {
@@ -30,13 +31,13 @@ export default function AssignmentDetail({ assignmentId }) {
   async function load() {
     setLoading(true);
     try {
-      const [a, subs, st] = await Promise.all([
+      const [a, subsRes, st] = await Promise.all([
         assignmentService.get(assignmentId),
-        assignmentService.getSubmissions(assignmentId),
+        assignmentService.getSubmissions(assignmentId, rangeAll()),
         assignmentService.getStats(assignmentId),
       ]);
       setAssignment(a);
-      setSubmissions(subs);
+      setSubmissions(subsRes.items);
       setStats(st);
     } catch { }
     setLoading(false);

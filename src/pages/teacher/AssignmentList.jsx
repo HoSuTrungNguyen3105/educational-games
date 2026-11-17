@@ -10,6 +10,7 @@ import { usePagedList } from '../../hooks/usePagedList.js';
 import { matchesQuery } from '../../lib/searchText.js';
 import { templateLabel } from '../../components/exam/templateLabel.js';
 import { exportCsv } from '../../lib/exportCsv.js';
+import { rangeAll } from '../../lib/rangePagination.js';
 
 export default function AssignmentList({ showToast }) {
   const [assignments, setAssignments] = useState(null);
@@ -32,11 +33,14 @@ export default function AssignmentList({ showToast }) {
     setAssignments(null);
     setError(null);
     try {
-      const [all, allClasses] = await Promise.all([
-        assignmentService.list(),
+      // Danh sách bài tập lọc/phân trang ở client trên toàn bộ dữ liệu →
+      // from/to "lấy tất cả". classService.list() ở đây chỉ để dựng map
+      // id → tên lớp (dữ liệu phụ trợ cho hiển thị) nên giữ nguyên.
+      const [allRes, allClasses] = await Promise.all([
+        assignmentService.list(undefined, rangeAll()),
         classService.list(),
       ]);
-      setAssignments(all);
+      setAssignments(allRes.items);
       const cMap = {}; allClasses.forEach(c => { cMap[c.id] = c.name; });
       setClasses(cMap);
     } catch (e) {

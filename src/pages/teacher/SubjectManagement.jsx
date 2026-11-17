@@ -4,6 +4,7 @@ import { setupService } from '../../services/setupService.js'
 import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal } from '../../components/ui'
 import { useCrudList } from '../../hooks/useCrudList.js'
 import { matchesQuery } from '../../lib/searchText.js'
+import { rangeAll } from '../../lib/rangePagination.js'
 
 const FIELDS = [{ name: "name", label: "Tên môn học", placeholder: "VD: Toán, Văn, Anh..." }];
 
@@ -14,7 +15,7 @@ export default function SubjectManagement({ showToast }) {
     openCreate, openEdit, closeModal, submit,
     confirmProps, askRemove,
   } = useCrudList({
-    fetchList: () => setupService.listSubjects(),
+    fetchList: () => setupService.listSubjects(rangeAll()),
     onSave: (form, editingId) => editingId
       ? setupService.updateSubject(editingId, form.name.trim())
       : setupService.addSubject(form.name.trim()),

@@ -4,6 +4,7 @@ import { setupService } from '../../services/setupService.js'
 import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal } from '../../components/ui'
 import { useCrudList } from '../../hooks/useCrudList.js'
 import { matchesQuery } from '../../lib/searchText.js'
+import { rangeAll } from '../../lib/rangePagination.js'
 
 const FIELDS = [
   { name: "id", label: "ID (không dấu, không khoảng trắng)", placeholder: "VD: quiz, puzzle, adventure" },
@@ -19,7 +20,9 @@ export default function CategoryManagement({ showToast }) {
     openCreate, openEdit, closeModal, submit,
     confirmProps, askRemove, askRemoveAll,
   } = useCrudList({
-    fetchList: () => setupService.listCategories(),
+    // ManagementTable tìm kiếm/phân trang ở client trên toàn bộ danh sách →
+    // from/to "lấy tất cả" (service bỏ qua cache khi có range).
+    fetchList: () => setupService.listCategories(rangeAll()),
     onSave: (form, editingId) => editingId
       ? setupService.updateCategory(editingId, { label: form.label })
       : setupService.createCategory({ id: form.id.trim(), label: form.label }),

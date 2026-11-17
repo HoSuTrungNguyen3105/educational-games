@@ -66,7 +66,7 @@ export default function DocumentStudio({ showToast }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await documentService.listMine({ perPage: 100 });
+      const res = await documentService.listMine({ from: 1, to: 100 });
       setDocs(res?.data || []);
       setError("");
     } catch (e) {

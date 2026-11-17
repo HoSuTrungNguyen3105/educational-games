@@ -20,7 +20,7 @@ export function ImageLibraryGrid({ onPick }) {
     try {
       const data = q.trim()
         ? await imageService.search(q.trim())
-        : await imageService.list({ folder: "edu-game", perPage: 60 });
+        : await imageService.list({ folder: "edu-game", from: 1, to: 60 });
       setImages(data?.images || []);
       setError("");
     } catch (e) {

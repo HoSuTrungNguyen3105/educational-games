@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { permissionService } from "../../services/api.js";
+import { rangeAll } from "../../lib/rangePagination.js";
 import { useModalParam } from "../../hooks/useModalParam.js";
 import {
   ConfirmModal,
@@ -71,7 +72,7 @@ export default function RoleManagement({ user, showToast }) {
   const load = useCallback(() => {
     setError(null);
     Promise.all([
-      permissionService.listRoles(),
+      permissionService.listRoles(rangeAll()),
       permissionService.features(),
       permissionService.catalog(),
     ])

@@ -300,6 +300,36 @@ export async function apiFetch(path, options = {}) {
   return json;
 }
 
+/**
+ * Phân trang from/to dùng chung cho các API DANH SÁCH ở khu quản trị
+ * (xem src/lib/rangePagination.js): caller truyền { from, to } thì service
+ * gửi đúng hai tham số đó + đọc envelope của server, chuẩn hoá kết quả về
+ * { items, total, pagination }. KHÔNG truyền range → giữ nguyên hành vi cũ
+ * (trả mảng data) để các caller phía học sinh/dropdown không đổi.
+ */
+export function hasRange(range) {
+  return range != null && range.from != null && range.to != null;
+}
+
+export function normalizeRangeResult(res) {
+  if (res && !Array.isArray(res) && Array.isArray(res.data)) {
+    return {
+      items: res.data,
+      total: typeof res.pagination?.total === "number" ? res.pagination.total : res.data.length,
+      pagination: res.pagination || null,
+    };
+  }
+  const items = Array.isArray(res) ? res : [];
+  return { items, total: items.length, pagination: null };
+}
+
+/** Gọi list có range: path đã gồm query lọc (nếu có), hàm tự nối from/to. */
+export async function fetchRangedList(path, range) {
+  const sep = path.includes("?") ? "&" : "?";
+  const res = await apiFetch(`${path}${sep}from=${range.from}&to=${range.to}`, { _withPagination: true });
+  return normalizeRangeResult(res);
+}
+
 export const gameService = {
   /**
    * Nạp dữ liệu mẫu (templates / games / câu hỏi / môn học) từ server/data/*.json.
@@ -405,12 +435,17 @@ export const gameConfigStore = {
 };
 
 export const questionService = {
-  async listAll() {
+  async listAll(range) {
+    if (hasRange(range)) return fetchRangedList("/questions", range);
     return apiFetch("/questions") || [];
   },
-  async listByGame(gameId, { inputMode } = {}) {
-    const params = inputMode ? `?inputMode=${encodeURIComponent(inputMode)}` : "";
-    return apiFetch(`/questions/game/${gameId}${params}`) || [];
+  async listByGame(gameId, { inputMode, from, to } = {}) {
+    const params = new URLSearchParams();
+    if (inputMode) params.set("inputMode", inputMode);
+    const qs = params.toString();
+    const path = `/questions/game/${gameId}${qs ? `?${qs}` : ""}`;
+    if (from != null && to != null) return fetchRangedList(path, { from, to });
+    return apiFetch(path) || [];
   },
   async save(gameId, questions) {
     return apiFetch(`/questions/game/${gameId}`, { method: "PUT", body: questions });
@@ -451,7 +486,8 @@ export const questionBankService = {
 };
 
 export const resultService = {
-  async listByGame(gameId) {
+  async listByGame(gameId, range) {
+    if (hasRange(range)) return fetchRangedList(`/results/game/${gameId}`, range);
     return apiFetch(`/results/game/${gameId}`) || [];
   },
   async submit(result) {
@@ -541,7 +577,8 @@ export const authService = {
 };
 
 export const userService = {
-  async list() {
+  async list(range) {
+    if (hasRange(range)) return fetchRangedList("/users", range);
     return apiFetch("/users") || [];
   },
   async create(data) {
@@ -600,7 +637,8 @@ export const statsService = {
 };
 
 export const templateService = {
-  async list() {
+  async list(range) {
+    if (hasRange(range)) return fetchRangedList("/templates", range);
     return apiFetch("/templates") || [];
   },
   async get(id) {
@@ -696,7 +734,8 @@ export const gameProgressService = {
 };
 
 export const adminGameProgressService = {
-  async listAll() {
+  async listAll(range) {
+    if (hasRange(range)) return fetchRangedList("/users/game-progress", range);
     return apiFetch("/users/game-progress") || [];
   },
   async updateProgress(id, data) {
@@ -796,11 +835,20 @@ export const imageService = {
     if (!res.ok || !json.status) throw new Error(json.msg || "Lỗi upload");
     return json.data;
   },
-  async list({ folder, page, perPage } = {}) {
+  // Phân trang CHỈ bằng from/to (đồng bộ dashboard): có range thì server trả
+  // data là MẢNG ảnh đã cắt — chuẩn hoá về { images, total, pagination } để
+  // caller giữ nguyên cách đọc `.images`. Không range → giữ nguyên object
+  // { images, totalCount, page, perPage } như cũ.
+  async list({ folder, from, to } = {}) {
     const params = new URLSearchParams();
     if (folder) params.set("folder", folder);
-    if (page) params.set("page", page);
-    if (perPage) params.set("perPage", perPage);
+    if (from != null && to != null) {
+      params.set("from", from);
+      params.set("to", to);
+      const res = await apiFetch(`/images?${params.toString()}`, { _withPagination: true });
+      const { items, total, pagination } = normalizeRangeResult(res);
+      return { images: items, total, pagination };
+    }
     const qs = params.toString();
     return apiFetch(`/images${qs ? `?${qs}` : ""}`);
   },
@@ -896,20 +944,27 @@ export const notificationService = {
 };
 
 export const classService = {
-  async list() { return apiFetch("/classes") || []; },
+  async list(range) {
+    if (hasRange(range)) return fetchRangedList("/classes", range);
+    return apiFetch("/classes") || [];
+  },
   async get(id) { return apiFetch(`/classes/${id}`); },
   async create(data) { return apiFetch("/classes", { method: "POST", body: data }); },
   async update(id, data) { return apiFetch(`/classes/${id}`, { method: "PUT", body: data }); },
   async delete_(id) { return apiFetch(`/classes/${id}`, { method: "DELETE" }); },
   async join(code) { return apiFetch("/classes/join", { method: "POST", body: { code } }); },
-  async getStudents(id) { return apiFetch(`/classes/${id}/students`) || []; },
+  async getStudents(id, range) {
+    if (hasRange(range)) return fetchRangedList(`/classes/${id}/students`, range);
+    return apiFetch(`/classes/${id}/students`) || [];
+  },
   async removeStudent(classId, studentId) { return apiFetch(`/classes/${classId}/students/${studentId}`, { method: "DELETE" }); },
 };
 
 export const assignmentService = {
-  async list(classId) {
-    const q = classId ? `?classId=${classId}` : "";
-    return apiFetch(`/assignments${q}`) || [];
+  async list(classId, range) {
+    const path = classId ? `/assignments?classId=${classId}` : "/assignments";
+    if (hasRange(range)) return fetchRangedList(path, range);
+    return apiFetch(path) || [];
   },
   async get(id) { return apiFetch(`/assignments/${id}`); },
   async create(data) { return apiFetch("/assignments", { method: "POST", body: data }); },
@@ -938,7 +993,10 @@ export const assignmentService = {
     return apiFetch(`/assignments/${id}/result${qs}`);
   },
   async getStats(id) { return apiFetch(`/assignments/${id}/stats`); },
-  async getSubmissions(id) { return apiFetch(`/assignments/${id}/submissions`) || []; },
+  async getSubmissions(id, range) {
+    if (hasRange(range)) return fetchRangedList(`/assignments/${id}/submissions`, range);
+    return apiFetch(`/assignments/${id}/submissions`) || [];
+  },
   async getMyCompleted() { return apiFetch("/assignments/my-completed") || []; },
   async close(id) { return apiFetch(`/assignments/${id}/close`, { method: "PUT" }); },
   async update(id, data) { return apiFetch(`/assignments/${id}`, { method: "PUT", body: data }); },
@@ -970,7 +1028,10 @@ export const gardenService = {
 };
 
 export const reminderService = {
-  async list() { return apiFetch("/reminders") || []; },
+  async list(range) {
+    if (hasRange(range)) return fetchRangedList("/reminders", range);
+    return apiFetch("/reminders") || [];
+  },
   async getDue() { return apiFetch("/reminders/due") || []; },
   async getUpcoming(minutes) { return apiFetch(`/reminders/upcoming?minutes=${minutes || 60}`) || []; },
   async create(data) { return apiFetch("/reminders", { method: "POST", body: data }); },
@@ -989,9 +1050,15 @@ export const supportService = {
   async mine() { return apiFetch("/support/tickets/mine") || []; },
   // GV: chỉ ticket được gán cho mình (server lọc theo assigneeId);
   // tài khoản có `support_all` (admin tổng) gọi cùng endpoint này sẽ thấy hết.
-  async assigned() { return apiFetch("/support/tickets/assigned") || []; },
+  async assigned(range) {
+    if (hasRange(range)) return fetchRangedList("/support/tickets/assigned", range);
+    return apiFetch("/support/tickets/assigned") || [];
+  },
   async updateAssigned(id, data) { return apiFetch(`/support/tickets/assigned/${encodeURIComponent(id)}`, { method: "PATCH", body: data }); },
-  async list() { return apiFetch("/support/admin/tickets") || []; },
+  async list(range) {
+    if (hasRange(range)) return fetchRangedList("/support/admin/tickets", range);
+    return apiFetch("/support/admin/tickets") || [];
+  },
   async update(id, data) { return apiFetch(`/support/admin/tickets/${encodeURIComponent(id)}`, { method: "PATCH", body: data }); },
   async remove(id) { return apiFetch(`/support/admin/tickets/${encodeURIComponent(id)}`, { method: "DELETE" }); },
   // Xóa hàng loạt ticket (admin, tối đa 200/lần) → { deleted, failed, counts }
@@ -999,17 +1066,28 @@ export const supportService = {
   // Báo cáo người dùng từ chat (collection `reports` riêng — xem reportService ở server):
   // người dùng gửi từ màn hình trò chuyện, chỉ admin xem/xử lý.
   async createReport(data) { return apiFetch("/support/reports", { method: "POST", body: data }); },
-  async listReports() { return apiFetch("/support/admin/reports") || []; },
+  async listReports(range) {
+    if (hasRange(range)) return fetchRangedList("/support/admin/reports", range);
+    return apiFetch("/support/admin/reports") || [];
+  },
   async updateReport(id, data) { return apiFetch(`/support/admin/reports/${encodeURIComponent(id)}`, { method: "PATCH", body: data }); },
 };
 
 export const permissionService = {
   async features() { return apiFetch("/permissions/features") || []; },
   async catalog() { return apiFetch("/permissions/catalog") || []; },
-  async listRoles() { return apiFetch("/permissions/roles") || []; },
+  async listRoles(range) {
+    if (hasRange(range)) {
+      const { items } = await fetchRangedList("/permissions/roles", range);
+      return items;
+    }
+    return apiFetch("/permissions/roles") || [];
+  },
   async getRole(key) { return apiFetch(`/permissions/roles/${encodeURIComponent(key)}`); },
   // API tách riêng dạng HiWeb (server/src/routes/roles.js, permissions.js GET "/"):
-  // params: { page, perPage, keyword, sort_by, sort_dir, from_date, to_date, date_col }
+  // phân trang CHỈ bằng from/to (đồng bộ dashboard) — params: { from, to,
+  // keyword, sort_by, sort_dir } (from_date/to_date/date_col chỉ dùng cho bộ
+  // lọc ngày, không phải biến phân trang).
   async rolesPaged(params = {}) {
     const qs = new URLSearchParams(params).toString();
     return apiFetch(`/roles${qs ? `?${qs}` : ""}`, { _withPagination: true });

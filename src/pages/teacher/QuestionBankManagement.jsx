@@ -214,7 +214,7 @@ export default function QuestionBankManagement({ showToast }) {
     setLoadErr(null)
     try {
       const [qs, gs, st] = await Promise.all([
-        questionBankService.list({ limit: 5000 }).catch(() => []),
+        questionBankService.list({ from: 1, to: 5000 }).catch(() => []),
         // gameService.list().catch(() => []),
         questionBankService.stats().catch(() => null),
       ])

@@ -5,6 +5,7 @@ import { gameService, templateService } from '../../services/api.js'
 import { BulkDeleteBar, Checkbox, GhostButton, GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, StatusBadge, TemplateThumb } from '../../components/ui'
 import { useBulkSelection, bulkInChunks } from '../../lib/hooks.js'
 import { matchesQuery } from '../../lib/searchText.js'
+import { rangeAll } from '../../lib/rangePagination.js'
 
 const STATUS_BADGE = {
   published: { label: "Hoạt động", tone: "mint" },
@@ -19,7 +20,10 @@ export default function TemplateManagement({ showToast }) {
 
   const load = useCallback(() => {
     setTemplates(null); setError(null);
-    templateService.list().then(setTemplates).catch(e => setError(e.message));
+    // Trang lọc/sắp xếp/chọn-tất-cả trên TOÀN BỘ danh sách ở client (server
+    // chưa có params lọc tương ứng) → xin khoảng "lấy tất cả" qua from/to,
+    // hành vi hiển thị giữ nguyên.
+    templateService.list(rangeAll()).then((res) => setTemplates(res.items)).catch(e => setError(e.message));
   }, []);
   useEffect(() => { load(); }, [load]);
 
