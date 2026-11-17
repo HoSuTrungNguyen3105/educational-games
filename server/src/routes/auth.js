@@ -3,6 +3,7 @@ import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, 
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 import { getByUser, XP_LEDGER_GAME_ID } from "../services/gameProgressService.js";
+import * as petService from "../services/petService.js";
 import { getCollection } from "../db.js";
 import { trackAction } from "../services/dailyTaskService.js";
 import { processTaskEvent } from "../services/taskEngineService.js";
@@ -58,11 +59,47 @@ router.post("/login", async (req, res, next) => {
       target: user.username || user.id,
       message: `Đăng nhập với vai trò ${user.role}`,
     }).catch(() => {});
-    sendSuccess(res, { token, user: publicUser(user) });
+    // `pet` trong response login = trạng thái thú cưng ĐẦY ĐỦ (gộp từ
+    // /api/pet cũ), không chỉ bộ đồ DressUp thô trong users.pet — client
+    // đọc luôn từ đây, khỏi gọi thêm GET /api/users/me/pet.
+    const pub = publicUser(user);
+    pub.pet = await petService.getFullState(user.id).catch(() => pub.pet);
+    sendSuccess(res, { token, user: pub });
   } catch (e) {
     next(e);
   }
 });
+
+/**
+ * Lõi refresh DÙNG CHUNG cho POST /api/auth/refresh và POST /api/v1/user/refresh
+ * (routes/v1User.js): kiểm tra origin → đọc cookie HttpOnly → xoay vòng qua
+ * refreshTokenService → set cookie mới. Hai endpoint chỉ khác nhau ở shape
+ * của response THÀNH CÔNG; logic và response LỖI là một.
+ *
+ * @returns {Promise<string|null>} access token mới khi thành công; `null` khi
+ *   thất bại — lúc đó response lỗi đã được gửi rồi, caller không gửi thêm gì.
+ */
+export async function performRefresh(req, res) {
+  if (!requireRefreshOrigin(req, res)) return null;
+
+  const raw = readRefreshCookie(req);
+  if (!raw) {
+    sendError(res, "Không có refresh token", 401);
+    return null;
+  }
+
+  try {
+    const { token, refreshRaw } = await rotateRefreshToken(raw);
+    setRefreshCookie(res, refreshRaw); // xoay vòng: cookie mới thay cookie cũ
+    return token;
+  } catch (e) {
+    // Token hỏng/hết hạn/thu hồi ⇒ cookie cũng vô giá trị, xoá để client không retry lặp.
+    clearRefreshCookie(res);
+    console.warn(`[refresh] Thất bại (${e.code || "unknown"}): ${e.message}`);
+    sendError(res, e.message || "Refresh thất bại", 401);
+    return null;
+  }
+}
 
 /**
  * POST /api/auth/refresh — cấp access token mới từ refresh token trong cookie.
@@ -72,27 +109,15 @@ router.post("/login", async (req, res, next) => {
  * trả theo envelope `{status, code, msg, data}` và client cũ đọc theo kiểu đó.
  */
 router.post("/refresh", async (req, res) => {
-  if (!requireRefreshOrigin(req, res)) return;
-
-  const raw = readRefreshCookie(req);
-  if (!raw) return sendError(res, "Không có refresh token", 401);
-
-  try {
-    const { token, refreshRaw } = await rotateRefreshToken(raw);
-    setRefreshCookie(res, refreshRaw); // xoay vòng: cookie mới thay cookie cũ
-    return res.json({
-      status: true,
-      code: 200,
-      msg: "refresh.success",
-      Authorization: `Bearer ${token}`,
-      data: { token },
-    });
-  } catch (e) {
-    // Token hỏng/hết hạn/thu hồi ⇒ cookie cũng vô giá trị, xoá để client không retry lặp.
-    clearRefreshCookie(res);
-    console.warn(`[refresh] Thất bại (${e.code || "unknown"}): ${e.message}`);
-    return sendError(res, e.message || "Refresh thất bại", 401);
-  }
+  const token = await performRefresh(req, res);
+  if (token === null) return;
+  return res.json({
+    status: true,
+    code: 200,
+    msg: "refresh.success",
+    Authorization: `Bearer ${token}`,
+    data: { token },
+  });
 });
 
 /**
@@ -147,12 +172,15 @@ router.post("/register", async (req, res, next) => {
 
 router.get("/me", authenticate, async (req, res) => {
   try {
-    const [userDoc, coins, games, permissions, roleIdentity] = await Promise.all([
+    const [userDoc, coins, games, permissions, roleIdentity, fullPet] = await Promise.all([
       getCollection("users").findOne({ id: req.user.sub }).catch(() => null),
       getCoins(req.user.sub).catch(() => 0),
       getByUser(req.user.sub).catch(() => []),
       getRolePermissions(req.user.role).catch(() => []),
       getRoleIdentity(req.user.role).catch(() => null),
+      // Trạng thái thú cưng ĐẦY ĐỦ (cấp/EXP/tâm tính + `look`) — gộp từ
+      // /api/pet cũ để hồ sơ là nguồn đọc pet duy nhất phía client.
+      petService.getFullState(req.user.sub).catch(() => null),
     ]);
 
     let classInfo = null;
@@ -192,9 +220,11 @@ router.get("/me", authenticate, async (req, res) => {
       classId: userDoc?.classId || null,
       className: classInfo?.name || null,
       classCode: classInfo?.code || null,
-      // Bộ đồ avatar + thú cưng do game tạo avatar lưu (không phải avatarLoadout).
+      // Bộ đồ avatar do game tạo avatar lưu (không phải avatarLoadout).
       avatar: userDoc?.avatar || null,
-      pet: userDoc?.pet || null,
+      // Thú cưng: trạng thái ĐẦY ĐỦ từ petService (kèm `look` = bộ đồ
+      // DressUp trong users.pet). Lỗi đọc pet thì lùi về bộ đồ thô như cũ.
+      pet: fullPet ?? (userDoc?.pet || null),
       // Lớp + giới tính của bé. `ageCode` là mã opaque, tuổi thật chỉ client biết.
       ageCode: userDoc?.ageCode || null,
       gender: userDoc?.gender || null,

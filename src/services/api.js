@@ -15,7 +15,7 @@ export const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 
 // import chúng — xem ghi chú tương thích ở đầu authToken.js.
 import {
   getAuth, setAuth, clearAuth as clearTokenAuth, getToken, isExpired,
-  isUsable, refreshOnce,
+  isUsable, refreshOnce, subscribeAuth,
 } from "../lib/authToken.js";
 
 /** Bản ghi đăng nhập; `null` khi chưa đăng nhập HOẶC token đã hết hạn (như cũ). */
@@ -26,7 +26,7 @@ export function loadAuth() {
 }
 
 export function saveAuth(auth) { return setAuth(auth); }
-export function clearAuth() { clearTokenAuth(); }
+export function clearAuth() { stopSessionRefreshLoop(); clearTokenAuth(); }
 
 /**
  * Đổi access token mới nhờ cookie refresh. Chỉ MỘT request chạy tại một thời điểm
@@ -66,6 +66,91 @@ export async function ensureFreshAccessToken() {
   if (isUsable(token)) return token;
   return (await refreshAccessToken()) || token;
 }
+
+// ── Refresh chủ động mỗi 20 giây qua endpoint v1 ───────────────────────────
+// Yêu cầu của Nguyên (mẫu theo hệ thống trong ảnh chụp): khi đã đăng nhập,
+// cứ 20 giây gọi POST /api/v1/user/refresh một lần để lấy access token mới —
+// BÊN CẠNH cơ chế ensureFreshAccessToken ở trên, không thay thế nó.
+//
+// ĐÁNH ĐỔI (Nguyên đã chốt, ghi lại để khỏi bàn lại): mỗi người dùng đang mở
+// app phát sinh ~3 request/phút kể cả khi không thao tác gì, và mỗi lần
+// refresh đều xoay vòng refresh token (ghi 1 dòng refresh_tokens mới + set
+// cookie mới) ⇒ tải server và ghi DB tăng tuyến tính theo số người online.
+// Đổi lại access token trên máy người dùng luôn tươi.
+//
+// An toàn: vẫn qua single-flight `refreshOnce` của authToken nên interval
+// không bao giờ chạy song song với một refresh khác trong cùng tab; token
+// mới được refreshOnce tự ghi vào authToken (đọc từ field `Authorization` ở
+// gốc JSON — đúng shape của endpoint v1).
+const SESSION_REFRESH_INTERVAL_MS = 20_000;
+let sessionRefreshTimer = null;
+/** HTTP status của lần gọi v1 trong tick hiện tại; 0 = không có response (mất mạng). */
+let lastV1RefreshStatus = 0;
+
+async function refreshAccessTokenV1() {
+  try {
+    return await refreshOnce(async () => {
+      const res = await fetchWithRetry(
+        `${API_BASE}/v1/user/refresh`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+          credentials: "include",
+        },
+        // Cold start (503) thì chờ một nhịp; 401/403 là từ chối dứt khoát, retry vô ích.
+        2
+      ).catch(() => null);
+      lastV1RefreshStatus = res?.status ?? 0;
+      if (!res?.ok) return null;
+      return await res.json();
+    });
+  } catch {
+    return null; // mất mạng / backend chết — tick tự quyết theo lastV1RefreshStatus
+  }
+}
+
+async function sessionRefreshTick() {
+  if (!getToken()) { stopSessionRefreshLoop(); return; }
+  lastV1RefreshStatus = 0;
+  const token = await refreshAccessTokenV1();
+  if (token) return;
+  // Server từ chối DỨT KHOÁT (401 = cookie thiếu/hết hạn/bị thu hồi; 403 =
+  // origin không được phép) ⇒ phiên thật sự đã kết thúc: dọn phiên đúng như
+  // nhánh 401 của apiFetch. Mất mạng / 503 / 5xx thì KHÔNG đăng xuất — giữ
+  // phiên và thử lại ở chu kỳ 20 giây sau, tránh đá người dùng oan khi mạng
+  // chập chờn. (Nếu refresh đang chạy dở là của transport /auth/refresh cũ
+  // thì status không được ghi ở đây — tick coi như lỗi tạm thời, và nhánh
+  // 401 của apiFetch vẫn là nơi dọn phiên như trước.)
+  if (lastV1RefreshStatus === 401 || lastV1RefreshStatus === 403) {
+    stopSessionRefreshLoop();
+    clearAuth();
+    window.dispatchEvent(new Event("edu-auth-expired"));
+  }
+}
+
+export function startSessionRefreshLoop() {
+  if (sessionRefreshTimer !== null || typeof window === "undefined") return;
+  sessionRefreshTimer = window.setInterval(() => {
+    sessionRefreshTick().catch(() => {});
+  }, SESSION_REFRESH_INTERVAL_MS);
+}
+
+export function stopSessionRefreshLoop() {
+  if (sessionRefreshTimer === null || typeof window === "undefined") return;
+  window.clearInterval(sessionRefreshTimer);
+  sessionRefreshTimer = null;
+}
+
+// Vòng đời interval đi theo phiên: có token → chạy, mất token → dừng.
+// subscribeAuth bắt được đăng nhập/đăng ký (setAuth), refresh thành công
+// (refreshOnce tự setAuth) và đăng xuất/dọn phiên (clearAuth). Trường hợp
+// tải lại trang — token khôi phục lặng lẽ từ bộ đệm localStorage, không qua
+// setAuth — thì apiFetch tự bật lại interval ở lần gọi API đầu tiên.
+subscribeAuth((auth) => {
+  if (auth?.token) startSessionRefreshLoop();
+  else stopSessionRefreshLoop();
+});
 
 // Lặp lại khi backend đang cold-start (503 / lỗi mạng), tránh request đầu tiên chết.
 // `attempts` là TỔNG số lần thử (kể cả lần đầu) và luôn ≥ 1 — nếu để 0, vòng lặp
@@ -126,6 +211,9 @@ export async function apiFetch(path, options = {}) {
   } else {
     auth = loadAuth();
   }
+  // Phiên còn sống mà interval refresh 20 giây chưa chạy (vd vừa tải lại
+  // trang, token lấy từ bộ đệm nên subscribeAuth chưa bắt được) → bật lại.
+  if (auth?.token) startSessionRefreshLoop();
   const url = `${API_BASE}${path}`;
   const method = (options.method || "GET").toUpperCase();
   const { signal, timer, detach } = buildSignal(options);

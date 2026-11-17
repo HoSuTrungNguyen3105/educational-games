@@ -30,13 +30,8 @@ router.delete("/device-token", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// GET /api/notifications/devices — list user's devices
-router.get("/devices", authenticate, async (req, res, next) => {
-  try {
-    const devices = await userDeviceService.getDevicesByUser(req.user.sub);
-    sendSuccess(res, devices);
-  } catch (e) { next(e); }
-});
+// (GET /api/notifications/devices đã bị gỡ: không còn caller nào trong
+// client — client chỉ đăng ký/gỡ device-token và reset toàn bộ token.)
 
 // DELETE /api/notifications/devices/reset — reset all device tokens for current user (re-register after reinstall)
 router.delete("/devices/reset", authenticate, async (req, res, next) => {

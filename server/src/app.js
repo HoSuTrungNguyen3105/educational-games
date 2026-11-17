@@ -15,6 +15,7 @@ import resultsRouter from "./routes/results.js";
 import gameAttemptsRouter from "./routes/gameAttempts.js";
 import setupRouter from "./routes/setup.js";
 import authRouter from "./routes/auth.js";
+import v1UserRouter from "./routes/v1User.js";
 import usersRouter from "./routes/users.js";
 import usersSearchRouter from "./routes/usersSearch.js";
 import usersDirectoryRouter from "./routes/usersDirectory.js";
@@ -24,7 +25,6 @@ import chatRouter from "./routes/chat.js";
 import conversationsRouter from "./routes/conversations.js";
 import friendsRouter from "./routes/friends.js";
 import seedRouter from "./routes/seed.js";
-import petRouter from "./pet/pet.js";
 import gameProgressRouter, { adminRouter } from "./routes/gameProgress.js";
 import examResultsRouter, { adminRouter as examResultsAdminRouter } from "./routes/examResults.js";
 import gamePlaysRouter from "./routes/gamePlays.js";
@@ -38,7 +38,6 @@ import avatarRouter from "./routes/avatar.js";
 import gardenRouter from "./routes/garden.js";
 import plantTypesRouter from "./routes/plantTypes.js";
 import imagesRouter from "./routes/images.js";
-import gameSessionsRouter from "./routes/gameSessions.js";
 import gameInvitesRouter from "./routes/gameInvites.js";
 import remindersRouter from "./routes/reminders.js";
 import scheduleRouter from "./routes/schedule.js";
@@ -53,6 +52,7 @@ import lessonsRouter from "./routes/lessons.js";
 import documentsRouter from "./routes/documents.js";
 import systemRouter, { publicRouter as publicConfigRouter } from "./routes/system.js";
 import * as reminderService from "./services/reminderService.js";
+import * as petService from "./services/petService.js";
 import { verifyToken } from "./services/authService.js";
 import { getRoleIdentity } from "./services/permissionService.js";
 import { isAllowedOrigin } from "./services/refreshTokenService.js";
@@ -106,6 +106,7 @@ app.use("/api", (_req, res, next) => {
 app.use("/api", permissionFilter);
 
 app.use("/api/auth", authRouter);
+app.use("/api/v1", v1UserRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/users", gameProgressRouter);
 // Router học sinh phải mounts TRƯỚC các adminRouter — adminRouter dùng
@@ -130,12 +131,16 @@ app.get("/api/users/me", async (req, res) => {
     const token = authHeader.slice(7);
     const payload = verifyToken(token);
     const roleIdentity = await getRoleIdentity(payload.role).catch(() => null);
+    // `pet` = trạng thái thú cưng ĐẦY ĐỦ (đã gộp từ /api/pet cũ): hồ sơ chỉ
+    // cần một lần đọc là đủ cả pet, client khỏi gọi thêm endpoint riêng.
+    const pet = await petService.getFullState(payload.sub).catch(() => null);
     sendSuccess(res, {
       id: payload.sub,
       username: payload.username,
       name: payload.name,
       role: payload.role,
       roles: roleIdentity ? [roleIdentity] : [],
+      pet,
     });
   } catch {
     sendError(res, "Token không hợp lệ hoặc đã hết hạn", 401);
@@ -163,7 +168,6 @@ app.use("/api/avatar", avatarRouter);
 app.use("/api/garden", gardenRouter);
 app.use("/api/plant-types", plantTypesRouter);
 app.use("/api/images", imagesRouter);
-app.use("/api/game-sessions", gameSessionsRouter);
 app.use("/api/game-invites", gameInvitesRouter);
 app.use("/api/reminders", remindersRouter);
 app.use("/api/schedule", scheduleRouter);
@@ -171,7 +175,6 @@ app.use("/api/attendance", attendanceRouter);
 app.use("/api/permissions", permissionsRouter);
 app.use("/api/roles", rolesRouter);
 app.use("/api/support", supportRouter);
-app.use("/api/pet", petRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/conversations", conversationsRouter);

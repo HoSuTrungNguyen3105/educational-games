@@ -245,13 +245,8 @@ router.delete("/:publicId(*)", authenticate, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// GET /api/images/folders — Liệt kê các folder
-router.get("/folders", authenticate, async (req, res, next) => {
-  try {
-    const result = await cloudinary.api.root_folders();
-    sendSuccess(res, { folders: result.folders });
-  } catch (e) { next(e); }
-});
+// (GET /api/images/folders đã bị gỡ: không còn caller nào trong client —
+// thư viện ảnh chỉ dùng GET /images kèm query `folder`.)
 
 // GET /api/images/:publicId — Lấy thông tin 1 ảnh
 // Ảnh không được xem trả 404 (không lộ cả sự tồn tại của ảnh người khác).
