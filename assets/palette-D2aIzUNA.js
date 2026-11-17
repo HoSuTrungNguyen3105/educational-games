@@ -1,0 +1,1 @@
+var e=[`#E4572E`,`#1B998B`,`#F4B942`,`#8B5CF6`,`#FF6F91`,`#1D2E4A`,`#38BDF8`,`#10B981`],t=t=>e[t%e.length];function n(e,t=7){return e.map((n,r)=>r%t===0||r===e.length-1?n:null)}function r(e){let t=Number(e);return Number.isFinite(t)?Math.abs(t)>=1e3?`${(t/1e3).toFixed(Math.abs(t)>=1e4?0:1).replace(/\.0$/,``)}k`:String(Math.round(t*10)/10):`0`}export{n as i,r as n,t as r,e as t};

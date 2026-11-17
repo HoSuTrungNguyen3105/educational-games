@@ -1,0 +1,1 @@
+import{i as e}from"./jsx-runtime-DSmqz3YD.js";var t={async getPage(t){return e(`/pages/${encodeURIComponent(t)}`)},async updatePage(t,n){return e(`/pages/${encodeURIComponent(t)}`,{method:`PUT`,body:n})}};export{t};
