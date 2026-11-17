@@ -17,7 +17,16 @@ const ROUTES = [
   { name: "admin-templates", pattern: "/dashboard/templates" },
   // Quản trị nội dung trang sinh nhật (#/sinh-nhat): tải file HTML lên qua API /pages
   { name: "admin-birthday", pattern: "/dashboard/birthday" },
-  // EduPlay AI Studio: danh sách bài học + editor soạn bài (API /api/lessons)
+  // Tạo bài học AI (tách khỏi AI Studio cũ theo REFACTOR_AI_STUDIO.md):
+  // danh sách bài học + editor soạn bài (API /api/lessons)
+  { name: "admin-lesson-creator", pattern: "/dashboard/ai-lesson-creator" },
+  { name: "admin-lesson-creator-edit", pattern: "/dashboard/ai-lesson-creator/:lessonId" },
+  // AI Studio mới: trung tâm cấu hình Gia sư AI (RAG) — khung 3 tab
+  // (Cấu hình / Đính chính / Kiểm thử), backend RAG nối ở bước sau.
+  { name: "admin-ai-studio", pattern: "/dashboard/ai-studio" },
+  // Route cũ của AI Studio trước khi tách — giữ để link cũ không 404;
+  // TeacherApp chuyển hướng /dashboard/studio → /dashboard/ai-studio và
+  // /dashboard/studio/:lessonId → /dashboard/ai-lesson-creator/:lessonId.
   { name: "admin-studio", pattern: "/dashboard/studio" },
   { name: "admin-studio-edit", pattern: "/dashboard/studio/:lessonId" },
   // Teacher Document Studio: soạn tài liệu Word/PowerPoint (API /api/documents)

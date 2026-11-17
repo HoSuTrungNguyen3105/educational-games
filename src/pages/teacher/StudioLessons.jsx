@@ -11,11 +11,12 @@ import LessonProgressModal from "./studio/LessonProgressModal.jsx";
 import "./studio/studio.css";
 import { rangeAll } from "../../lib/rangePagination.js";
 
-// StudioLessons — danh sách bài học của giáo viên tại /dashboard/studio,
-// dùng đúng kit lưới dùng chung (ManagementTable + GridCard + usePagedList
-// bên trong ManagementTable) như các trang quản lý khác. Tạo mới xong vào
-// thẳng editor; nhân bản ghép từ GET (bản đầy đủ) + POST tạo mới vì API
-// không có endpoint clone riêng.
+// StudioLessons — danh sách bài học của giáo viên tại
+// /dashboard/ai-lesson-creator (menu "Tạo bài học AI", tách khỏi AI Studio
+// cũ theo REFACTOR_AI_STUDIO.md), dùng đúng kit lưới dùng chung
+// (ManagementTable + GridCard + usePagedList bên trong ManagementTable)
+// như các trang quản lý khác. Tạo mới xong vào thẳng editor; nhân bản ghép
+// từ GET (bản đầy đủ) + POST tạo mới vì API không có endpoint clone riêng.
 
 const CREATE_FIELDS = [
   { name: "title", label: "Tên bài học", placeholder: "VD: Bảng nhân 4 — Toán lớp 3" },
@@ -106,7 +107,7 @@ export default function StudioLessons({ showToast }) {
       setCreateOpen(false);
       setForm({ title: "", subject: "", grade: "" });
       showToast?.("Đã tạo bài học", "success");
-      navigate(`/dashboard/studio/${lesson.id}`);
+      navigate(`/dashboard/ai-lesson-creator/${lesson.id}`);
     } catch (e) {
       setCreateError(e?.message || "Tạo bài học thất bại");
     } finally { setCreating(false); }
@@ -150,7 +151,7 @@ export default function StudioLessons({ showToast }) {
 
   return (
     <div>
-      <ManagementHeader title="AI Studio" subtitle="Soạn bài học tương tác: trang, câu hỏi và game — xuất bản cho học sinh học ngay trong EduPlay">
+      <ManagementHeader title="Tạo bài học AI" subtitle="Soạn bài học tương tác: trang, câu hỏi và game — xuất bản cho học sinh học ngay trong EduPlay">
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
           className="note-card px-3 py-2 text-sm border-ink/10 bg-paper2">
           <option value="all">Tất cả trạng thái</option>
@@ -191,7 +192,7 @@ export default function StudioLessons({ showToast }) {
             ) : undefined}
             meta={`${lesson.pageCount} trang · ${lesson.elementCount} phần tử · Cập nhật ${fmtDate(lesson.updatedAt)}`}
             footerActions={[
-              { label: "Soạn bài", icon: <Pencil />, onClick: () => navigate(`/dashboard/studio/${lesson.id}`), tone: "blue" },
+              { label: "Soạn bài", icon: <Pencil />, onClick: () => navigate(`/dashboard/ai-lesson-creator/${lesson.id}`), tone: "blue" },
               { label: "Tiến độ", icon: <BarChart3 />, onClick: () => setProgressLesson(lesson), tone: "muted" },
               { label: busyId === lesson.id ? "Đang sao…" : "Nhân bản", icon: <Copy />, onClick: () => duplicate(lesson), tone: "muted" },
               { label: "Xoá", icon: <Trash2 />, onClick: () => askRemove(lesson), tone: "red" },
@@ -208,7 +209,7 @@ export default function StudioLessons({ showToast }) {
             <td className="px-5 py-3 font-body text-ink">{fmtDate(lesson.updatedAt)}</td>
             <td className="px-5 py-3">
               <div className="flex items-center justify-end gap-2">
-                <IconButton title="Soạn bài" onClick={() => navigate(`/dashboard/studio/${lesson.id}`)}><Pencil /></IconButton>
+                <IconButton title="Soạn bài" onClick={() => navigate(`/dashboard/ai-lesson-creator/${lesson.id}`)}><Pencil /></IconButton>
                 <IconButton title="Tiến độ học sinh" onClick={() => setProgressLesson(lesson)}><BarChart3 /></IconButton>
                 {lesson.status === "published" && (
                   <IconButton title="Sao chép link cho học sinh" onClick={() => copyLink(lesson)}><Link2 /></IconButton>

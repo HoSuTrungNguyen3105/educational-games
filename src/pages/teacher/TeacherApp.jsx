@@ -15,6 +15,7 @@ const TemplateFormPage = lazy(() => import('./TemplateFormPage.jsx'));
 const BirthdayPageManagement = lazy(() => import('./BirthdayPageManagement.jsx'));
 const StudioLessons = lazy(() => import('./StudioLessons.jsx'));
 const StudioEditor = lazy(() => import('./StudioEditor.jsx'));
+const AiStudioPage = lazy(() => import('./AiStudioPage.jsx'));
 const DocumentStudio = lazy(() => import('./DocumentStudio.jsx'));
 const DocumentTemplates = lazy(() => import('./DocumentTemplates.jsx'));
 const DocumentStudioEditor = lazy(() => import('./DocumentStudioEditor.jsx'));
@@ -48,10 +49,12 @@ const SupportTicketManagement = lazy(() => import('./SupportTicketManagement.jsx
 const TeacherSupportTickets = lazy(() => import('./TeacherSupportTickets.jsx'));
 
 /* Hai trang EDITOR được render toàn màn hình, KHÔNG có sidebar quản trị:
- *   • /dashboard/studio/:lessonId     — AI Studio soạn bài học
+ *   • /dashboard/ai-lesson-creator/:lessonId — Tạo bài học AI (soạn bài học)
  *   • /dashboard/documents/:documentId — Teacher Document Studio (Word/PPT)
- * Danh sách (…/studio, …/documents) vẫn nằm trong TeacherLayout như cũ. */
-const STANDALONE_EDITORS = new Set(["admin-studio-edit", "admin-document-edit"]);
+ * Danh sách (…/ai-lesson-creator, …/documents) vẫn nằm trong TeacherLayout
+ * như cũ. "admin-studio-edit" là route cũ của editor — giữ trong set để
+ * link cũ mở vào không nháy layout trước khi effect bên dưới thay URL. */
+const STANDALONE_EDITORS = new Set(["admin-lesson-creator-edit", "admin-studio-edit", "admin-document-edit"]);
 
 export default function TeacherApp({ user, route, onLogout, showToast, toast }) {
   const [refreshFlag, setRefreshFlag] = useState(0);
@@ -62,17 +65,27 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
 
   const page = route.name;
 
-  /* Hai route cũ của trang Avatar đã gộp vào /dashboard/avatar-items:
-   * thay URL (replace, không thêm history) về route chuẩn kèm ?tab= tương
-   * ứng để link cũ/bookmark mở đúng tab thay vì 404. Trong lúc chờ thay URL,
-   * khối render bên dưới vẫn hiện trang gộp với defaultTab đúng tab đó. */
+  /* Các route cũ đã đổi chỗ — thay URL (replace, không thêm history) về
+   * route chuẩn để link cũ/bookmark không 404:
+   *   • Avatar đã gộp: /dashboard/avatar-template, /dashboard/body-custom
+   *     → /dashboard/avatar-items kèm ?tab= tương ứng. Trong lúc chờ thay
+   *     URL, khối render bên dưới vẫn hiện trang gộp với defaultTab đúng.
+   *   • AI Studio tách theo REFACTOR_AI_STUDIO.md: /dashboard/studio
+   *     → /dashboard/ai-studio (trang cấu hình Gia sư AI mới);
+   *     /dashboard/studio/:lessonId → /dashboard/ai-lesson-creator/:lessonId
+   *     (editor tạo bài học). */
+  const legacyLessonId = route.params?.lessonId;
   useEffect(() => {
     if (page === "admin-avatar-template") {
       window.location.replace("#/dashboard/avatar-items?tab=template");
     } else if (page === "admin-body-custom") {
       window.location.replace("#/dashboard/avatar-items?tab=body");
+    } else if (page === "admin-studio") {
+      window.location.replace("#/dashboard/ai-studio");
+    } else if (page === "admin-studio-edit" && legacyLessonId) {
+      window.location.replace(`#/dashboard/ai-lesson-creator/${legacyLessonId}`);
     }
-  }, [page]);
+  }, [page, legacyLessonId]);
 
   const content = (
     <Suspense fallback={<div className="p-12 flex items-center justify-center"><Loader label="Đang tải dữ liệu..." /></div>}>
@@ -90,7 +103,12 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
         {page === "admin-template-new" && <TemplateFormPage showToast={showToast} />}
         {page === "admin-template-edit" && <TemplateFormPage key={route.params.templateId} showToast={showToast} route={route} />}
         {page === "admin-birthday" && <BirthdayPageManagement showToast={showToast} />}
-        {page === "admin-studio" && <StudioLessons showToast={showToast} />}
+        {page === "admin-lesson-creator" && <StudioLessons showToast={showToast} />}
+        {page === "admin-lesson-creator-edit" && <StudioEditor key={route.params.lessonId} lessonId={route.params.lessonId} showToast={showToast} />}
+        {page === "admin-ai-studio" && <AiStudioPage showToast={showToast} />}
+        {/* Route cũ trước khi tách: render tạm đúng trang đích trong lúc
+            effect chuyển hướng thay URL (tránh nháy trang trống/404). */}
+        {page === "admin-studio" && <AiStudioPage showToast={showToast} />}
         {page === "admin-studio-edit" && <StudioEditor key={route.params.lessonId} lessonId={route.params.lessonId} showToast={showToast} />}
         {page === "admin-documents" && <DocumentStudio showToast={showToast} />}
         {page === "admin-document-templates" && <DocumentTemplates showToast={showToast} />}
