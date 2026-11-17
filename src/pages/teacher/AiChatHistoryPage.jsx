@@ -6,19 +6,23 @@
 // vai trò, loại lượt và khoảng ngày; bấm vào một dòng để xem toàn văn câu
 // hỏi + câu trả lời + nguồn bài học. Nút "Xóa theo bộ lọc" dọn lịch sử
 // đúng phạm vi đang lọc (server bắt buộc có điều kiện ngày hoặc userId và
-// ghi audit cho mỗi lần xóa).
+// ghi audit cho mỗi lần xóa). Trong chi tiết mỗi bản ghi có nút "Dạy lại
+// AI" → sang Tab Đính chính kiến thức của AI Studio kèm prefill chủ đề
+// (REFACTOR_AI_STUDIO.md mục 3; đặt ở mọi bản ghi vì hệ thống chưa có
+// dữ liệu đánh giá 👍/👎 để lọc như đặc tả mô tả).
 //
 // Bố cục + phân trang theo mẫu mục Nhật ký trong AdminSettings (bộ UI dùng
 // chung: Input/Select/GhostButton/PrimaryButton/ConfirmModal/EmptyState).
 
 import { useCallback, useEffect, useState } from "react";
-import { History, RefreshCw, Search, Trash2 } from "lucide-react";
+import { GraduationCap, History, RefreshCw, Search, Trash2 } from "lucide-react";
 import {
   ConfirmModal, EmptyState, GhostButton, Input, Loader, Modal, PrimaryButton, Select,
 } from "../../components/ui";
 import AiMarkdown from "../../components/ai/AiMarkdown.jsx";
 import { deleteChatLogs, listChatLogs } from "../../services/aiApi.js";
 import { getRoleLabel } from "../../config/roles.js";
+import { navigate } from "../../lib/router.js";
 
 const PAGE_SIZE = 20;
 
@@ -122,6 +126,23 @@ export default function AiChatHistoryPage({ showToast }) {
       setDeleting(false);
     }
   }
+
+  /**
+   * "Dạy lại AI" (REFACTOR_AI_STUDIO.md mục 3): đưa lượt hỏi này sang
+   * Tab Đính chính kiến thức của AI Studio để admin soạn bản ghi đính
+   * chính. Hệ thống CHƯA có dữ liệu đánh giá 👍/👎 cho từng lượt nên nút
+   * có ở MỌI bản ghi (không lọc theo đánh giá). Truyền qua hash query:
+   * topic = câu hỏi của bản ghi; answer = câu trả lời AI cũ (cắt 300 ký
+   * tự) — trang đích chỉ hiển thị nó làm ghi chú tham chiếu, KHÔNG tự
+   * điền vào ô nội dung chuẩn.
+   */
+  const reteach = (r) => {
+    const params = new URLSearchParams();
+    params.set("tab", "override");
+    params.set("topic", String(r.question || "").slice(0, 200));
+    if (r.answer) params.set("answer", String(r.answer).slice(0, 300));
+    navigate(`/dashboard/ai-studio?${params.toString()}`);
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-24">
@@ -250,7 +271,10 @@ export default function AiChatHistoryPage({ showToast }) {
               </p>
             )}
           </div>
-          <div className="flex justify-end mt-4">
+          <div className="flex justify-end gap-2 mt-4">
+            <PrimaryButton onClick={() => reteach(selected)} className="!px-4 !py-2 text-sm rounded-lg">
+              <GraduationCap className="w-4 h-4 mr-1.5" />Dạy lại AI
+            </PrimaryButton>
             <GhostButton onClick={() => setSelected(null)}>Đóng</GhostButton>
           </div>
         </Modal>

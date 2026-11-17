@@ -23,9 +23,15 @@ import { Router } from "express";
 import { ObjectId } from "mongodb";
 import { getCollection } from "../db.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
-import { sendSuccess, sendError } from "../utils/response.js";
+import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 import * as questionService from "../services/questionService.js";
 import { isOn } from "../services/systemConfigService.js";
+import {
+  getSavedTutorConfig, saveTutorConfig, normalizeTutorConfigInput,
+} from "../services/aiTutorConfigService.js";
+import {
+  listCorrections, createCorrection, updateCorrection, deleteCorrection,
+} from "../services/aiCorrectionService.js";
 import { callAiBackend, aiBackendHealth, AiBackendError, getAiInferenceStatus, aiProviderKind } from "../services/aiBackendService.js";
 import { listChatLogs, deleteChatLogs } from "../services/aiChatLogService.js";
 import { computeLearningMetrics, topicDisplayName, MIN_QUESTIONS_PER_TOPIC } from "../services/aiLearningMetrics.js";
@@ -201,6 +207,88 @@ router.post("/playground/chat", authenticate, requireRoles("teacher", "admin"), 
     sendSuccess(res, data);
   } catch (e) {
     forwardError(res, e, "/api/ai/playground/chat");
+  }
+});
+
+// ─────────────── Cấu hình Gia sư AI + Đính chính kiến thức (AI Studio) ───────────────
+//
+// Tab 1 + Tab 2 của trang AI Studio (REFACTOR_AI_STUDIO.md Bước 2). Đây
+// là các endpoint DỮ LIỆU THUẦN (đọc/ghi system_config + collection
+// ai_corrections), KHÔNG gọi model — xử lý thẳng ở route qua service như
+// /class-overview và /chat-logs. CHỈ giáo viên/admin; kèm requireAiEnabled
+// như mọi endpoint AI Studio khác (AI tắt thì trang cấu hình cũng đóng).
+
+/**
+ * GET /api/ai/tutor-config?level=&subject= — cấu hình Gia sư ĐÃ LƯU của
+ * đúng một khoá (cấp × môn). `config: null` nghĩa là khoá đó CHƯA có cấu
+ * hình riêng (Tab 1 hiển thị mặc định và nói rõ điều đó).
+ */
+router.get("/tutor-config", authenticate, requireRoles("teacher", "admin"), requireAiEnabled, async (req, res) => {
+  try {
+    const level = typeof req.query.level === "string" && req.query.level.trim() !== ""
+      ? req.query.level.trim() : "default";
+    const subject = typeof req.query.subject === "string" ? req.query.subject.trim().slice(0, 80) : "";
+    const config = await getSavedTutorConfig(level, subject);
+    sendSuccess(res, { level, subject, config });
+  } catch (e) {
+    console.error("[ai] Lỗi đọc cấu hình Gia sư AI:", e?.message || e);
+    sendError(res, "Không đọc được cấu hình Gia sư AI. Hãy thử lại sau.", 500);
+  }
+});
+
+/**
+ * PUT /api/ai/tutor-config — lưu (tạo/ghi đè) cấu hình Gia sư của một
+ * khoá. Validate + kẹp temperature [0, 0.5] ở aiTutorConfigService;
+ * cấu hình có hiệu lực cho CHAT THẬT ngay từ lượt hỏi tiếp theo
+ * (aiDirectService.directChat tra theo cấp × môn của học sinh).
+ */
+router.put("/tutor-config", authenticate, requireRoles("teacher", "admin"), requireAiEnabled, async (req, res) => {
+  try {
+    const { level, subject, entry } = normalizeTutorConfigInput(req.body || {});
+    const config = await saveTutorConfig(level, subject, entry, req.user);
+    sendSuccess(res, { level, subject, config }, "Đã lưu cấu hình Gia sư AI");
+  } catch (e) {
+    forwardError(res, e, "/api/ai/tutor-config");
+  }
+});
+
+/** GET /api/ai/corrections — danh sách đính chính kiến thức, mới nhất trước. */
+router.get("/corrections", authenticate, requireRoles("teacher", "admin"), requireAiEnabled, async (_req, res) => {
+  try {
+    sendSuccess(res, { items: await listCorrections() });
+  } catch (e) {
+    console.error("[ai] Lỗi đọc danh sách đính chính:", e?.message || e);
+    sendError(res, "Không đọc được danh sách đính chính. Hãy thử lại sau.", 500);
+  }
+});
+
+/** POST /api/ai/corrections — tạo bản ghi đính chính (topic/content bắt buộc). */
+router.post("/corrections", authenticate, requireRoles("teacher", "admin"), requireAiEnabled, async (req, res) => {
+  try {
+    const item = await createCorrection(req.body || {}, req.user?.sub);
+    sendCreated(res, item, "Đã lưu đính chính kiến thức");
+  } catch (e) {
+    forwardError(res, e, "/api/ai/corrections");
+  }
+});
+
+/** PUT /api/ai/corrections/:id — sửa bản ghi (kể cả bật/tắt `active`). */
+router.put("/corrections/:id", authenticate, requireRoles("teacher", "admin"), requireAiEnabled, async (req, res) => {
+  try {
+    const item = await updateCorrection(req.params.id, req.body || {});
+    sendSuccess(res, item, "Đã cập nhật đính chính kiến thức");
+  } catch (e) {
+    forwardError(res, e, "/api/ai/corrections/:id");
+  }
+});
+
+/** DELETE /api/ai/corrections/:id — xoá bản ghi đính chính. */
+router.delete("/corrections/:id", authenticate, requireRoles("teacher", "admin"), requireAiEnabled, async (req, res) => {
+  try {
+    const data = await deleteCorrection(req.params.id);
+    sendSuccess(res, data, "Đã xoá đính chính kiến thức");
+  } catch (e) {
+    forwardError(res, e, "/api/ai/corrections/:id");
   }
 });
 

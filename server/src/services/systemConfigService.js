@@ -76,6 +76,14 @@ export const DEFAULTS = {
     // dương, còn lại về mặc định.
     dailyTokenLimit: 200000,
     dailyRequestLimit: 1000,
+    // Cấu hình hành vi Gia sư AI theo (cấp học × môn học) do trang AI
+    // Studio (Tab "Cấu hình Gia sư AI") lưu: MAP khoá "level|subject" →
+    // { systemPrompt, temperature, scopeOnly, requireCitation,
+    // refuseOffTopic, updatedAt }. level "default" = mặc định toàn hệ
+    // thống, subject "" = mọi môn. Là LÁ dạng object duy nhất trong
+    // DEFAULTS (xem xử lý riêng ở coerce/LEAF_PATHS) — aiTutorConfigService
+    // là nơi đọc/ghi nghiệp vụ, ở đây chỉ whitelist + ép kiểu khi ghi.
+    tutorConfigs: {},
   },
   // Màu tuỳ chỉnh của KHU QUẢN TRỊ (trang Cài đặt → Giao diện): admin chọn
   // màu thanh header / sidebar / nền body cho dashboard, áp cho mọi tài
@@ -118,7 +126,13 @@ const LEAF_PATHS = (() => {
       // server, KHÔNG phải khoá ghi được — loại khỏi danh sách lá để client
       // không ghi đè được qua API cấu hình.
       if (Array.isArray(v)) continue;
-      if (v && typeof v === "object") walk(v, p);
+      if (v && typeof v === "object") {
+        // Object RỖNG (ai.tutorConfigs — map do nghiệp vụ tự quản lý khoá
+        // con) được tính là MỘT lá: toàn bộ map là một giá trị ghi được,
+        // ép kiểu tập trung ở coerce().
+        if (Object.keys(v).length === 0) out.push(p);
+        else walk(v, p);
+      }
       else out.push(p);
     }
   };
@@ -126,8 +140,38 @@ const LEAF_PATHS = (() => {
   return out;
 })();
 
+/**
+ * Ép kiểu MAP cấu hình Gia sư AI (ai.tutorConfigs) — xem DEFAULTS.ai.
+ * Chỉ giữ đúng cấu trúc nghiệp vụ: khoá "level|subject" (cắt độ dài),
+ * mỗi giá trị gồm systemPrompt (≤4000 ký tự), temperature (số kẹp
+ * [0, 0.5] như thanh trượt AI Studio, lạ → 0.2), 3 công tắc boolean và
+ * updatedAt. Mọi field lạ bị loại — không cho nhét dữ liệu tuỳ ý vào
+ * system_config qua đường này. Trần 64 mục để map không phình vô hạn.
+ */
+function sanitizeTutorConfigs(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const out = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (Object.keys(out).length >= 64) break;
+    const k = String(key).slice(0, 121);
+    if (!k.includes("|") || !raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+    const t = Number(raw.temperature);
+    out[k] = {
+      systemPrompt: raw.systemPrompt == null ? "" : String(raw.systemPrompt).slice(0, 4000),
+      temperature: Number.isFinite(t) ? Math.min(0.5, Math.max(0, t)) : 0.2,
+      scopeOnly: raw.scopeOnly === true,
+      requireCitation: raw.requireCitation === true,
+      refuseOffTopic: raw.refuseOffTopic === true,
+      updatedAt: raw.updatedAt == null ? null : String(raw.updatedAt).slice(0, 40),
+    };
+  }
+  return out;
+}
+
 /** Ép kiểu theo giá trị mặc định — boolean/string, chuỗi bị cắt theo trần an toàn. */
 function coerce(path, value) {
+  // Map cấu hình Gia sư AI: cấu trúc riêng, xem sanitizeTutorConfigs.
+  if (path === "ai.tutorConfigs") return sanitizeTutorConfigs(value);
   // Model AI: CHỈ nhận đúng id trong danh sách cấu hình sẵn (aiModelConfig)
   // hoặc rỗng (= dùng GROQ_MODEL của env). Giá trị lạ → "" để không ai nhét
   // được tên model tuỳ ý qua API cấu hình.
@@ -272,6 +316,7 @@ export async function updateConfig(patch, actor = null) {
       lowScoreThreshold: next.ai.lowScoreThreshold ?? null,
       dailyTokenLimit: next.ai.dailyTokenLimit ?? 200000,
       dailyRequestLimit: next.ai.dailyRequestLimit ?? 1000,
+      tutorConfigs: next.ai.tutorConfigs ?? {},
     },
     appearance: {
       headerColor: next.appearance?.headerColor || "",

@@ -3,10 +3,13 @@ import {
   FlaskConical, Info, MessagesSquare, Pencil, Save, Send, SlidersHorizontal, Trash2, Wrench, X,
 } from "lucide-react";
 import {
-  GhostButton, Input, ManagementHeader, PrimaryButton, Select, ToggleSwitch,
+  ConfirmModal, GhostButton, Input, ManagementHeader, PrimaryButton, Select, ToggleSwitch,
 } from "../../components/ui";
 import { setupService } from "../../services/setupService.js";
-import { playgroundChat } from "../../services/aiApi.js";
+import {
+  createCorrection, deleteCorrection, getTutorConfig, listCorrections,
+  playgroundChat, saveTutorConfig, updateCorrection,
+} from "../../services/aiApi.js";
 import AiMarkdown from "../../components/ai/AiMarkdown.jsx";
 
 /* AiStudioPage — trang AI Studio MỚI ở /dashboard/ai-studio (nhóm AI),
@@ -15,15 +18,18 @@ import AiMarkdown from "../../components/ai/AiMarkdown.jsx";
  *   • config     — Cấu hình Gia sư AI (prompt & guardrails)
  *   • override   — Đính chính kiến thức (Knowledge Override)
  *   • playground — Kiểm thử RAG
- * Trạng thái nối backend:
- *   • Tab Kiểm thử ĐÃ nối backend thật (POST /api/ai/playground/chat):
- *     câu hỏi chạy qua đúng pipeline của AI Bạn Học — truy xuất đoạn bài
- *     học ĐÃ XUẤT BẢN theo TỪ KHOÁ (hệ thống chưa có vector/embedding)
- *     + model đang cấu hình — kèm cấu hình NHÁP của Tab 1 gửi theo từng
- *     lượt thử. Nguồn hiển thị dưới câu trả lời là dữ liệu truy xuất thật;
+ * Trạng thái nối backend — CẢ 3 TAB ĐÃ NỐI BACKEND THẬT:
+ *   • Tab Cấu hình: GET/PUT /api/ai/tutor-config — cấu hình lưu ở
+ *     system_config theo khoá (cấp × môn) và được áp vào chat THẬT của
+ *     học sinh ở backend (chỉ thị bổ sung + temperature + guardrail
+ *     phạm vi chốt ở backend, cùng cơ chế với bản nháp ở Tab Kiểm thử).
+ *   • Tab Đính chính: CRUD /api/ai/corrections — bản ghi được Gia sư AI
+ *     truy xuất theo TỪ KHOÁ với ưu tiên cao nhất (hệ thống chưa có
+ *     vector/embedding), chèn trước tài liệu bài học trong prompt.
+ *   • Tab Kiểm thử: POST /api/ai/playground/chat — pipeline chat thật
+ *     kèm cấu hình NHÁP của Tab 1 gửi theo từng lượt thử (không phải bản
+ *     đã lưu). Nguồn hiển thị dưới câu trả lời là dữ liệu truy xuất thật;
  *     "điểm khớp" là điểm từ khoá, không phải độ tương đồng vector.
- *   • Tab Cấu hình + Đính chính vẫn là khung: nút Lưu báo rõ "sẽ nối
- *     backend ở bước tiếp theo" — không giả vờ đã lưu.
  * (Trang tạo bài học cũ đã tách sang /dashboard/ai-lesson-creator.)
  * Tab đồng bộ qua ?tab= trên hash như trang Avatar gộp. */
 
@@ -34,8 +40,6 @@ const TABS = [
 ];
 const TAB_KEYS = TABS.map((t) => t.key);
 const BASE_HASH = "#/dashboard/ai-studio";
-
-const PENDING_MSG = "Khung giao diện — chức năng sẽ được nối backend ở bước tiếp theo, dữ liệu chưa được lưu.";
 
 /* Router tự chế bỏ qua query khi match route nên trang tự đọc ?tab= từ hash. */
 function tabFromHash() {
@@ -85,7 +89,7 @@ function ToggleRow({ title, desc, checked, onChange }) {
 
 export default function AiStudioPage({ showToast }) {
   const [tab, setTab] = useState(() => tabFromHash() || "config");
-  const [notice, setNotice] = useState("");
+
 
   /* Hash đổi từ bên ngoài (back/forward, bấm menu về route chuẩn không kèm
    * ?tab=) thì tab đi theo URL. */
@@ -105,20 +109,6 @@ export default function AiStudioPage({ showToast }) {
      * cuộn lên đầu trang) và không thêm mục history cho mỗi lần đổi tab. */
     window.history.replaceState(null, "", `${BASE_HASH}?tab=${key}`);
   }, []);
-
-  useEffect(() => {
-    if (!notice) return undefined;
-    const t = setTimeout(() => setNotice(""), 8000);
-    return () => clearTimeout(t);
-  }, [notice]);
-
-  /* Các hành động CHƯA nối backend (Lưu cấu hình ở Tab 1, Lưu đính chính
-   * ở Tab 2) đều đi qua đây: báo rõ chưa nối backend, KHÔNG giả vờ đã lưu.
-   * (Tab Kiểm thử đã có backend thật — xem submitQuestion ở dưới.) */
-  const notifyPending = useCallback(() => {
-    setNotice(PENDING_MSG);
-    showToast?.(PENDING_MSG);
-  }, [showToast]);
 
   // ── Danh sách môn học thật từ hệ thống (dùng cho cả Tab 1 và Tab 2) ──
   const [subjectNames, setSubjectNames] = useState(FALLBACK_SUBJECTS);
@@ -140,7 +130,7 @@ export default function AiStudioPage({ showToast }) {
     ...subjectNames.map((name) => ({ value: name, label: name })),
   ];
 
-  // ── Tab 1: Cấu hình Gia sư AI (state local thuần giao diện) ──
+  // ── Tab 1: Cấu hình Gia sư AI (LƯU THẬT ở backend theo khoá cấp × môn) ──
   const [cfgLevel, setCfgLevel] = useState("default");
   const [cfgSubject, setCfgSubject] = useState("");
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
@@ -151,6 +141,75 @@ export default function AiStudioPage({ showToast }) {
     refuseOffTopic: false,
   });
   const promptRef = useRef(null);
+  /* Trạng thái bản ĐÃ LƯU của khoá đang chọn: cfgHasSaved=false nghĩa là
+   * khoá này chưa có cấu hình riêng — form đang hiển thị bộ mặc định. */
+  const [cfgLoading, setCfgLoading] = useState(false);
+  const [cfgSaving, setCfgSaving] = useState(false);
+  const [cfgHasSaved, setCfgHasSaved] = useState(false);
+  const [cfgSavedAt, setCfgSavedAt] = useState(null);
+
+  const applyFormDefaults = useCallback(() => {
+    setPrompt(DEFAULT_PROMPT);
+    setTemperature(0.2);
+    setGuardrails({ scopeOnly: true, requireCitation: true, refuseOffTopic: false });
+    setCfgHasSaved(false);
+    setCfgSavedAt(null);
+  }, []);
+
+  /* Đổi cấp/môn → nạp cấu hình ĐÃ LƯU của đúng khoá đó. Chưa có thì về
+   * mặc định của form và ghi rõ chưa có cấu hình riêng. */
+  useEffect(() => {
+    let alive = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- bật cờ loading trước khi fetch bất đồng bộ, setState còn lại đều sau await
+    setCfgLoading(true);
+    getTutorConfig(cfgLevel, cfgSubject)
+      .then((res) => {
+        if (!alive) return;
+        if (res?.config) {
+          setPrompt(res.config.systemPrompt || "");
+          setTemperature(typeof res.config.temperature === "number" ? res.config.temperature : 0.2);
+          setGuardrails({
+            scopeOnly: res.config.scopeOnly === true,
+            requireCitation: res.config.requireCitation === true,
+            refuseOffTopic: res.config.refuseOffTopic === true,
+          });
+          setCfgHasSaved(true);
+          setCfgSavedAt(res.config.updatedAt || null);
+        } else {
+          applyFormDefaults();
+        }
+      })
+      .catch((e) => {
+        if (!alive) return;
+        applyFormDefaults();
+        showToast?.(e?.message || "Không đọc được cấu hình Gia sư AI đã lưu", "error");
+      })
+      .finally(() => { if (alive) setCfgLoading(false); });
+    return () => { alive = false; };
+  }, [cfgLevel, cfgSubject, applyFormDefaults, showToast]);
+
+  const saveConfig = async () => {
+    if (cfgSaving || cfgLoading) return;
+    setCfgSaving(true);
+    try {
+      const res = await saveTutorConfig({
+        level: cfgLevel,
+        subject: cfgSubject,
+        systemPrompt: prompt,
+        temperature,
+        scopeOnly: guardrails.scopeOnly,
+        requireCitation: guardrails.requireCitation,
+        refuseOffTopic: guardrails.refuseOffTopic,
+      });
+      setCfgHasSaved(true);
+      setCfgSavedAt(res?.config?.updatedAt || null);
+      showToast?.("Đã lưu cấu hình Gia sư AI — áp dụng cho chat thật từ lượt hỏi tiếp theo", "success");
+    } catch (e) {
+      showToast?.(e?.message || "Không lưu được cấu hình Gia sư AI", "error");
+    } finally {
+      setCfgSaving(false);
+    }
+  };
 
   const insertVariable = (token) => {
     const el = promptRef.current;
@@ -164,14 +223,128 @@ export default function AiStudioPage({ showToast }) {
     });
   };
 
-  // ── Tab 2: Đính chính kiến thức ──
+  // ── Tab 2: Đính chính kiến thức (CRUD THẬT qua /api/ai/corrections) ──
   const [ovSubject, setOvSubject] = useState("");
   const [ovLevel, setOvLevel] = useState("");
   const [ovTopic, setOvTopic] = useState("");
   const [ovContent, setOvContent] = useState("");
-  /* Chưa có backend nên danh sách luôn rỗng ở bước này — bước sau sẽ đổ
-   * bản ghi thật (kèm nút Sửa/Xoá như khung render bên dưới) từ API. */
-  const overrideRecords = [];
+  const [overrideRecords, setOverrideRecords] = useState([]);
+  const [ovLoading, setOvLoading] = useState(false);
+  const [ovSaving, setOvSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [ovConfirmDelete, setOvConfirmDelete] = useState(null);
+  const [ovDeleting, setOvDeleting] = useState(false);
+  /* Ghi chú tham chiếu từ nút "Dạy lại AI" ở Lịch sử hỏi AI: câu trả lời
+   * AI đã đưa (có thể sai) — CHỈ để giáo viên đối chiếu khi viết đính
+   * chính, không tự điền vào ô nội dung chuẩn. */
+  const [reteachNote, setReteachNote] = useState(null);
+
+  const loadCorrections = useCallback(async () => {
+    setOvLoading(true);
+    try {
+      const res = await listCorrections();
+      setOverrideRecords(Array.isArray(res?.items) ? res.items : []);
+    } catch (e) {
+      showToast?.(e?.message || "Không đọc được danh sách đính chính kiến thức", "error");
+    } finally {
+      setOvLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loadCorrections tự setState bất đồng bộ sau await
+    loadCorrections();
+  }, [loadCorrections]);
+
+  /* Prefill từ "Dạy lại AI" (Lịch sử hỏi AI): URL dạng
+   * #/dashboard/ai-studio?tab=override&topic=...&answer=... — topic đổ
+   * vào ô chủ đề, câu trả lời AI cũ chỉ hiện ở ghi chú tham chiếu. */
+  useEffect(() => {
+    const query = (window.location.hash || "").split("?")[1] || "";
+    const params = new URLSearchParams(query);
+    const topic = params.get("topic");
+    if (!topic) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prefill một lần khi mở trang từ nút "Dạy lại AI", không phải vòng render lặp
+    setOvTopic(topic.slice(0, 300));
+    const answer = params.get("answer");
+    if (answer) setReteachNote({ answer: answer.slice(0, 400) });
+    setTab("override");
+  }, []);
+
+  const resetOvForm = () => {
+    setOvSubject("");
+    setOvLevel("");
+    setOvTopic("");
+    setOvContent("");
+    setEditingId(null);
+  };
+
+  const submitCorrection = async () => {
+    if (ovSaving) return;
+    if (!ovTopic.trim()) { showToast?.("Hãy nhập Câu hỏi / Chủ đề cần đính chính", "error"); return; }
+    if (!ovContent.trim()) { showToast?.("Hãy nhập Nội dung kiến thức chuẩn xác", "error"); return; }
+    setOvSaving(true);
+    try {
+      if (editingId) {
+        await updateCorrection(editingId, {
+          subject: ovSubject, level: ovLevel, topic: ovTopic.trim(), content: ovContent.trim(),
+        });
+        showToast?.("Đã cập nhật đính chính kiến thức", "success");
+      } else {
+        await createCorrection({
+          subject: ovSubject, level: ovLevel, topic: ovTopic.trim(), content: ovContent.trim(),
+        });
+        showToast?.("Đã lưu đính chính kiến thức — Gia sư AI sẽ ưu tiên dùng khi học sinh hỏi đúng chủ đề", "success");
+      }
+      resetOvForm();
+      setReteachNote(null);
+      await loadCorrections();
+    } catch (e) {
+      showToast?.(e?.message || "Không lưu được đính chính kiến thức", "error");
+    } finally {
+      setOvSaving(false);
+    }
+  };
+
+  const startEditCorrection = (r) => {
+    setEditingId(r.id);
+    setOvSubject(r.subject || "");
+    setOvLevel(r.level || "");
+    setOvTopic(r.topic || "");
+    setOvContent(r.content || "");
+    setReteachNote(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const toggleCorrectionActive = async (r) => {
+    try {
+      await updateCorrection(r.id, { active: !r.active });
+      setOverrideRecords((prev) => prev.map((x) => (x.id === r.id ? { ...x, active: !r.active } : x)));
+    } catch (e) {
+      showToast?.(e?.message || "Không đổi được trạng thái đính chính", "error");
+    }
+  };
+
+  const doDeleteCorrection = async () => {
+    if (!ovConfirmDelete || ovDeleting) return;
+    setOvDeleting(true);
+    try {
+      await deleteCorrection(ovConfirmDelete.id);
+      showToast?.("Đã xoá đính chính kiến thức", "success");
+      if (editingId === ovConfirmDelete.id) resetOvForm();
+      setOvConfirmDelete(null);
+      await loadCorrections();
+    } catch (e) {
+      showToast?.(e?.message || "Không xoá được đính chính kiến thức", "error");
+    } finally {
+      setOvDeleting(false);
+    }
+  };
+
+  const levelLabelOf = (value) => {
+    if (!value) return "Tất cả cấp học";
+    return OVERRIDE_LEVEL_OPTIONS.find((o) => o.value === value)?.label || value;
+  };
 
   // ── Tab 3: Kiểm thử Gia sư AI (ĐÃ nối backend thật) ──
   const [draft, setDraft] = useState("");
@@ -232,30 +405,17 @@ export default function AiStudioPage({ showToast }) {
         subtitle="Trung tâm cấu hình hành vi Gia sư AI (RAG) và quản lý tri thức ưu tiên"
       />
 
-      {/* Banner trung thực trạng thái: Tab Kiểm thử đã nối backend thật;
-          Tab Cấu hình + Đính chính vẫn là khung chờ nối lưu trữ. */}
+      {/* Banner trung thực trạng thái: cả 3 tab đã nối backend thật. */}
       <div className="note-card px-4 py-3 flex items-start gap-2.5">
         <Info className="w-4.5 h-4.5 shrink-0 mt-0.5 text-[#8A7C63]" />
         <p className="text-sm text-ink/75">
-          <strong className="text-ink">Tab Kiểm thử đã nối backend thật.</strong>{" "}
-          Câu hỏi kiểm thử chạy qua đúng pipeline của AI Bạn Học — truy xuất đoạn bài học
-          đã xuất bản theo <strong className="text-ink">từ khoá</strong> (hệ thống chưa có
-          vector/embedding) + model đang cấu hình — kèm cấu hình nháp ở Tab Cấu hình.
-          Riêng nút Lưu ở Tab Cấu hình và Tab Đính chính vẫn là khung, sẽ nối lưu trữ
-          ở bước tiếp theo.
+          <strong className="text-ink">Cả 3 tab đã nối backend thật.</strong>{" "}
+          Cấu hình ở Tab Cấu hình được lưu theo cấp × môn và áp vào chat thật của học sinh;
+          bản ghi ở Tab Đính chính được Gia sư AI truy xuất theo <strong className="text-ink">từ khoá</strong>{" "}
+          với ưu tiên cao nhất (hệ thống chưa có vector/embedding); Tab Kiểm thử chạy qua đúng
+          pipeline của AI Bạn Học kèm cấu hình nháp ở Tab Cấu hình.
         </p>
       </div>
-
-      {notice && (
-        <div className="note-card px-4 py-3 flex items-start gap-2.5 border-gold/50">
-          <Info className="w-4.5 h-4.5 shrink-0 mt-0.5 text-[#8A7C63]" />
-          <p className="text-sm text-ink/80 flex-1">{notice}</p>
-          <button type="button" onClick={() => setNotice("")} aria-label="Đóng thông báo"
-            className="shrink-0 text-ink/40 hover:text-ink transition">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       <div className="flex gap-1 p-1 rounded-2xl bg-ink/5 w-fit max-w-full overflow-x-auto" role="tablist" aria-label="Nhóm chức năng AI Studio">
         {TABS.map(({ key, label, icon: Icon }) => (
@@ -341,9 +501,17 @@ export default function AiStudioPage({ showToast }) {
                 onChange={(v) => setGuardrails((g) => ({ ...g, refuseOffTopic: v }))}
               />
             </div>
-            <div className="flex justify-end">
-              <PrimaryButton onClick={notifyPending} className="flex items-center gap-2 !px-4 !py-2.5 text-sm">
-                <Save className="w-4 h-4" /> Lưu cấu hình
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-xs text-ink/55">
+                {cfgLoading
+                  ? "Đang đọc cấu hình đã lưu…"
+                  : cfgHasSaved
+                    ? `Phạm vi này ĐÃ có cấu hình riêng${cfgSavedAt ? ` (lưu lúc ${new Date(cfgSavedAt).toLocaleString("vi-VN")})` : ""} — đang áp dụng cho chat thật.`
+                    : "Phạm vi này CHƯA có cấu hình riêng — form đang hiển thị bộ mặc định. Bấm Lưu cấu hình để tạo và áp dụng cho chat thật."}
+              </p>
+              <PrimaryButton onClick={saveConfig} disabled={cfgSaving || cfgLoading}
+                className="flex items-center gap-2 !px-4 !py-2.5 text-sm">
+                <Save className="w-4 h-4" /> {cfgSaving ? "Đang lưu…" : "Lưu cấu hình"}
               </PrimaryButton>
             </div>
           </div>
@@ -352,13 +520,31 @@ export default function AiStudioPage({ showToast }) {
 
       {tab === "override" && (
         <div className="space-y-4">
+          {reteachNote && (
+            <div className="note-card px-4 py-3 flex items-start gap-2.5 border-gold/50">
+              <Info className="w-4.5 h-4.5 shrink-0 mt-0.5 text-[#8A7C63]" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-ink">Từ Lịch sử hỏi AI — câu trả lời AI đã đưa (chỉ để tham chiếu)</p>
+                <p className="text-sm text-ink/70 mt-1 whitespace-pre-wrap break-words">{reteachNote.answer}</p>
+                <p className="text-xs text-ink/55 mt-1">
+                  Hãy viết nội dung kiến thức CHUẨN vào ô “Nội dung kiến thức chuẩn xác” bên dưới — đừng sao chép nguyên câu trả lời này.
+                </p>
+              </div>
+              <button type="button" onClick={() => setReteachNote(null)} aria-label="Đóng ghi chú tham chiếu"
+                className="shrink-0 text-ink/40 hover:text-ink transition">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           <div className="note-card p-4 sm:p-5 space-y-4">
             <div>
-              <h2 className="font-display font-bold text-ink">Thêm bản ghi đính chính</h2>
+              <h2 className="font-display font-bold text-ink">{editingId ? "Sửa bản ghi đính chính" : "Thêm bản ghi đính chính"}</h2>
               <p className="text-xs text-ink/55 mt-0.5">
                 Vá nhanh kiến thức sai trong giáo trình khi chưa kịp sửa file Word/PowerPoint gốc.
-                Khi backend được nối, bản ghi sẽ được tạo embedding và lưu với độ ưu tiên cao
-                (priority = high) để RAG luôn truy xuất trước tài liệu gốc.
+                Bản ghi được lưu với độ ưu tiên cao nhất: khi học sinh hỏi, hệ thống truy xuất
+                theo từ khoá và luôn ưu tiên các đính chính khớp trước tài liệu bài học —
+                nếu mâu thuẫn với bài học thì Gia sư AI theo nội dung đính chính.
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -372,38 +558,60 @@ export default function AiStudioPage({ showToast }) {
             <Input label="Nội dung kiến thức chuẩn xác" type="textarea" rows={4}
               value={ovContent} onChange={setOvContent}
               placeholder="Nhập nội dung đúng mà Gia sư AI phải dùng khi trả lời chủ đề trên…" full />
-            <div className="flex justify-end">
-              <PrimaryButton onClick={notifyPending} className="flex items-center gap-2 !px-4 !py-2.5 text-sm">
-                <Save className="w-4 h-4" /> Lưu đính chính
+            <div className="flex justify-end gap-2">
+              {editingId && (
+                <GhostButton onClick={resetOvForm} className="!px-4 !py-2.5 text-sm">
+                  Huỷ sửa
+                </GhostButton>
+              )}
+              <PrimaryButton onClick={submitCorrection} disabled={ovSaving}
+                className="flex items-center gap-2 !px-4 !py-2.5 text-sm">
+                <Save className="w-4 h-4" /> {ovSaving ? "Đang lưu…" : editingId ? "Cập nhật đính chính" : "Lưu đính chính"}
               </PrimaryButton>
             </div>
           </div>
 
           <div className="note-card p-4 sm:p-5">
-            <h2 className="font-display font-bold text-ink mb-3">Bản ghi đang hoạt động</h2>
-            {overrideRecords.length === 0 ? (
+            <h2 className="font-display font-bold text-ink mb-3">Bản ghi đính chính đã lưu</h2>
+            {ovLoading && overrideRecords.length === 0 ? (
+              <p className="text-sm text-ink/55 py-6 text-center">Đang đọc danh sách đính chính…</p>
+            ) : overrideRecords.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-ink/15 px-4 py-10 text-center">
                 <Wrench className="w-8 h-8 mx-auto text-ink/30" />
                 <p className="font-display font-semibold text-ink mt-2">Chưa có bản ghi đính chính nào</p>
                 <p className="text-sm text-ink/55 mt-1 max-w-md mx-auto">
-                  Các bản ghi đã lưu sẽ hiện ở đây kèm nút Sửa / Xoá sau khi backend được nối ở bước tiếp theo.
+                  Các bản ghi đã lưu sẽ hiện ở đây kèm nút Sửa / Xoá. Khi học sinh hỏi đúng
+                  chủ đề, Gia sư AI sẽ ưu tiên dùng nội dung đính chính thay cho tài liệu cũ.
                 </p>
               </div>
             ) : (
               <ul className="divide-y divide-ink/5">
                 {overrideRecords.map((r) => (
-                  <li key={r.id} className="py-3 flex items-start gap-3">
+                  <li key={r.id} className={`py-3 flex items-start gap-3 ${r.active ? "" : "opacity-60"}`}>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-ink">{r.topic}</p>
-                      <p className="text-xs text-ink/55">{r.subject} · {r.level}</p>
-                      <p className="text-sm text-ink/75 mt-1">{r.content}</p>
+                      <p className="text-sm font-semibold text-ink">
+                        {r.topic}
+                        {!r.active && (
+                          <span className="ml-2 rounded-full bg-ink/10 px-2 py-0.5 text-[11px] font-semibold text-ink/60">
+                            Đang tắt — không dùng khi trả lời
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-ink/55">{r.subject || "Tất cả môn học"} · {levelLabelOf(r.level)}</p>
+                      <p className="text-sm text-ink/75 mt-1 whitespace-pre-wrap break-words">{r.content}</p>
                     </div>
-                    <GhostButton onClick={notifyPending} className="!px-3 !py-1.5 text-xs flex items-center gap-1.5">
-                      <Pencil className="w-3.5 h-3.5" /> Sửa
-                    </GhostButton>
-                    <GhostButton onClick={notifyPending} className="!px-3 !py-1.5 text-xs flex items-center gap-1.5">
-                      <Trash2 className="w-3.5 h-3.5" /> Xoá
-                    </GhostButton>
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <ToggleSwitch checked={r.active === true}
+                        onChange={() => toggleCorrectionActive(r)} />
+                      <div className="flex gap-1.5">
+                        <GhostButton onClick={() => startEditCorrection(r)} className="!px-3 !py-1.5 text-xs flex items-center gap-1.5">
+                          <Pencil className="w-3.5 h-3.5" /> Sửa
+                        </GhostButton>
+                        <GhostButton onClick={() => setOvConfirmDelete(r)} className="!px-3 !py-1.5 text-xs flex items-center gap-1.5">
+                          <Trash2 className="w-3.5 h-3.5" /> Xoá
+                        </GhostButton>
+                      </div>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -447,21 +655,32 @@ export default function AiStudioPage({ showToast }) {
                     {m.role === "assistant" && m.refused && (
                       <p className="mt-1.5 inline-block rounded-full bg-gold/25 px-2.5 py-1 text-[11px] font-semibold text-ink">
                         Guardrail đã chặn ở backend: công tắc “Chỉ trả lời trong phạm vi bài học”
-                        đang bật và không truy xuất được đoạn bài học nào — model không được gọi.
+                        đang bật và không truy xuất được đoạn bài học hay đính chính nào — model không được gọi.
                       </p>
                     )}
                     {m.role === "assistant" && !m.refused && Array.isArray(m.sources) && m.sources.length === 0 && (
                       <p className="mt-1.5 text-[11px] text-ink/55">
-                        Không truy xuất được đoạn bài học nào cho câu hỏi này — câu trả lời
+                        Không truy xuất được đoạn bài học hay đính chính nào cho câu hỏi này — câu trả lời
                         không dựa trên tài liệu bài học đã xuất bản.
                       </p>
                     )}
                     {m.role === "assistant" && Array.isArray(m.sources) && m.sources.length > 0 && (
                       <div className="mt-2 space-y-2">
                         {m.sources.map((s, i) => (
-                          <div key={i} className="rounded-xl border border-ink/10 bg-white/70 px-3 py-2.5">
+                          <div key={i} className={`rounded-xl border px-3 py-2.5 ${
+                            s.type === "correction" ? "border-gold/60 bg-gold/10" : "border-ink/10 bg-white/70"
+                          }`}>
                             <p className="text-xs font-semibold text-ink">
-                              Nguồn: Bài “{s.title}”
+                              {s.type === "correction" ? (
+                                <>
+                                  Đính chính kiến thức: “{s.title}”
+                                  <span className="ml-2 rounded-full bg-gold/40 px-2 py-0.5 text-[11px] font-semibold text-ink">
+                                    Ưu tiên cao nhất
+                                  </span>
+                                </>
+                              ) : (
+                                <>Nguồn: Bài “{s.title}”</>
+                              )}
                               {(s.subject || s.grade) && (
                                 <span className="font-normal text-ink/55">
                                   {" "}· {[s.subject, s.grade ? `lớp ${s.grade}` : null].filter(Boolean).join(" · ")}
@@ -523,12 +742,26 @@ export default function AiStudioPage({ showToast }) {
               Nguồn là các đoạn văn bản THẬT trong bài học đã xuất bản, được truy xuất bằng
               khớp từ khoá trên chính câu hỏi (cùng cơ chế AI Bạn Học đang dùng cho học sinh).
               Điểm khớp là điểm từ khoá: cụm 2 từ khớp = 2 điểm, từ đơn khớp = 1 điểm, đoạn
-              phải đạt tối thiểu 2 điểm mới được dùng. Hệ thống hiện chưa có vector/embedding
-              nên điểm này KHÔNG phải độ tương đồng ngữ nghĩa.
+              phải đạt tối thiểu 2 điểm mới được dùng. Bản ghi Đính chính kiến thức ở Tab
+              Đính chính khớp chủ đề cũng được truy xuất trong cùng lượt, hiển thị riêng với
+              nhãn “Ưu tiên cao nhất” và được chèn trước tài liệu bài học trong prompt.
+              Hệ thống hiện chưa có vector/embedding nên điểm này KHÔNG phải độ tương đồng ngữ nghĩa.
             </p>
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!ovConfirmDelete}
+        title="Xoá bản ghi đính chính?"
+        message={ovConfirmDelete
+          ? `Xoá đính chính “${ovConfirmDelete.topic}”? Gia sư AI sẽ không dùng nội dung này nữa và học sinh có thể lại nhận câu trả lời theo tài liệu cũ.`
+          : ""}
+        confirmLabel={ovDeleting ? "Đang xoá…" : "Xoá đính chính"}
+        danger
+        onConfirm={doDeleteCorrection}
+        onClose={() => !ovDeleting && setOvConfirmDelete(null)}
+      />
     </div>
   );
 }
