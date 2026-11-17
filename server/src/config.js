@@ -31,8 +31,13 @@ export const config = {
   refreshSecret: process.env.REFRESH_SECRET || process.env.JWT_SECRET || "edu-games-dev-secret-change-me",
   refreshExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "30d",
   refreshCookieName: process.env.REFRESH_COOKIE_NAME || "edu_refresh",
-  // Cookie chỉ đường dẫn này để trình duyệt không gửi nó cho mọi endpoint /api.
-  refreshCookiePath: "/api/auth",
+  // Cookie phủ toàn bộ /api: endpoint refresh gốc ở /api/auth/refresh, endpoint
+  // refresh v1 ở /api/v1/user/refresh — path hẹp hơn /api thì trình duyệt không
+  // gửi cookie tới một trong hai. Cookie là HttpOnly và chỉ các handler
+  // refresh/logout mới đọc nó; endpoint nghiệp vụ xác thực bằng Bearer header.
+  // (Trước đây path là /api/auth — xem LEGACY_REFRESH_COOKIE_PATH trong
+  // refreshTokenService để biết cách dọn cookie cũ khi set/clear.)
+  refreshCookiePath: "/api",
   // `none` = frontend và API khác site (github.io ↔ onrender.com) ⇒ bắt buộc Secure.
   refreshCookieSameSite: (process.env.REFRESH_COOKIE_SAMESITE || "").toLowerCase(),
   refreshCookieSecure: process.env.REFRESH_COOKIE_SECURE || "",

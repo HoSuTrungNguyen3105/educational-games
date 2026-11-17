@@ -15,6 +15,7 @@ import resultsRouter from "./routes/results.js";
 import gameAttemptsRouter from "./routes/gameAttempts.js";
 import setupRouter from "./routes/setup.js";
 import authRouter from "./routes/auth.js";
+import v1UserRouter from "./routes/v1User.js";
 import usersRouter from "./routes/users.js";
 import usersSearchRouter from "./routes/usersSearch.js";
 import usersDirectoryRouter from "./routes/usersDirectory.js";
@@ -105,6 +106,7 @@ app.use("/api", (_req, res, next) => {
 app.use("/api", permissionFilter);
 
 app.use("/api/auth", authRouter);
+app.use("/api/v1", v1UserRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/users", gameProgressRouter);
 // Router học sinh phải mounts TRƯỚC các adminRouter — adminRouter dùng

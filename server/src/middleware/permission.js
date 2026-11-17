@@ -44,6 +44,7 @@ const RULES = [
   // ── API công khai: không đòi quyền ────────────────────────────────────
   { re: /^\/health$/, perms: [] },
   { re: /^\/auth\/(login|register|refresh|logout)$/, perms: [] },
+  { re: /^\/v1\/user\/refresh$/, perms: [] },                  // refresh v1 — cùng bản chất /auth/refresh: xác thực bằng cookie HttpOnly, không Bearer
   { re: /^\/ai\/health$/, perms: [] },
   { re: /^\/avatar\/categories$/, perms: [] },
 
