@@ -2006,23 +2006,6 @@
   .gq-hcard:hover .gq-hcard__media img { transform: none; }
 }
 
-  /* ── Banner thương hiệu ── */
-  .gq-mbanner {
-    display: block;
-    width: 100%;
-    margin: 14px 0 0;
-    padding: 0;
-    border: 0;
-    border-radius: 20px;
-    overflow: hidden;
-    background: transparent;
-    box-shadow: var(--gq-shadow);
-    cursor: pointer;
-    transition: transform 0.15s ease;
-  }
-  .gq-mbanner:active { transform: scale(0.99); }
-  .gq-mbanner img { display: block; width: 100%; height: auto; }
-
   /* ── Các section thành lưới thẻ 2 cột ── */
   .gq-rail {
     display: grid;
