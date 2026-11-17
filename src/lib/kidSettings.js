@@ -59,8 +59,6 @@ export const gradeLabel = (g) => `Lớp ${clampGrade(g)}`;
 /** Nhãn lớp hiển thị cạnh tuổi — luôn lấy từ tuổi đang chọn. */
 export const ageBandLabel = (age) => gradeLabel(gradeForAge(age));
 /** Danh sách tuổi để dựng thanh trượt trong Cài đặt. */
-export const AGE_MIN = AGE_BY_GRADE[GRADE_MIN];
-export const AGE_MAX = AGE_BY_GRADE[GRADE_MAX];
 export const AGE_RANGE = Object.values(AGE_BY_GRADE);
 
 function read() {
@@ -126,11 +124,6 @@ export function useKidSettings() {
   return useSyncExternalStore(subscribe, getKidSettings, getKidSettings);
 }
 
-/** Đã đi qua màn chào chưa (dùng để chặn ở App). */
-export function isOnboarded() {
-  return !!state.onboarded;
-}
-
 /** Lưu lại kết quả màn chào và đóng gói theo shape của store. */
 export function completeOnboarding({ name, grade, gender }) {
   setKidSettings({
@@ -147,13 +140,6 @@ export function skipOnboarding({ name, grade, gender } = {}) {
   if (grade !== undefined && grade !== null) patch.grade = clampGrade(grade);
   if (gender) patch.gender = gender;
   setKidSettings(patch);
-}
-
-/** Tên gọi tắt của bé (lấy chữ đầu của họ + tên). */
-export function kidShortName(name = state.name) {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "Bé";
-  return parts.length === 1 ? parts[0] : `${parts[parts.length - 2][0]}. ${parts[parts.length - 1]}`;
 }
 
 /** Mẫu câu đối với phần Song ngữ (tiếng Việt / tiếng Anh). */

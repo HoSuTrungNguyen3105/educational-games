@@ -92,6 +92,7 @@ import { OFFLINE_GAME_MANIFEST } from "../games/offline/games-src/manifest.js";
 import { gameThumbnail, thumbnailForGame } from "../lib/gameThumbnail.js";
 import { subscribeWallet } from "../lib/coinWallet.js";
 import { clearAppCaches } from "../lib/appUpdate.js";
+import SubjectIcon from '../components/SubjectIcon.jsx'
 
 
 
@@ -1465,7 +1466,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
                 <HomeGameCard
                   key={name}
                   name={name}
-                  icon={meta.icon}
+                   icon={<SubjectIcon subject={name} />}
                   tint={tintFor(name)}
                   age={`${count} trò chơi`}
                   ariaLabel={`Xem trò chơi môn ${name}`}

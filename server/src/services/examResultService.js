@@ -2,9 +2,7 @@ import { getCollection } from "../db.js";
 
 const COLLECTION = "examResults";
 
-function uid() {
-  return `exam-${Math.random().toString(36).slice(2, 9)}`;
-}
+import { uid } from "../utils/id.js";
 
 function clean(data = {}) {
   return {
@@ -23,7 +21,7 @@ function clean(data = {}) {
 
 export async function create(userId, data = {}) {
   const now = new Date().toISOString();
-  const doc = { _id: uid(), userId, ...clean(data), createdAt: now, updatedAt: now };
+  const doc = { _id: uid("exam"), userId, ...clean(data), createdAt: now, updatedAt: now };
   await getCollection(COLLECTION).insertOne(doc);
   return doc;
 }

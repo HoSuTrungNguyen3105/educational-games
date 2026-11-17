@@ -5,9 +5,8 @@ const MEMBERS = "conversationMembers";
 const MESSAGES = "messages";
 const READ_STATES = "chatReadStates";
 
-function uid(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
+import { timeUid as uid } from "../utils/id.js";
+import { escapeRegex } from "../utils/escapeRegex.js";
 
 /**
  * Tạo hoặc lấy conversation DM giữa 2 user.
@@ -32,25 +31,6 @@ export async function getOrCreateDM(userId1, userId2) {
     { $setOnInsert: conv },
     { upsert: true }
   );
-  return conv;
-}
-
-/**
- * Tạo conversation cho game room.
- */
-export async function createGameRoom(gameId, title) {
-  const existing = await getCollection(CONVERSATIONS).findOne({ type: "game_room", gameId });
-  if (existing) return existing;
-
-  const conv = {
-    id: uid("conv"),
-    type: "game_room",
-    gameId,
-    memberIds: [],
-    name: title || `Phòng ${gameId}`,
-    createdAt: new Date().toISOString(),
-  };
-  await getCollection(CONVERSATIONS).insertOne(conv);
   return conv;
 }
 
@@ -246,10 +226,6 @@ export async function listConversationsEnriched(userId) {
   return enriched;
 }
 
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 /**
  * Lấy danh sách members của conversation.
  */
@@ -266,9 +242,3 @@ export async function getById(id) {
   return getCollection(CONVERSATIONS).findOne({ id });
 }
 
-/**
- * Tìm DM conversation giữa 2 user hoặc tạo mới.
- */
-export async function findDM(userId1, userId2) {
-  return getOrCreateDM(userId1, userId2);
-}

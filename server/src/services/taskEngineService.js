@@ -49,10 +49,6 @@ export async function getAllActiveTasks() {
     .toArray();
 }
 
-export async function getTaskByCode(code) {
-  return getCollection(TASKS_COL).findOne({ code });
-}
-
 export async function getTaskById(id) {
   const { ObjectId } = await import("mongodb");
   return getCollection(TASKS_COL).findOne({ _id: new ObjectId(id) });

@@ -22,7 +22,7 @@ import { isAnswerCorrect, DEFAULT_POINTS } from "../lib/gradeAnswer.js";
 export const LESSONS_COLLECTION = "lessons";
 export const LESSON_PROGRESS_COLLECTION = "lessonProgress";
 
-const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 // ── Hệ toạ độ canvas + giới hạn ─────────────────────────────────────────
 // Canvas logic CỐ ĐỊNH 1280×720 (tỉ lệ 16:9). Client Studio (đợt 2) vẽ
@@ -39,9 +39,6 @@ export const MAX_OPTIONS_PER_QUESTION = 10;
 
 export const ELEMENT_TYPES = ["title", "text", "note", "image", "question", "game", "decor"];
 export const QUESTION_TYPES = ["single", "fill"];
-// Nền trang có sẵn — chỉ lưu ID preset (frontend vẽ), server kiểm tra allowlist
-// để dữ liệu bài học luôn đọc được ở mọi bản client.
-export const PAGE_BACKGROUNDS = ["white", "chalkboard", "paper", "grid", "sky", "night"];
 const TEXT_ALIGNS = ["left", "center", "right"];
 const GRADES = [1, 2, 3, 4, 5];
 

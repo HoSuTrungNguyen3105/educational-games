@@ -1,7 +1,7 @@
 import { getCollection } from "../db.js";
 
 const COLLECTION = "gameSessions";
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 export async function createSession({ gameId, gameName, gameCode, hostUserId, hostName }) {
   const now = new Date().toISOString();

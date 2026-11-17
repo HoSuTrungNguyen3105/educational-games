@@ -6,6 +6,7 @@ import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError, sendCreated } from "../utils/response.js";
 import { getCollection } from "../db.js";
 import { renderItemHtml, renderItemParts } from "../lib/avatarRenderer.js";
+import { uid } from "../utils/id.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -411,8 +412,6 @@ router.post("/save", authenticate, async (req, res, next) => {
 
 const adminOnly = [authenticate, requireRoles("teacher", "admin")];
 
-const uid = () => `av-${Math.random().toString(36).slice(2, 9)}`;
-
 router.put("/template", ...adminOnly, async (req, res, next) => {
   try {
     const { categories } = req.body || {};
@@ -433,7 +432,7 @@ router.post("/admin/items", ...adminOnly, async (req, res, next) => {
     if (!CATEGORIES.find(c => c.id === category)) return sendError(res, "Category không hợp lệ", 400);
     const p = params || {};
     const item = {
-      code: uid(), category, name: String(name).trim(),
+      code: uid("av"), category, name: String(name).trim(),
       params: p, price: Math.max(0, Number(price) || 0), default: !!isDefault,
       ...(gender ? { gender } : {}),
       ...deriveMarkup({ category, params: p }),
@@ -484,7 +483,7 @@ router.post("/admin/items/batch", ...adminOnly, async (req, res, next) => {
       if (!CATEGORIES.find(c => c.id === category)) return sendError(res, `Category không hợp lệ: ${category}`, 400);
       const p = params || {};
       const item = {
-        code: uid(), category, name: String(name).trim(),
+        code: uid("av"), category, name: String(name).trim(),
         params: p, price: Math.max(0, Number(price) || 0), default: !!isDefault,
         ...(gender ? { gender } : {}),
         ...deriveMarkup({ category, params: p }),

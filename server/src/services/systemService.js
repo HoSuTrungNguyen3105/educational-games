@@ -197,10 +197,6 @@ export async function getSystemStatus({ force = false } = {}) {
   return statusCache;
 }
 
-export function lastStatusCheck() {
-  return { checkedAt: lastCheckedAt, cacheMs: STATUS_CACHE_MS };
-}
-
 // ── B. Thống kê lưu trữ game ──────────────────────────────────────────────
 
 /**
@@ -391,6 +387,3 @@ export async function scanTemplates({ page = 1, perPage = 50, force = false } = 
   }
 }
 
-export function lastScan() {
-  return lastScanResult ? { ...lastScanResult, cached: true } : null;
-}

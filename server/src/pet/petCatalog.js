@@ -106,11 +106,6 @@ function buildCache(rows) {
   };
 }
 
-/** Cache hiện tại; null nếu chưa nạp. Dùng cho test / fallback. */
-export function peek() {
-  return cache;
-}
-
 /* ── Tra cứu (đồng bộ, đọc cache) ─────────────────────────────────────── */
 
 export function getSpecies(id) {
@@ -196,25 +191,6 @@ export function availableFor(level = 1) {
     species: listSpecies().filter((s) => (s.minLevel || 1) <= lv),
     colors: listColors(),
     outfits: listOutfits().filter((o) => (o.minLevel || 1) <= lv),
-  };
-}
-
-/**
- * Toàn bộ danh mục cho frontend.
- *
- * `availableFor(level)` CHỈ chứa phần đã lọc theo cấp. Client dùng
- * `data.species/colors/outfits` cho danh sách, `data.unlocked` để đánh dấu
- * mở khoá hay chưa.
- */
-export function fullCatalog(level = 1) {
-  return {
-    species: listSpecies(),
-    colors: listColors(),
-    outfits: listOutfits(),
-    moods: MOODS,
-    slots: SLOTS,
-    slotLabels: SLOT_LABEL,
-    unlocked: availableFor(level),
   };
 }
 

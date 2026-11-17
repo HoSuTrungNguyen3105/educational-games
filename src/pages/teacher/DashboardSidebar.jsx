@@ -19,7 +19,6 @@ import {
   Move,
   Image,
   Lock,
-  KeyRound,
   Sparkles,
   History,
   Cake,
@@ -29,6 +28,7 @@ import {
   LifeBuoy,
   FileText,
   LayoutTemplate,
+  KeyRound,
 } from 'lucide-react'
 import {
   IconAdd, IconBell, IconClose, IconFile, IconLogout, IconSettings, IconUser, IconUsers,
@@ -54,7 +54,6 @@ const SECTIONS = [
       { id: "admin-users", label: "Người dùng", icon: IconUsers, route: "/dashboard/users", permission: "users.view" },
       { id: "admin-roles", label: "Vai trò", icon: Lock, route: "/dashboard/roles", permission: "users.view" },
       { id: "admin-permissions", label: "Quyền hạn", icon: KeyRound, route: "/dashboard/permissions", permission: "users.view" },
-      { id: "admin-roles-matrix", label: "Ma trận vai trò", icon: KeyRound, route: "/dashboard/roles-matrix", permission: "users.view" },
       { id: "admin-classes", label: "Lớp học", icon: GraduationCap, route: "/dashboard/classes", permission: null },
       { id: "admin-assignments", label: "Bài tập", icon: IconFile, route: "/dashboard/assignments", permission: null },
       { id: "admin-coins", label: "Coin & Progress", icon: Coins, route: "/dashboard/coins", permission: "coins.manage" },

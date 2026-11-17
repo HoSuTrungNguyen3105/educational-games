@@ -15,7 +15,7 @@
 import { getCollection } from "../db.js";
 
 const COLLECTION = "admin_logs";
-const uid = () => `log-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+import { stampUid } from "../utils/id.js";
 
 /** Khoá bị loại khỏi meta — chống rò rỉ credentials vào log. */
 const SECRET_KEY_RE = /(password|passwd|pwd|secret|token|authorization|cookie|apikey|api_key|credential|refresh|sessionid|auth)/i;
@@ -102,7 +102,7 @@ export async function record({ req, action, target = "", result = "success", mes
   try {
     const u = actor || req?.user || null;
     const doc = {
-      id: uid(),
+      id: stampUid("log"),
       at: new Date(),
       action: String(action || "unknown").slice(0, 60),
       target: String(target || "").slice(0, 200),
@@ -195,10 +195,3 @@ export async function list(q = {}) {
   };
 }
 
-/** Xoá nhật ký cũ hơn N ngày (admin chủ động gọi, không tự chạy nền). */
-export async function purge(days = 90) {
-  const d = Math.max(7, Number(days) || 90);
-  const cut = new Date(Date.now() - d * 86_400_000);
-  const res = await getCollection(COLLECTION).deleteMany({ at: { $lt: cut } });
-  return { deleted: res.deletedCount || 0, olderThanDays: d };
-}

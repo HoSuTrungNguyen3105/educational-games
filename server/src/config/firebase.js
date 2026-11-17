@@ -106,9 +106,4 @@ export function getBucket() {
   return cachedBucket;
 }
 
-/** Chỉ số bucket, dùng để dựng link tải. */
-export function getBucketName() {
-  return getBucket().name;
-}
-
 export default getBucket;

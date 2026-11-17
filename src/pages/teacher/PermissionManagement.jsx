@@ -2,7 +2,7 @@
 //
 // Nguồn dữ liệu: GET /api/permissions (phân trang + keyword phía server, seed từ
 // danh mục quyền trong config/roles.js). Trang chỉ xem — thêm/bớt quyền cho vai
-// trò làm ở "Ma trận quyền" (/dashboard/roles-matrix).
+// trò làm tại trang "Vai trò" (/dashboard/roles).
 //   · Bấm dòng mở modal chi tiết (?m=permDetail&perm=<slug> qua useModalParam).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { permissionService } from "../../services/api.js";
@@ -225,7 +225,7 @@ export default function PermissionManagement({ user, showToast }) {
         Danh mục quyền do <span className="font-semibold text-ink">hệ thống định nghĩa sẵn</span> — trang này
         chỉ để xem và tra cứu, không thêm/sửa/xóa quyền tại đây. Muốn cấp hoặc thu quyền cho từng vai trò,
         dùng trang{" "}
-        <button type="button" onClick={() => navigate("/dashboard/roles-matrix")} className="font-semibold text-teal hover:underline">
+        <button type="button" onClick={() => navigate("/dashboard/roles")} className="font-semibold text-teal hover:underline">
           Ma trận quyền
         </button>.
       </p>

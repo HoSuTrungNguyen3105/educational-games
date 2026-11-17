@@ -13,7 +13,6 @@ const ROUTES = [
   { name: "admin-library",   pattern: "/dashboard/library" },
   { name: "admin-users",     pattern: "/dashboard/users" },
   { name: "admin-roles",     pattern: "/dashboard/roles" },
-  { name: "admin-roles-matrix", pattern: "/dashboard/roles-matrix" },
   { name: "admin-permissions", pattern: "/dashboard/permissions" },
   { name: "admin-templates", pattern: "/dashboard/templates" },
   // Quản trị nội dung trang sinh nhật (#/sinh-nhat): tải file HTML lên qua API /pages

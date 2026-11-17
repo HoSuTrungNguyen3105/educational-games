@@ -2,9 +2,7 @@ import { getCollection } from "../db.js";
 
 const COLLECTION = "user_devices";
 
-function uid() {
-  return `dev-${Math.random().toString(36).slice(2, 9)}`;
-}
+import { uid } from "../utils/id.js";
 
 export async function registerDevice(userId, token, deviceType = "WEB") {
   const now = new Date().toISOString();
@@ -19,7 +17,7 @@ export async function registerDevice(userId, token, deviceType = "WEB") {
     return { ...existing, userId, deviceType: deviceType.toUpperCase(), isActive: true, updatedAt: now };
   }
   const doc = {
-    _id: uid(),
+    _id: uid("dev"),
     userId,
     token,
     deviceType: deviceType.toUpperCase(),
@@ -36,11 +34,6 @@ export async function removeDevice(token) {
   return result.deletedCount > 0;
 }
 
-export async function removeDeviceById(id) {
-  const result = await getCollection(COLLECTION).deleteOne({ _id: id });
-  return result.deletedCount > 0;
-}
-
 export async function getDevicesByUser(userId) {
   return getCollection(COLLECTION).find({ userId, isActive: true }).toArray();
 }
@@ -50,14 +43,6 @@ export async function getActiveTokensByUser(userId) {
     .find({ userId, isActive: true })
     .toArray();
   return devices.map((d) => d.token);
-}
-
-export async function deactivateDevice(token) {
-  const now = new Date().toISOString();
-  await getCollection(COLLECTION).updateOne(
-    { token },
-    { $set: { isActive: false, updatedAt: now } }
-  );
 }
 
 export async function deactivateAllByUser(userId) {

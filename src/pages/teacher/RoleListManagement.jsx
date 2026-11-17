@@ -1,17 +1,18 @@
 // RoleListManagement.jsx — trang /dashboard/roles "Vai trò" theo mẫu bảng HiWeb.
 //
-// Nguồn dữ liệu: GET /api/roles (phân trang + sort + keyword phía server).
+// Nguồn dữ liệu: GET /api/roles (phân trang + sort + keyword phía server),
+// ghép với GET /api/permissions/roles (isBuiltIn + accountCount + permission_count).
 //   · Thanh trên: tiêu đề, ô tìm, xuất CSV, xoá bộ lọc, bảng/lưới,
 //     phân trang dạng khoảng "1-10 / 34" với mũi tên trước/sau.
-//   · Bảng: mỗi cột có ô lọc riêng (lọc ngay trên trang đang xem).
-//   · Bấm dòng mở modal chi tiết (?m=roleDetail&role=… qua useModalParam),
-//     trong modal có nút mở trang "Ma trận quyền" (/dashboard/roles-matrix) để sửa.
-//   · Thêm/Sửa/Xoá vai trò NGAY tại trang này (cùng API + cùng cách chặn
-//     vai trò hệ thống như RoleManagement): vai trò built-in khoá sửa/xoá,
-//     phân quyền chi tiết vẫn làm ở trang Ma trận quyền.
+//   · Dạng bảng: cột "Số quyền" là badge bấm vào mở MA TRẬN QUYỀN
+//     (?m=rolePerms&role=…), cột "Tài khoản" = số user đang giữ vai trò.
+//   · Dạng thẻ: giữ nguyên như cũ + thêm hành động "Quyền" mở ma trận quyền.
+//   · Bấm dòng mở modal chi tiết (?m=roleDetail&role=… qua useModalParam).
+//   · Thêm/Sửa/Xoá vai trò NGAY tại trang này: vai trò built-in khoá sửa/xoá;
+//     cấp/bớt quyền chi tiết làm trong modal ma trận quyền rồi bấm Lưu.
+//   · Trang "Ma trận quyền" (/dashboard/roles-matrix) đã gộp vào đây nên bị xoá.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { permissionService } from "../../services/api.js";
-import { navigate } from "../../lib/router.js";
 import { useModalParam } from "../../hooks/useModalParam.js";
 import {
   ConfirmModal,
@@ -25,18 +26,26 @@ import {
   Modal,
   PrimaryButton,
   SearchInput,
+  Select,
   tableWrapClass,
   useViewMode,
   ViewToggle,
 } from "../../components/ui";
 import RangePagination from "../../components/RangePagination.jsx";
-import { Download, Eye, Filter, Grid2x2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Crown, Download, Eye, Filter, GraduationCap, Grid2x2, KeyRound, Pencil, Plus, Shield, Trash2 } from "lucide-react";
 
 const PER_PAGE = 10;
 
-const EMPTY_FILTERS = { id: "", slug: "", name_vi: "", name_en: "", total_permissions: "" };
+const EMPTY_FILTERS = { id: "", slug: "", name: "", total_permissions: "" };
 const EMPTY_ROLE_FORM = { key: "", label: "", name_en: "", description: "", dashboardAccess: "false" };
 const STATIC_BUILTIN_KEYS = ["admin", "teacher", "student"];
+
+/** Icon theo vai trò — cùng bộ với trang Ma trận quyền trước đây. */
+function roleIcon(key) {
+  if (key === "admin") return Crown;
+  if (key === "teacher") return GraduationCap;
+  return Shield;
+}
 
 export default function RoleListManagement({ user, showToast }) {
   const isAdmin = user?.role === "admin";
@@ -52,9 +61,27 @@ export default function RoleListManagement({ user, showToast }) {
   const [error, setError] = useState(null);
   const [detail, setDetail] = useState(null);
 
+  // ── Ma trận quyền (?m=rolePerms&role=…) — gộp từ trang /dashboard/roles-matrix
+  const [roleMap, setRoleMap] = useState(null); // key → vai trò (GET /permissions/roles)
+  const [features, setFeatures] = useState(null);
+  const [catalog, setCatalog] = useState(null);
+  const [permOpen, setPermOpen] = useState(false);
+  const [permRole, setPermRole] = useState(null);
+  const [permLoading, setPermLoading] = useState(false);
+  const [permSaving, setPermSaving] = useState(false);
+  const [permError, setPermError] = useState("");
+  const [permSearch, setPermSearch] = useState("");
+  const [permModule, setPermModule] = useState("all");
+  // Mặc định "all": ở chế độ "Đã cấp" việc BỎ tick làm dòng biến mất ngay tại
+  // chỗ, trông như checkbox không hoạt động.
+  const [permStatus, setPermStatus] = useState("all");
+  const [granted, setGranted] = useState(() => new Set());
+  const permRestoredRef = useRef(false);
+
   // ── Thêm / Sửa / Xoá vai trò tại chỗ ──────────────────────────────────
   // Danh sách phân trang (GET /roles) không trả isBuiltIn → tra thêm qua
-  // listRoles (cùng nguồn RoleManagement dùng) để biết vai trò hệ thống.
+  // listRoles (cùng nguồn trang Ma trận quyền trước đây dùng) để biết vai trò
+  // hệ thống, đồng thời lấy accountCount / permission_count cho bảng.
   const [builtinMap, setBuiltinMap] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null); // row đang sửa (null = thêm mới)
@@ -65,9 +92,24 @@ export default function RoleListManagement({ user, showToast }) {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      permissionService.listRoles()
-        .then((rs) => setBuiltinMap(Object.fromEntries((rs || []).map((r) => [r.key, !!r.isBuiltIn]))))
-        .catch(() => setBuiltinMap({}));
+      Promise.all([
+        permissionService.listRoles(),
+        permissionService.features(),
+        permissionService.catalog(),
+      ])
+        .then(([rs, fs, cat]) => {
+          const list = rs || [];
+          setRoleMap(Object.fromEntries(list.map((r) => [r.key, r])));
+          setBuiltinMap(Object.fromEntries(list.map((r) => [r.key, !!r.isBuiltIn])));
+          setFeatures(fs || []);
+          setCatalog(cat || []);
+        })
+        .catch(() => {
+          setRoleMap({});
+          setBuiltinMap({});
+          setFeatures([]);
+          setCatalog([]);
+        });
     }, 0);
     return () => clearTimeout(t);
   }, []);
@@ -150,6 +192,124 @@ export default function RoleListManagement({ user, showToast }) {
     }
   };
 
+  // ── Ma trận quyền (gộp từ trang /dashboard/roles-matrix) ───────────────
+  const canEditPermissions = isAdmin && permRole?.key !== "admin";
+
+  const openPermissions = async (row) => {
+    const key = row?.key || row?.slug;
+    if (!key) return;
+    permRestoredRef.current = true; // mở bằng nút → không mở lại từ URL nữa
+    setPermOpen(true);
+    setPermRole({ key, name_vi: row.name_vi, name_en: row.name_en, label: row.label || row.name_vi });
+    setPermLoading(true);
+    setPermError("");
+    setPermSearch("");
+    setPermModule("all");
+    setPermStatus("all");
+    setGranted(new Set());
+    modalParam.open("rolePerms", { role: key });
+    try {
+      // Vào thẳng link khi effect chính chưa tải xong danh mục → tải bù ngay.
+      let nextFeatures = features;
+      let nextCatalog = catalog;
+      if (!nextFeatures || !nextCatalog) {
+        [nextFeatures, nextCatalog] = await Promise.all([
+          permissionService.features(),
+          permissionService.catalog(),
+        ]);
+        setFeatures(nextFeatures || []);
+        setCatalog(nextCatalog || []);
+      }
+      const detailRole = await permissionService.getRole(key);
+      setPermRole(detailRole);
+      setGranted(new Set((detailRole.permission_details || []).map((p) => p.slug)));
+    } catch (e) {
+      setPermError(e.message || "Không tải được quyền của vai trò");
+    } finally {
+      setPermLoading(false);
+    }
+  };
+
+  const closePermissions = () => {
+    setPermOpen(false);
+    modalParam.close("rolePerms");
+  };
+
+  const togglePermission = (permission) => {
+    if (!canEditPermissions || permission.is_base) return;
+    setGranted((prev) => {
+      const next = new Set(prev);
+      if (next.has(permission.slug)) next.delete(permission.slug);
+      else next.add(permission.slug);
+      return next;
+    });
+  };
+
+  const moduleOptions = useMemo(() => {
+    const map = new Map();
+    for (const permission of catalog || []) {
+      if (permission.module) map.set(permission.module, permission.module_vi || permission.module);
+    }
+    return [
+      { value: "all", label: "Tất cả mô-đun" },
+      ...[...map.entries()]
+        .sort((a, b) => a[1].localeCompare(b[1], "vi"))
+        .map(([value, label]) => ({ value, label })),
+    ];
+  }, [catalog]);
+
+  const filteredPermissions = useMemo(() => {
+    const q = permSearch.trim().toLowerCase();
+    return (catalog || []).filter((permission) => {
+      const isGranted = granted.has(permission.slug);
+      if (permStatus === "granted" && !isGranted) return false;
+      if (permStatus === "not_granted" && isGranted) return false;
+      if (permModule !== "all" && permission.module !== permModule) return false;
+      if (!q) return true;
+      return [permission.slug, permission.name_vi, permission.name_en, permission.module]
+        .some((value) => String(value || "").toLowerCase().includes(q));
+    });
+  }, [catalog, granted, permModule, permSearch, permStatus]);
+
+  const grantedCount = useMemo(
+    () => (catalog || []).filter((permission) => granted.has(permission.slug)).length,
+    [catalog, granted]
+  );
+
+  const savePermissions = async () => {
+    if (!permRole || !features) return;
+    const nextMatrix = {};
+    for (const feature of features) {
+      nextMatrix[feature.key] = { view: false, edit: false, delete: false };
+    }
+    for (const permission of catalog || []) {
+      if (permission.is_base) continue;
+      if (!granted.has(permission.slug) || !permission.feature_key || !permission.action) continue;
+      if (!nextMatrix[permission.feature_key]) {
+        nextMatrix[permission.feature_key] = { view: false, edit: false, delete: false };
+      }
+      nextMatrix[permission.feature_key][permission.action] = true;
+    }
+
+    // Quyền `_all` (toàn quyền) không có ô ma trận → gửi riêng ở extraPermissions,
+    // server chỉ nhận các slug `_all` hợp lệ (admin tổng mới được seed sẵn).
+    const extraPermissions = (catalog || [])
+      .filter((permission) => permission.slug.endsWith("_all") && granted.has(permission.slug))
+      .map((permission) => permission.slug);
+
+    setPermSaving(true);
+    try {
+      await permissionService.updateRole(permRole.key, { matrix: nextMatrix, extraPermissions });
+      closePermissions();
+      showToast?.("Đã cập nhật quyền", "success");
+      load(); // cột "Số quyền" trên bảng / thẻ tải lại theo
+    } catch (e) {
+      showToast?.(e.message || "Lỗi cập nhật quyền", "error");
+    } finally {
+      setPermSaving(false);
+    }
+  };
+
   const roleFormFields = [
     { name: "key", label: "Mã vai trò (key)", placeholder: "vd: monitor", disabled: !!editing },
     { name: "label", label: "Tên Việt" },
@@ -190,10 +350,10 @@ export default function RoleListManagement({ user, showToast }) {
   const filtered = useMemo(() => {
     return (rows || []).filter((r) => {
       if (filters.id && !String(r.id).includes(filters.id.trim())) return false;
-      for (const key of ["slug", "name_vi", "name_en"]) {
-        const q = filters[key].trim().toLowerCase();
-        if (q && !String(r[key] || "").toLowerCase().includes(q)) return false;
-      }
+      if (filters.slug && !String(r.slug || "").toLowerCase().includes(filters.slug.trim().toLowerCase())) return false;
+      // Cột "Tên vai trò" gộp VI+EN (theo Ma trận quyền) → một ô lọc cho cả hai.
+      const name = filters.name.trim().toLowerCase();
+      if (name && ![r.name_vi, r.name_en].some((v) => String(v || "").toLowerCase().includes(name))) return false;
       if (filters.total_permissions && !String(r.total_permissions ?? "").includes(filters.total_permissions.trim())) return false;
       return true;
     });
@@ -241,6 +401,33 @@ export default function RoleListManagement({ user, showToast }) {
   useEffect(() => {
     const t = setTimeout(() => {
       if (modalParam.modal !== "roleDetail" && detail) setDetail(null);
+    }, 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalParam.modal]);
+
+  // Vào thẳng link ?m=rolePerms&role=… (reload / dán link chia sẻ) → mở modal
+  // ma trận quyền của vai trò đó. Vai trò không nằm ở trang hiện tại thì lấy
+  // từ danh sách đầy đủ (GET /permissions/roles) hoặc dựng tối thiểu theo key.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (permRestoredRef.current || rows === null || modalParam.modal !== "rolePerms") return;
+      permRestoredRef.current = true;
+      const slug = modalParam.params.get("role");
+      if (!slug) return;
+      const found = (rows || []).find((r) => r.slug === slug)
+        || (roleMap ? Object.values(roleMap).find((r) => r.key === slug) : null)
+        || { key: slug, slug, name_vi: slug, name_en: "" };
+      openPermissions(found);
+    }, 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, roleMap]);
+
+  // Nút Back của trình duyệt làm mất params → đóng modal ma trận quyền.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (modalParam.modal !== "rolePerms" && permOpen) setPermOpen(false);
     }, 0);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -325,17 +512,17 @@ export default function RoleListManagement({ user, showToast }) {
       ) : (
         <>
           <div className={`note-card overflow-x-auto ${tableWrapClass(mode)}`}>
-            <table className="w-full min-w-[1020px]">
+            <table className="w-full min-w-[1080px]">
               <thead>
                 <tr className="text-left text-[#8A7C63] font-mono text-[11px] uppercase border-b border-ink/10">
                   <th className="py-2.5 pl-4 pr-3 font-medium w-20">ID</th>
-                  <th className="py-2.5 pr-3 font-medium w-52">Mã vai trò</th>
-                  <th className="py-2.5 pr-3 font-medium">Tên Việt</th>
-                  <th className="py-2.5 pr-3 font-medium">Tên Anh</th>
-                  <th className="py-2.5 px-3 font-medium w-28">Số quyền</th>
+                  <th className="py-2.5 pr-3 font-medium w-44">Mã vai trò</th>
+                  <th className="py-2.5 pr-3 font-medium">Tên vai trò</th>
+                  <th className="py-2.5 px-3 font-medium w-24 text-center">Số quyền</th>
+                  <th className="py-2.5 px-3 font-medium w-24 text-center">Tài khoản</th>
                   <th className="py-2.5 px-3 font-medium w-40">Ngày tạo</th>
                   <th className="py-2.5 px-3 font-medium w-40">Cập nhật</th>
-                  <th className="py-2.5 pl-3 pr-4 font-medium w-28 text-right">Thao tác</th>
+                  <th className="py-2.5 pl-3 pr-4 font-medium w-40 text-right">Thao tác</th>
                 </tr>
                 <tr className="border-b border-ink/10">
                   <td className="py-2 pl-4 pr-3">
@@ -345,10 +532,7 @@ export default function RoleListManagement({ user, showToast }) {
                     <input className={cellInput} placeholder="Tìm kiếm" value={filters.slug} onChange={(e) => setFilter("slug", e.target.value)} />
                   </td>
                   <td className="py-2 pr-3">
-                    <input className={cellInput} placeholder="Tìm kiếm" value={filters.name_vi} onChange={(e) => setFilter("name_vi", e.target.value)} />
-                  </td>
-                  <td className="py-2 pr-3">
-                    <input className={cellInput} placeholder="Tìm kiếm" value={filters.name_en} onChange={(e) => setFilter("name_en", e.target.value)} />
+                    <input className={cellInput} placeholder="Tìm kiếm" value={filters.name} onChange={(e) => setFilter("name", e.target.value)} />
                   </td>
                   <td className="py-2 px-3">
                     <input className={cellInput} placeholder="Tìm kiếm" value={filters.total_permissions} onChange={(e) => setFilter("total_permissions", e.target.value)} />
@@ -356,44 +540,79 @@ export default function RoleListManagement({ user, showToast }) {
                   <td className="py-2 px-3" />
                   <td className="py-2 px-3" />
                   <td className="py-2 px-3" />
+                  <td className="py-2 px-3" />
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r) => (
-                  <tr key={r.slug} className="border-b border-ink/5 last:border-0 hover:bg-ink/[0.02] cursor-pointer" onClick={() => openDetail(r)}>
-                    <td className="py-3 pl-4 pr-3 text-xs font-mono text-ink">{r.id}</td>
-                    <td className="py-3 pr-3 text-xs font-mono text-teal truncate" title={r.slug}>{r.slug}</td>
-                    <td className="py-3 pr-3 text-sm font-body text-ink max-w-[220px] truncate" title={r.name_vi}>{r.name_vi}</td>
-                    <td className="py-3 pr-3 text-sm font-body text-ink/70 max-w-[220px] truncate" title={r.name_en}>{r.name_en}</td>
-                    <td className="py-3 px-3 text-xs font-mono text-ink">{r.total_permissions}</td>
-                    <td className="py-3 px-3 text-xs text-[#8A7C63] font-body whitespace-nowrap">{r.created_at}</td>
-                    <td className="py-3 px-3 text-xs text-[#8A7C63] font-body whitespace-nowrap">{r.updated_at}</td>
-                    <td className="py-3 pl-3 pr-4">
-                      {isBuiltin(r) ? (
-                        <span className="block text-right text-[11px] font-mono uppercase text-[#8A7C63]">Hệ thống</span>
-                      ) : (
+                {filtered.map((r) => {
+                  const Icon = roleIcon(r.slug);
+                  const permCount = r.total_permissions ?? roleMap?.[r.slug]?.permission_count ?? 0;
+                  const accounts = roleMap?.[r.slug]?.accountCount ?? 0;
+                  return (
+                    <tr key={r.slug} className="border-b border-ink/5 last:border-0 hover:bg-ink/[0.02] cursor-pointer" onClick={() => openDetail(r)}>
+                      <td className="py-3 pl-4 pr-3 text-xs font-mono text-ink">{r.id}</td>
+                      <td className="py-3 pr-3 text-xs font-mono text-teal truncate" title={r.slug}>{r.slug}</td>
+                      <td className="py-3 pr-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-7 h-7 rounded-lg bg-ink/5 text-ink/50 flex items-center justify-center shrink-0">
+                            <Icon className="w-4 h-4" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-display text-sm text-ink truncate">{r.name_vi}</p>
+                            <p className="text-[11px] text-[#8A7C63] font-body truncate">{r.name_en || "—"}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); openPermissions(r); }}
+                          title={`Xem ${permCount} quyền của ${r.name_vi}`}
+                          className="inline-flex min-w-8 h-8 items-center justify-center rounded-full bg-teal text-paper px-2.5 text-xs font-mono font-semibold hover:bg-teal/90 active:scale-95 transition"
+                        >
+                          {permCount}
+                        </button>
+                      </td>
+                      <td className="py-3 px-3 text-center text-sm font-mono text-ink/70">{accounts}</td>
+                      <td className="py-3 px-3 text-xs text-[#8A7C63] font-body whitespace-nowrap">{r.created_at}</td>
+                      <td className="py-3 px-3 text-xs text-[#8A7C63] font-body whitespace-nowrap">{r.updated_at}</td>
+                      <td className="py-3 pl-3 pr-4">
                         <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); openEdit(r); }}
-                            title="Sửa vai trò"
+                            onClick={(e) => { e.stopPropagation(); openPermissions(r); }}
+                            title="Xem / sửa quyền hạn"
                             className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-ink/45 hover:text-teal hover:bg-teal/10 transition"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(r); }}
-                            title="Xóa vai trò"
-                            className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-ink/45 hover:text-ticket hover:bg-ticket/10 transition"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {isBuiltin(r) ? (
+                            <span className="text-[11px] font-mono uppercase text-[#8A7C63]">Hệ thống</span>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); openEdit(r); }}
+                                title="Sửa vai trò"
+                                className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-ink/45 hover:text-teal hover:bg-teal/10 transition"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setDeleteTarget(r); }}
+                                title="Xóa vai trò"
+                                className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-ink/45 hover:text-ticket hover:bg-ticket/10 transition"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -409,6 +628,7 @@ export default function RoleListManagement({ user, showToast }) {
                 meta={`Cập nhật: ${r.updated_at}`}
                 footerActions={[
                   { label: "Chi tiết", icon: <Eye />, onClick: () => openDetail(r), tone: "blue" },
+                  { label: "Quyền", icon: <KeyRound />, onClick: () => openPermissions(r), tone: "blue" },
                   ...(isBuiltin(r) ? [] : [
                     { label: "Sửa", icon: <Pencil />, onClick: () => openEdit(r), tone: "blue" },
                     { label: "Xóa", icon: <Trash2 />, onClick: () => setDeleteTarget(r), tone: "red" },
@@ -471,7 +691,7 @@ export default function RoleListManagement({ user, showToast }) {
                 </GhostButton>
               </>
             )}
-            <PrimaryButton onClick={() => navigate("/dashboard/roles-matrix")} className="flex items-center gap-1.5">
+            <PrimaryButton onClick={() => { closeDetail(); openPermissions(detail); }} className="flex items-center gap-1.5">
               <Grid2x2 className="w-4 h-4" />
               Ma trận quyền
             </PrimaryButton>

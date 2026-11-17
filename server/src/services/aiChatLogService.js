@@ -27,7 +27,7 @@
 import { getCollection } from "../db.js";
 
 const COLLECTION = "ai_chat_logs";
-const uid = () => `ailog-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+import { stampUid } from "../utils/id.js";
 
 /** Trần độ dài câu hỏi khớp giới hạn ở tầng chat (normalizeChatMessage: 2000). */
 const MAX_QUESTION_LENGTH = 2000;
@@ -137,7 +137,7 @@ export async function recordChatLog(entry = {}) {
       .filter((t) => typeof t === "string" && t.trim() !== "")
       .map((t) => t.slice(0, 200));
     const doc = {
-      id: uid(),
+      id: stampUid("ailog"),
       userId: String(entry.userId).slice(0, 80),
       username: strOrNull(entry.username, 80),
       role: strOrNull(entry.role, 24),

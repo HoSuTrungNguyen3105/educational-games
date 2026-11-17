@@ -17,7 +17,7 @@ import { addXp, addCoins, XP_PER_LEVEL } from "./authService.js";
 
 const COLLECTION = "results";
 
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 /** Ngưỡng an toàn: play-to-win không có câu hỏi thì chặn score bất thường. */
 const MAX_FREE_SCORE = 100000;

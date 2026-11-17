@@ -1,7 +1,7 @@
 import { getCollection } from "../db.js";
 
 const COLLECTION = "question_banks";
-const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 /**
  * Question Bank: independent pool, not tied to a game.

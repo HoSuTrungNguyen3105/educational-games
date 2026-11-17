@@ -13,12 +13,10 @@ import { getClassById, getStudentClass, getTeacherClasses } from "./classService
 
 const COLLECTION = "scheduleEntries";
 
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-function httpError(message, status) {
-  return Object.assign(new Error(message), { status });
-}
+import { httpError } from "../utils/httpError.js";
 
 function cleanEntry(data = {}) {
   const title = String(data.title || "").trim();

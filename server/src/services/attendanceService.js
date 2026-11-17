@@ -11,7 +11,7 @@
 import { getCollection } from "../db.js";
 
 const COLL = "attendance";
-const uid = () => "att-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+import { stampUid } from "../utils/id.js";
 
 export const ATTENDANCE_STATUSES = ["present", "absent", "late"];
 /** Học sinh tự chấm chỉ được hai trạng thái này (không tự đánh dấu mình nghỉ). */
@@ -96,7 +96,7 @@ export async function saveRecord({ userId, date, status, notes, source, updatedB
   }
 
   const doc = {
-    id: uid(),
+    id: stampUid("att"),
     userId,
     date: d,
     status,

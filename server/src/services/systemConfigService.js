@@ -302,9 +302,4 @@ export async function getPublicConfig() {
   };
 }
 
-/** Nhãn nhà cung cấp lưu trữ đang dùng — an toàn để đưa ra frontend. */
-export function storageProviderName() {
-  return config.supabase?.url && config.supabase?.key ? `Supabase (${config.supabase.bucket})` : "Chưa cấu hình";
-}
-
 export const CONFIG_LEAF_PATHS = LEAF_PATHS;

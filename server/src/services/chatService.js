@@ -7,9 +7,7 @@ const MAX_MESSAGE_LENGTH = 500;
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
 
-function uid(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
+import { timeUid } from "../utils/id.js";
 
 /**
  * Tạo conversationId cho DM giữa 2 user (deterministic).
@@ -92,7 +90,7 @@ export async function sendMessage({ conversationId, senderId, playerName, conten
   }
 
   const msg = {
-    id: uid("msg"),
+    id: timeUid("msg"),
     conversationId,
     senderId,
     playerName: String(playerName || "Ẩn danh").slice(0, 24),

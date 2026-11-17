@@ -10,7 +10,7 @@ const COLLECTION = "support_tickets";
 export const TICKET_PRIORITIES = ["low", "medium", "high"];
 export const TICKET_STATUSES = ["open", "processing", "pending", "done", "closed"];
 
-const uid = () => `spk-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+import { stampUid } from "../utils/id.js";
 
 /** Mã hiển thị dạng HC-00001 — đếm số ticket hiện có (đủ dùng với lưu lượng nhỏ). */
 async function nextCode() {
@@ -55,7 +55,7 @@ export async function createTicket({ title, content, priority, user }) {
   const now = new Date().toISOString();
   const assignee = await resolveAssignee(user);
   const doc = {
-    id: uid(),
+    id: stampUid("spk"),
     code: await nextCode(),
     title: String(title || "").trim().slice(0, 200),
     content: String(content || "").trim().slice(0, 4000),

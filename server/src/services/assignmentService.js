@@ -2,7 +2,7 @@ import { getCollection } from "../db.js";
 import { isAnswerCorrect } from "../lib/gradeAnswer.js";
 import { getClassStudents } from "./classService.js";
 
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -226,15 +226,6 @@ export async function submitAnswers({ submissionId, studentId, answers }) {
   );
 
   return { ...sub, answers: answerList, score, correctCount, wrongCount, totalQuestions, status: "SUBMITTED", timeUsedSec, overtimeSec };
-}
-
-export async function getSubmissionById(id) {
-  return getCollection("submissions").findOne({ id });
-}
-
-export async function getStudentSubmission(assignmentId, studentId) {
-  return getCollection("submissions").findOne({ assignmentId, studentId, status: "IN_PROGRESS" }) ||
-    getCollection("submissions").findOne({ assignmentId, studentId, status: "SUBMITTED" });
 }
 
 /**

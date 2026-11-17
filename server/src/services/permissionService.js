@@ -12,7 +12,7 @@ import {
 } from "../../../src/config/roles.js";
 
 const COLLECTION = "roles";
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 // Ma trận cũ gộp nhiều trang vào một ô (content/settings). Khi đọc dữ liệu cũ,
 // mở rộng sang các trang con để không mất quyền đã cấp trước đây.
@@ -351,7 +351,7 @@ function fmtDateTime(value) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+import { escapeRegex } from "../utils/escapeRegex.js";
 
 /** Kẹp tham số phân trang/sort của client vào khoảng hợp lệ. */
 function pagingFrom(query = {}, defaultPerPage = 10) {

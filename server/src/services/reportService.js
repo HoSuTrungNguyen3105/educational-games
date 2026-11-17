@@ -13,7 +13,7 @@ import { getCollection } from "../db.js";
 
 const COLLECTION = "reports";
 
-const uid = () => `rep-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+import { stampUid } from "../utils/id.js";
 
 /** Lý do cố định — client chỉ được chọn trong danh sách này. */
 export const REPORT_REASONS = [
@@ -25,9 +25,7 @@ export const REPORT_REASONS = [
 
 export const REPORT_STATUSES = ["open", "resolved"];
 
-function httpError(message, status) {
-  return Object.assign(new Error(message), { status });
-}
+import { httpError } from "../utils/httpError.js";
 
 export async function createReport({ reporterId, reportedId, reason, note }) {
   if (!reportedId) throw httpError("Thiếu người bị báo cáo", 400);
@@ -43,7 +41,7 @@ export async function createReport({ reporterId, reportedId, reason, note }) {
 
   const now = new Date().toISOString();
   const doc = {
-    id: uid(),
+    id: stampUid("rep"),
     reporterId,
     reporterUsername: reporter?.username || "",
     reporterName: reporter?.name || "",

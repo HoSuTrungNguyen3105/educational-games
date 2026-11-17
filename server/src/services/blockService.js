@@ -14,7 +14,7 @@ import * as friendService from "./friendService.js";
 
 const COLLECTION = "userBlocks";
 
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 /** Có ai trong hai người đã chặn người kia không? (dùng cho chat + kết bạn) */
 export async function isBlockedBetween(a, b) {

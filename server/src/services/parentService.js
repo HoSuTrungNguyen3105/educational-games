@@ -22,15 +22,13 @@ import * as blockService from "./blockService.js";
 const LINKS = "parentLinks";
 const USERS = "users";
 
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 function linkCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-function httpError(message, status) {
-  return Object.assign(new Error(message), { status });
-}
+import { httpError } from "../utils/httpError.js";
 
 // ── Mã liên kết ───────────────────────────────────────────────────────────
 

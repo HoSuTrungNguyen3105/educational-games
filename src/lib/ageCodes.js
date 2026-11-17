@@ -7,11 +7,10 @@
  *
  *   ageCodeForGrade(3)        → "kid-breeze"
  *   gradeForAgeCode("kid-breeze") → 3
- *   ageForAgeCode("kid-breeze")   → 8
  *   syncKidFromAccount(user)  → điền lớp + giới tính từ hồ sơ vào kidSettings
  */
 
-import { setKidSettings, ageForGrade } from "./kidSettings.js";
+import { setKidSettings } from "./kidSettings.js";
 
 /** Mã → lớp; tuổi suy ra từ lớp qua `AGE_BY_GRADE` của kidSettings. */
 export const GRADE_BY_AGE_CODE = {
@@ -24,18 +23,8 @@ export const GRADE_BY_AGE_CODE = {
 
 export const AGE_CODES = Object.keys(GRADE_BY_AGE_CODE);
 
-export function isAgeCode(value) {
-  return Object.prototype.hasOwnProperty.call(GRADE_BY_AGE_CODE, String(value || ""));
-}
-
 export function gradeForAgeCode(code) {
   return GRADE_BY_AGE_CODE[String(code || "")] ?? null;
-}
-
-/** Tuổi thật của bé — chỉ tồn tại ở phía client. */
-export function ageForAgeCode(code) {
-  const grade = gradeForAgeCode(code);
-  return grade == null ? null : ageForGrade(grade);
 }
 
 export function ageCodeForGrade(grade) {

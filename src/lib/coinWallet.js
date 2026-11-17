@@ -41,8 +41,6 @@ function writeWallet({ coins, pending }) {
   } catch { /* storage đầy hoặc bị chặn */ }
 }
 
-export const cachedCoins = () => readWallet().coins;
-
 /**
  * Đồng bộ với API: gửi phần chênh đang chờ (nếu có), ngược lại đọc số xu mới nhất.
  * Lỗi mạng thì giữ nguyên `pending` để lần sau gửi tiếp.
@@ -84,14 +82,6 @@ export function addCoins(amount) {
   writeWallet({ coins, pending: w.pending + (coins - w.coins) });
   notify();
   queueSync();
-  return readWallet();
-}
-
-/** Ghi số xu tuyệt đối (khi host hoặc API đưa ra giá trị chuẩn). */
-export function setCoins(coins) {
-  const w = readWallet();
-  writeWallet({ coins: Math.max(0, Number(coins) || 0), pending: w.pending });
-  notify();
   return readWallet();
 }
 

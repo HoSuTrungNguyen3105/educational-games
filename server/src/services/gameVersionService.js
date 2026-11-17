@@ -5,7 +5,7 @@ import { sanitizeConfig } from "./gameService.js";
 
 const COLLECTION = "game_versions";
 
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 // ioRef pattern giống notificationService — server.js inject sau khi initSocket
 let ioRef = null;

@@ -1,10 +1,5 @@
 import { uid } from '../services/api.js';
 
-export function shortName(full) {
-  const parts = full.trim().split(/\s+/);
-  return parts.length > 1 ? parts.slice(-2).join(" ") : full;
-}
-
 export function rankMedal(rank) {
   if (rank === 1) return { icon: "🥇", ring: "#F4B942" };
   if (rank === 2) return { icon: "🥈", ring: "#9CA3AF" };
@@ -31,11 +26,6 @@ export function getLevelFromCoins(coins) {
     if (c >= LEVEL_THRESHOLDS[i]) return i + 1;
   }
   return 1;
-}
-
-export function getCoinsForNextLevel(level) {
-  const idx = Math.min(level, LEVEL_THRESHOLDS.length - 1);
-  return LEVEL_THRESHOLDS[idx] || 0;
 }
 
 export function getLevelProgress(coins) {

@@ -115,10 +115,6 @@ export function getToken() {
   return memory?.token || null;
 }
 
-export function getUser() {
-  return getAuth()?.user || null;
-}
-
 export function clearAuth() {
   memory = null;
   inflight = null;
@@ -130,11 +126,6 @@ export function clearAuth() {
 export function subscribeAuth(cb) {
   listeners.add(cb);
   return () => listeners.delete(cb);
-}
-
-/** Đang có một request refresh chạy hay không (§8: không tạo vòng lặp retry). */
-export function isRefreshing() {
-  return !!inflight;
 }
 
 /**
@@ -161,12 +152,4 @@ export async function refreshOnce(transport) {
     }
   })();
   return inflight;
-}
-
-/**
- * §4: khi refresh thất bại (token hết hạn / bị thu hồi / mất mạng) thì KHÔNG
- * refresh tiếp nữa — phiên bị coi là kết thúc, ai đang giữ token phải xin lại.
- */
-export function markSessionDead() {
-  clearAuth();
 }

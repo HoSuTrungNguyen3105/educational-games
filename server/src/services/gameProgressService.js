@@ -2,9 +2,7 @@ import { getCollection } from "../db.js";
 
 const COLLECTION = "userGameProgress";
 
-function uid() {
-  return `ugp-${Math.random().toString(36).slice(2, 9)}`;
-}
+import { uid } from "../utils/id.js";
 
 export async function getByUser(userId) {
   return getCollection(COLLECTION).find({ userId }).toArray();
@@ -32,7 +30,7 @@ export async function upsert(userId, gameId, data = {}) {
   }
 
   const doc = {
-    _id: uid(),
+    _id: uid("ugp"),
     userId,
     gameId,
     level: 1,

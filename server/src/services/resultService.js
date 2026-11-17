@@ -1,6 +1,6 @@
 import { getCollection } from "../db.js";
 
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 const COLLECTION = "results";
 

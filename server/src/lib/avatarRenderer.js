@@ -292,9 +292,6 @@ export function renderItemHtml(category, params = {}) {
   return back + front;
 }
 
-/** Category hợp lệ — KHÔNG gồm `body` (body nằm ở mã frontend). */
-export const ACCESSORY_CATEGORIES = ["skin", "face", "hair", "shirt", "pants", "shoes", "hat", "glasses", "accessory"];
-
 export {
   shade, capPath, girlLongHair, starShape, heartShape,
   drawFace, hairMarkup, shirtMarkup, pantsMarkup,

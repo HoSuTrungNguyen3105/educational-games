@@ -1,5 +1,6 @@
 import { getCollection } from "../db.js";
 import { ObjectId } from "mongodb";
+import { escapeRegex as escapeRegExp } from "../utils/escapeRegex.js";
 
 export const genCode = () => Math.random().toString(36).slice(2, 9).toUpperCase().slice(0, 8);
 
@@ -405,8 +406,4 @@ export async function duplicate(id) {
     await getCollection("questions").insertMany(cloned);
   }
   return { _id: copyId, ...copy };
-}
-
-function escapeRegExp(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

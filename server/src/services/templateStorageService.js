@@ -21,8 +21,6 @@ import * as firebaseStorage from "./firebaseStorageService.js";
 import * as supabase from "./supabaseStorageService.js";
 import * as disk from "./htmlFileStorageService.js";
 
-export const STORAGE_PREFIX = "templates";
-
 /** Đường dẫn object của 1 template. */
 export function htmlPath(templateId) {
   return htmlKey(templateId);
@@ -52,11 +50,6 @@ export function providerLabel() {
 export function configErrorHint() {
   if (!isR2Configured()) return `R2 thiếu: ${missingR2Keys().join(", ")}`;
   return "";
-}
-
-/** Chuẩn hoá id thành khoá an toàn cho đường dẫn object. */
-export function safeKey(templateId) {
-  return String(templateId || "").replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 100);
 }
 
 /**

@@ -34,6 +34,7 @@ import { buildChatContext } from "./aiChatContext.js";
 import { recordChatLog } from "./aiChatLogService.js";
 import { getEffectiveGroqModel } from "./aiModelConfig.js";
 import { config } from "../config.js";
+import { clientIp as clientIpOf } from "../utils/clientIp.js";
 
 // ─────────────────── Chọn gateway suy luận ───────────────────
 // Hai gateway CÙNG giao diện (complete/completeJson): Ollama (đường trực tiếp
@@ -54,12 +55,6 @@ const llmCompleteJson = (system, messages) =>
 const RATE_LIMITS = { chat: 20, explain: 30, quiz: 10, analysis: 10 };
 const RATE_WINDOW_MS = 60_000;
 const rateWindows = new Map();
-
-function clientIpOf(req) {
-  const fwd = req?.headers?.["x-forwarded-for"];
-  const raw = (typeof fwd === "string" && fwd) ? fwd.split(",")[0].trim() : req?.ip || req?.socket?.remoteAddress;
-  return raw ? String(raw).slice(0, 64) : "";
-}
 
 function checkRateLimit(req, bucket) {
   const limit = RATE_LIMITS[bucket];

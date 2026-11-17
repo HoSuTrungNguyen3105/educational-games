@@ -8,7 +8,6 @@ const TeacherDashboard = lazy(() => import('./TeacherDashboard.jsx'));
 const CreateGameFlow = lazy(() => import('./CreateGameFlow.jsx'));
 const TeacherResults = lazy(() => import('./TeacherResults.jsx'));
 const UserManagement = lazy(() => import('./UserManagement.jsx'));
-const RoleManagement = lazy(() => import('./RoleManagement.jsx'));
 const RoleListManagement = lazy(() => import('./RoleListManagement.jsx'));
 const PermissionManagement = lazy(() => import('./PermissionManagement.jsx'));
 const TemplateManagement = lazy(() => import('./TemplateManagement.jsx'));
@@ -74,7 +73,6 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
         {page === "admin-results" && <TeacherResults gameId={route.params.gameId} onBack={goLibrary} />}
         {page === "admin-users" && <UserManagement user={user} showToast={showToast} />}
         {page === "admin-roles" && <RoleListManagement user={user} showToast={showToast} />}
-        {page === "admin-roles-matrix" && <RoleManagement user={user} showToast={showToast} />}
         {page === "admin-permissions" && <PermissionManagement user={user} showToast={showToast} />}
         {page === "admin-coins" && <CoinManagement user={user} showToast={showToast} />}
         {page === "admin-daily-tasks" && <DailyTaskManagement showToast={showToast} />}

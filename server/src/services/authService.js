@@ -8,7 +8,7 @@ import { REDEEM_ACHIEVEMENTS, findRedeemAchievement } from "../config/redeemCata
 import { normalizeAgeCode, normalizeGender } from "../config/ageCodes.js";
 import { sanitizeAvatar, sanitizePet } from "../lib/outfitCatalog.js";
 
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 const COLLECTION = "users";
 
@@ -394,14 +394,6 @@ export async function addCoins(userId, amount) {
   const newCoins = Math.max(0, (user.coins || 0) + amount);
   await getCollection(COLLECTION).updateOne({ id: userId }, { $set: { coins: newCoins } });
   return newCoins;
-}
-
-export async function setCoins(userId, coins) {
-  if (typeof coins !== "number" || coins < 0) throw new Error("coins must be a non-negative number");
-  const user = await getCollection(COLLECTION).findOne({ id: userId });
-  if (!user) throw new Error("Không tìm thấy người dùng");
-  await getCollection(COLLECTION).updateOne({ id: userId }, { $set: { coins } });
-  return coins;
 }
 
 export async function updateUserRole(userId, newRole) {

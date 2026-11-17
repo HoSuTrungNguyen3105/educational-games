@@ -25,7 +25,7 @@ export const DOC_MODES = ["html", "json"];
 export const MAX_SOURCE_BYTES = 1024 * 1024;
 export const MAX_NAME_LENGTH = 200;
 
-const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 function fail(status, message) {
   const e = new Error(message);

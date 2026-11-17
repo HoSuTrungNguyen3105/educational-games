@@ -1,12 +1,10 @@
 import { getCollection } from "../db.js";
 
-function uid() {
-  return "rmnd-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
+import { stampUid } from "../utils/id.js";
 
 export async function createReminder({ userId, title, message, remindAt, repeat = "none", type = "CUSTOM", relatedId = null, vibrate = true, sound = true, vibratePattern = "" }) {
   const doc = {
-    id: uid(),
+    id: stampUid("rmnd"),
     userId,
     title,
     message: message || "",

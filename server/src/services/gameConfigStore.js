@@ -67,12 +67,6 @@ export async function set(key, values, actor = null) {
   return rest;
 }
 
-export async function remove(key) {
-  const k = normalizeKey(key);
-  const res = await getCollection(COLLECTION).deleteOne({ key: k });
-  return res.deletedCount > 0;
-}
-
 /** Danh sách key đã lưu (cho trang admin liệt kê). */
 export async function list() {
   const docs = await getCollection(COLLECTION).find({}).sort({ updatedAt: -1 }).toArray();

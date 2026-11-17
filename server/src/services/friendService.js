@@ -27,7 +27,7 @@ import { isBlockedBetween } from "./blockService.js";
 
 const COLLECTION = "friendships";
 
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 function pairQuery(a, b) {
   return {

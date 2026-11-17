@@ -87,6 +87,3 @@ export const deleteHtmlPath = async (filePath) => {
     return false;
   }
 };
-
-/** Xoá file HTML của 1 template (best-effort). */
-export const deleteHtmlTemplate = (templateId) => deleteHtmlPath(htmlPath(templateId));

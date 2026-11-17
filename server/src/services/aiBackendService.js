@@ -37,6 +37,7 @@ import { ollamaHealth } from "./aiOllamaGateway.js";
 import { groqHealth } from "./aiGroqGateway.js";
 import { getEffectiveGroqModel, GROQ_MODELS } from "./aiModelConfig.js";
 import { getAiInferenceStatus } from "./aiInferenceStatus.js";
+import { clientIp } from "../utils/clientIp.js";
 
 export { AiBackendError };
 export { getAiInferenceStatus };
@@ -129,12 +130,6 @@ function internalHeaders(req) {
   if (ip) headers[INTERNAL_HEADERS.clientIp] = ip.slice(0, 64);
 
   return headers;
-}
-
-function clientIp(req) {
-  const fwd = req?.headers?.["x-forwarded-for"];
-  const raw = (typeof fwd === "string" && fwd) ? fwd.split(",")[0].trim() : req?.ip || req?.socket?.remoteAddress;
-  return raw ? String(raw).slice(0, 64) : "";
 }
 
 /** Bóc envelope {status, code, msg, data} của AI Service. */

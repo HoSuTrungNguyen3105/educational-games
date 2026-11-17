@@ -4,7 +4,7 @@ import * as classService from "./classService.js";
 import { isOn } from "./systemConfigService.js";
 
 const COLLECTION = "notifications";
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 const EVENTS = { NOTIFICATION_NEW: "notification:new" };
 

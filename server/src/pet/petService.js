@@ -25,7 +25,7 @@ import { sanitizePet } from "../lib/outfitCatalog.js";
 const COLLECTION = "userPets";
 const USERS = "users";
 
-const uid = () => `upet-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 const nowIso = () => new Date().toISOString();
 
 /** 7 ô trang phục, dùng khi tạo pet mới và khi reset. */
@@ -47,7 +47,7 @@ export function buildDefault(userId, name = DEFAULT_PET_NAME) {
   const sp = catalog.getSpecies("dog") || { id: "dog" };
   const col = catalog.defaultColorFor("dog") || { id: "cream" };
   return {
-    _id: uid(),
+    _id: uid("upet"),
     userId,
     species: sp.id,
     name: String(name || DEFAULT_PET_NAME).slice(0, 24),

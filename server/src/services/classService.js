@@ -1,6 +1,6 @@
 import { getCollection } from "../db.js";
 
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 // ── Class CRUD ──
 
@@ -121,11 +121,6 @@ export async function assignTeacher(teacherId, classId) {
   return doc;
 }
 
-export async function removeTeacher(teacherId, classId) {
-  await getCollection("teacher_classes").deleteOne({ teacherId, classId });
-  return true;
-}
-
 export async function getTeacherClasses(teacherId) {
   const mappings = await getCollection("teacher_classes").find({ teacherId }).toArray();
   if (mappings.length === 0) return [];
@@ -134,13 +129,6 @@ export async function getTeacherClasses(teacherId) {
   // Cùng trang ClassManagement với nhánh admin (listClasses) — gắn cùng
   // studentCount/teacherName để GV xem lớp của mình cũng thấy sĩ số.
   return enrichClasses(docs);
-}
-
-export async function getClassTeachers(classId) {
-  const mappings = await getCollection("teacher_classes").find({ classId }).toArray();
-  if (mappings.length === 0) return [];
-  const teacherIds = mappings.map(m => m.teacherId);
-  return getCollection("users").find({ id: { $in: teacherIds } }).project({ passwordHash: 0 }).toArray();
 }
 
 // ── Students in class ──

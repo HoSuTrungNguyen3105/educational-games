@@ -10,7 +10,7 @@ import {
 
 const COLLECTION = "questions";
 
-const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+import { uid } from "../utils/id.js";
 
 export async function listByGame(gameId, { inputMode } = {}) {
   const filter = { gameId };
@@ -37,12 +37,6 @@ export async function save(gameId, questions) {
     { $set: { questionsCount: prepared.length, updatedAt: new Date().toISOString() } }
   );
   return prepared;
-}
-
-export async function add(gameId, question) {
-  const doc = { ...question, id: question.id || uid("question"), gameId };
-  await getCollection(COLLECTION).insertOne(doc);
-  return doc;
 }
 
 export async function getById(questionId) {
