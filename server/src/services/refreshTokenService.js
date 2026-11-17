@@ -89,14 +89,33 @@ export function cookieOptions() {
   };
 }
 
+/**
+ * Path cookie của các bản trước khi có endpoint refresh v1. Trình duyệt coi
+ * (tên + path) là các cookie KHÁC nhau: bản cũ ở path này còn sót sẽ được gửi
+ * kèm bản mới ở những request khớp cả hai path, mà cookie-parser chỉ đọc một
+ * giá trị — đọc trúng token đã xoay vòng thì reuse-detection thu hồi cả
+ * family oan. Mọi lần set/clear đều xoá luôn bản legacy để jar hội tụ về
+ * đúng một cookie ở path hiện hành.
+ */
+const LEGACY_REFRESH_COOKIE_PATH = "/api/auth";
+
 export function setRefreshCookie(res, rawToken) {
-  res.cookie(config.refreshCookieName, rawToken, cookieOptions());
+  const opts = cookieOptions();
+  res.cookie(config.refreshCookieName, rawToken, opts);
+  if (opts.path !== LEGACY_REFRESH_COOKIE_PATH) {
+    res.clearCookie(config.refreshCookieName, { ...opts, path: LEGACY_REFRESH_COOKIE_PATH, maxAge: 0 });
+  }
 }
 
 export function clearRefreshCookie(res) {
   // `path` phải khớp lúc set thì xoá mới có tác dụng; maxAge 0 = xóa ngay.
+  // Xoá cả path hiện hành lẫn path legacy để đăng xuất/refresh lỗi là cookie
+  // biến mất thật ở mọi path.
   const { maxAge, ...opts } = cookieOptions();
   res.clearCookie(config.refreshCookieName, { ...opts, maxAge: 0 });
+  if (opts.path !== LEGACY_REFRESH_COOKIE_PATH) {
+    res.clearCookie(config.refreshCookieName, { ...opts, path: LEGACY_REFRESH_COOKIE_PATH, maxAge: 0 });
+  }
 }
 
 // ── Phát hành / xác thực ───────────────────────────────────────────────────

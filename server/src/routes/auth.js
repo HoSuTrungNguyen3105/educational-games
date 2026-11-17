@@ -65,6 +65,37 @@ router.post("/login", async (req, res, next) => {
 });
 
 /**
+ * Lõi refresh DÙNG CHUNG cho POST /api/auth/refresh và POST /api/v1/user/refresh
+ * (routes/v1User.js): kiểm tra origin → đọc cookie HttpOnly → xoay vòng qua
+ * refreshTokenService → set cookie mới. Hai endpoint chỉ khác nhau ở shape
+ * của response THÀNH CÔNG; logic và response LỖI là một.
+ *
+ * @returns {Promise<string|null>} access token mới khi thành công; `null` khi
+ *   thất bại — lúc đó response lỗi đã được gửi rồi, caller không gửi thêm gì.
+ */
+export async function performRefresh(req, res) {
+  if (!requireRefreshOrigin(req, res)) return null;
+
+  const raw = readRefreshCookie(req);
+  if (!raw) {
+    sendError(res, "Không có refresh token", 401);
+    return null;
+  }
+
+  try {
+    const { token, refreshRaw } = await rotateRefreshToken(raw);
+    setRefreshCookie(res, refreshRaw); // xoay vòng: cookie mới thay cookie cũ
+    return token;
+  } catch (e) {
+    // Token hỏng/hết hạn/thu hồi ⇒ cookie cũng vô giá trị, xoá để client không retry lặp.
+    clearRefreshCookie(res);
+    console.warn(`[refresh] Thất bại (${e.code || "unknown"}): ${e.message}`);
+    sendError(res, e.message || "Refresh thất bại", 401);
+    return null;
+  }
+}
+
+/**
  * POST /api/auth/refresh — cấp access token mới từ refresh token trong cookie.
  *
  * Hợp đồng response theo update_refresh_token.md §3.2: `Authorization` nằm ở
@@ -72,27 +103,15 @@ router.post("/login", async (req, res, next) => {
  * trả theo envelope `{status, code, msg, data}` và client cũ đọc theo kiểu đó.
  */
 router.post("/refresh", async (req, res) => {
-  if (!requireRefreshOrigin(req, res)) return;
-
-  const raw = readRefreshCookie(req);
-  if (!raw) return sendError(res, "Không có refresh token", 401);
-
-  try {
-    const { token, refreshRaw } = await rotateRefreshToken(raw);
-    setRefreshCookie(res, refreshRaw); // xoay vòng: cookie mới thay cookie cũ
-    return res.json({
-      status: true,
-      code: 200,
-      msg: "refresh.success",
-      Authorization: `Bearer ${token}`,
-      data: { token },
-    });
-  } catch (e) {
-    // Token hỏng/hết hạn/thu hồi ⇒ cookie cũng vô giá trị, xoá để client không retry lặp.
-    clearRefreshCookie(res);
-    console.warn(`[refresh] Thất bại (${e.code || "unknown"}): ${e.message}`);
-    return sendError(res, e.message || "Refresh thất bại", 401);
-  }
+  const token = await performRefresh(req, res);
+  if (token === null) return;
+  return res.json({
+    status: true,
+    code: 200,
+    msg: "refresh.success",
+    Authorization: `Bearer ${token}`,
+    data: { token },
+  });
 });
 
 /**
