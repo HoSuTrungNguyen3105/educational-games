@@ -51,6 +51,7 @@ const RULES = [
   { re: /^\/auth\/me/, perms: [PROFILE] },                 // /me, /me/wallet, /me/xp, change-password
   { re: /^\/users\/me$/, perms: [PROFILE] },
   { re: /^\/users\/me\/games/, perms: [PLAY, "games.view"] },   // tiến độ game của bản thân
+  { re: /^\/users\/me\/check-in/, perms: [PROFILE] },      // điểm danh mỗi ngày của bản thân (checkinService)
   { re: /^\/users\/me\/exam-results/, perms: [PLAY, "assignments.view"] },
   { re: /^\/users\/game-progress/, feature: "coins" },     // admin xem/sửa JSON save của user
   { re: /^\/users\/exam-results/, feature: "reports" },    // admin xem điểm thi

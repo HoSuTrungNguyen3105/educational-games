@@ -1,12 +1,34 @@
 import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { createUser, listUsers, removeUser, removeUsersBulk, BULK_DELETE_MAX_IDS, resetPassword, updateUserRole, updateUser } from "../services/authService.js";
+import { getCheckinStatus, performCheckin } from "../services/checkinService.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
 import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
 
 router.use(authenticate);
+
+// ── Điểm danh mỗi ngày (check-in nhận xu + chuỗi ngày liên tiếp) ────────
+// Mọi tài khoản đã đăng nhập đều gọi được; giao diện chỉ hiện thẻ cho học
+// sinh. Logic ở checkinService — KHÁC hệ điểm danh đi học của lớp
+// (routes/attendance.js). Khai báo ở đầu để "/me/..." không lẫn với "/:id".
+router.get("/me/check-in", async (req, res) => {
+  try {
+    sendSuccess(res, await getCheckinStatus(req.user.sub));
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+router.post("/me/check-in", async (req, res) => {
+  try {
+    const result = await performCheckin(req.user.sub);
+    sendSuccess(res, result, result.alreadyCheckedIn ? "Hôm nay đã điểm danh rồi" : "Điểm danh thành công");
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
 
 router.get("/", requireRoles("teacher", "admin"), async (_req, res, next) => {
   try {
