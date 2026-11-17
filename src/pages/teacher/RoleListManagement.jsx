@@ -32,6 +32,7 @@ import {
   ViewToggle,
 } from "../../components/ui";
 import RangePagination from "../../components/RangePagination.jsx";
+import { rangeAll, rangeForPage } from "../../lib/rangePagination.js";
 import { Crown, Download, Eye, Filter, GraduationCap, Grid2x2, KeyRound, Pencil, Plus, Shield, Trash2 } from "lucide-react";
 
 const PER_PAGE = 10;
@@ -93,7 +94,7 @@ export default function RoleListManagement({ user, showToast }) {
   useEffect(() => {
     const t = setTimeout(() => {
       Promise.all([
-        permissionService.listRoles(),
+        permissionService.listRoles(rangeAll()),
         permissionService.features(),
         permissionService.catalog(),
       ])
@@ -324,10 +325,8 @@ export default function RoleListManagement({ user, showToast }) {
   const load = useCallback(() => {
     setError(null);
     // Phân trang bằng đoạn bản ghi ?from=&to= (hợp đồng rangeList phía
-    // server): trang p ↔ from = (p-1)*PER_PAGE+1, to = p*PER_PAGE. Server
-    // vẫn hỗ trợ page/perPage song song cho các caller khác.
-    const from = (page - 1) * PER_PAGE + 1;
-    const to = page * PER_PAGE;
+    // server, helper dùng chung rangeForPage): client chỉ gửi from/to.
+    const { from, to } = rangeForPage(page, PER_PAGE);
     permissionService.rolesPaged({ from, to, keyword: debouncedKeyword })
       .then((res) => {
         setRows(res?.data || []);
@@ -366,8 +365,9 @@ export default function RoleListManagement({ user, showToast }) {
 
   const totalItems = pagination?.total ?? 0;
   const totalPages = pagination?.total_pages ?? 1;
-  const fromRecord = totalItems === 0 ? 1 : (page - 1) * PER_PAGE + 1;
-  const toRecord = Math.min(page * PER_PAGE, totalItems);
+  const pageRange = rangeForPage(page, PER_PAGE);
+  const fromRecord = totalItems === 0 ? 1 : pageRange.from;
+  const toRecord = Math.min(pageRange.to, totalItems);
   const changeRange = (from) => setPage(Math.max(1, Math.min(totalPages, Math.ceil((Number(from) || 1) / PER_PAGE))));
   const prevPage = () => setPage((p) => Math.max(1, p - 1));
   const nextPage = () => setPage((p) => Math.min(totalPages, p + 1));
@@ -394,7 +394,7 @@ export default function RoleListManagement({ user, showToast }) {
       const found = (rows || []).find((r) => r.slug === slug);
       if (found) { setDetail(found); return; }
       try {
-        const res = await permissionService.rolesPaged({ page: 1, perPage: 20, keyword: slug });
+        const res = await permissionService.rolesPaged({ from: 1, to: 20, keyword: slug });
         const match = (res?.data || []).find((r) => r.slug === slug);
         if (match) setDetail(match);
       } catch { /* để nguyên, không chặn trang */ }

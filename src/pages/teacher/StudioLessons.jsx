@@ -70,7 +70,7 @@ export default function StudioLessons({ showToast }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await lessonService.listMine({ perPage: 100 });
+      const res = await lessonService.listMine({ from: 1, to: 100 });
       setLessons(res?.data || []);
       setError("");
     } catch (e) {

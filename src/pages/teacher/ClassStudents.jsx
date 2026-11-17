@@ -5,6 +5,7 @@ import { CircleUserRound, Download, Hash, School, Search, UserMinus } from 'luci
 import { ConfirmModal, EmptyState, IconBack, IconMail, IconUsers, Loader, SearchInput } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { exportCsv } from '../../lib/exportCsv.js';
+import { rangeAll } from '../../lib/rangePagination.js';
 
 export default function ClassStudents({ classId }) {
   const [cls, setCls] = useState(null);
@@ -23,12 +24,13 @@ export default function ClassStudents({ classId }) {
     setLoading(true);
     setError('');
     try {
-      const [clsData, studentsData] = await Promise.all([
+      // Lọc + xuất CSV chạy trên toàn bộ học sinh của lớp ở client → from/to "lấy tất cả".
+      const [clsData, studentsRes] = await Promise.all([
         classService.get(classId),
-        classService.getStudents(classId),
+        classService.getStudents(classId, rangeAll()),
       ]);
       setCls(clsData);
-      setStudents(Array.isArray(studentsData) ? studentsData : []);
+      setStudents(studentsRes.items || []);
     } catch (e) {
       setError('Không thể tải dữ liệu lớp học.');
       console.error(e);

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FileText, Pencil, Trash2, X } from 'lucide-react'
 import { gameService, questionService } from '../../services/api.js'
+import { rangeAll } from '../../lib/rangePagination.js'
 import { gameLabel } from '../../lib/gameLabel.js'
 import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState, ErrorState } from '../../components/ui'
 import QuestionImportModal from './QuestionImportModal.jsx'
@@ -30,7 +31,8 @@ export default function QuestionManagement({ showToast }) {
   const loadQuestions = useCallback(() => {
     if (!selectedGame) { setQuestions(null); return; }
     setQuestions(null); setError(null);
-    questionService.listByGame(selectedGame).then(setQuestions).catch(e => setError(e.message));
+    // Trang sửa/lưu CẢ bộ câu hỏi của game nên cần toàn bộ → from/to "lấy tất cả".
+    questionService.listByGame(selectedGame, rangeAll()).then((res) => setQuestions(res.items)).catch(e => setError(e.message));
   }, [selectedGame]);
   useEffect(() => { loadQuestions(); }, [loadQuestions]);
 

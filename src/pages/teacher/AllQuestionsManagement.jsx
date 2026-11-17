@@ -4,6 +4,7 @@ import { gameService, questionService } from '../../services/api.js'
 import { gameLabel } from '../../lib/gameLabel.js'
 import { BulkDeleteBar, Checkbox, GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState } from '../../components/ui'
 import { useBulkSelection, bulkInChunks } from '../../lib/hooks.js'
+import { rangeAll } from '../../lib/rangePagination.js'
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -51,7 +52,9 @@ export default function AllQuestionsManagement({ showToast }) {
       // tự game như cũ.
       const perGame = await mapWithConcurrency(allGames, QUESTION_LOAD_CONCURRENCY, async (g) => {
         try {
-          const qs = await questionService.listByGame(g._id);
+          // Tab này gom/tìm/xoá trên TOÀN BỘ câu hỏi → mỗi game xin from/to "lấy tất cả".
+          const res = await questionService.listByGame(g._id, rangeAll());
+          const qs = res.items;
           if (!Array.isArray(qs)) return null;
           // Attach gameId locally (not from API response)
           qs.forEach(q => { q.gameId = g._id; });

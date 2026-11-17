@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_BASE } from '../../services/api.js';
+import { FULL_LIST_TO } from '../../lib/rangePagination.js';
 import { IconDownload, IconPlay, IconUpload, ManagementHeader } from '../../components/ui';
 import { Save, Plus, LoaderCircle, X, Coins } from 'lucide-react';
 
@@ -114,11 +115,13 @@ export default function UploadItems({ showToast }) {
   const loadExisting = useCallback(async () => {
     setExistingInfo('Đang tải...');
     try {
-      const res = await fetch(`${API_BASE}/avatar/items`);
+      const res = await fetch(`${API_BASE}/avatar/items?from=1&to=${FULL_LIST_TO}`);
       const json = await res.json();
       if (json.status) {
-        setExistingItems(json.data.items || []);
-        setExistingInfo(`Đã tải ${json.data.items?.length || 0} items`);
+        // Có from/to → data là MẢNG items đã cắt (không còn bọc { items, ... }).
+        const items = Array.isArray(json.data) ? json.data : (json.data.items || []);
+        setExistingItems(items);
+        setExistingInfo(`Đã tải ${items.length} items`);
       } else setExistingInfo('Lỗi: ' + (json.msg || ''));
     } catch (e) { setExistingInfo('Lỗi: ' + e.message); }
   }, []);

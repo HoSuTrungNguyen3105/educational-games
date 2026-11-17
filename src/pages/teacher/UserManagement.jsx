@@ -5,6 +5,7 @@ import { hasPermission, getRoleLabel, ROLES } from '../../config/roles.js'
 import { matchesQuery } from '../../lib/searchText.js'
 import { BulkDeleteBar, Checkbox, GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal, Modal } from '../../components/ui'
 import { useBulkSelection, bulkInChunks } from '../../lib/hooks.js'
+import { rangeAll } from '../../lib/rangePagination.js'
 
 const RANDOM_FIRST_NAMES = ["An", "Bình", "Cúc", "Dũng", "Em", "Giang", "Hà", "Hiếu", "Iris", "Khanh", "Lan", "Minh", "Nga", "Oanh", "Phúc", "Quân", "Rạng", "Sơn", "Tâm", "Uyên", "Vân", "Xuân", "Yên", "Zoe"];
 const RANDOM_LAST_NAMES = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý"];
@@ -64,7 +65,9 @@ export default function UserManagement({ user, showToast }) {
 
   const load = useCallback(() => {
     setUsers(null); setError(null);
-    userService.list().then(setUsers).catch(e => setError(e.message));
+    // Tìm kiếm + chọn/xoá hàng loạt chạy trên toàn bộ danh sách ở client →
+    // xin khoảng "lấy tất cả" qua from/to (xem lib/rangePagination.js).
+    userService.list(rangeAll()).then((res) => setUsers(res.items)).catch(e => setError(e.message));
   }, []);
   useEffect(() => { load(); }, [load]);
 

@@ -24,6 +24,7 @@ import {
   ViewToggle,
 } from "../../components/ui";
 import RangePagination from "../../components/RangePagination.jsx";
+import { rangeForPage } from "../../lib/rangePagination.js";
 import { Download, Eye, Filter, Wand2 } from "lucide-react";
 
 const PER_PAGE = 10;
@@ -62,7 +63,7 @@ export default function PermissionManagement({ user, showToast }) {
 
   const load = useCallback(() => {
     setError(null);
-    permissionService.permissionsPaged({ page, perPage: PER_PAGE, keyword: debouncedKeyword })
+    permissionService.permissionsPaged({ ...rangeForPage(page, PER_PAGE), keyword: debouncedKeyword })
       .then((res) => {
         setRows(res?.data || []);
         setPagination(res?.pagination || null);
@@ -107,8 +108,9 @@ export default function PermissionManagement({ user, showToast }) {
 
   const totalItems = pagination?.total ?? 0;
   const totalPages = pagination?.total_pages ?? 1;
-  const fromRecord = totalItems === 0 ? 1 : (page - 1) * PER_PAGE + 1;
-  const toRecord = Math.min(page * PER_PAGE, totalItems);
+  const pageRange = rangeForPage(page, PER_PAGE);
+  const fromRecord = totalItems === 0 ? 1 : pageRange.from;
+  const toRecord = Math.min(pageRange.to, totalItems);
   const changeRange = (from) => setPage(Math.max(1, Math.min(totalPages, Math.ceil((Number(from) || 1) / PER_PAGE))));
   const prevPage = () => setPage((p) => Math.max(1, p - 1));
   const nextPage = () => setPage((p) => Math.min(totalPages, p + 1));
@@ -133,7 +135,7 @@ export default function PermissionManagement({ user, showToast }) {
       const found = (rows || []).find((r) => r.slug === slug);
       if (found) { setDetail(found); return; }
       try {
-        const res = await permissionService.permissionsPaged({ page: 1, perPage: 20, keyword: slug });
+        const res = await permissionService.permissionsPaged({ from: 1, to: 20, keyword: slug });
         const match = (res?.data || []).find((r) => r.slug === slug);
         if (match) setDetail(match);
       } catch { /* không chặn trang */ }

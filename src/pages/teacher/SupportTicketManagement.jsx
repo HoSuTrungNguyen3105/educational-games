@@ -33,6 +33,7 @@ import {
 } from "../../components/ui";
 import { useBulkSelection, bulkInChunks } from "../../lib/hooks.js";
 import RangePagination from "../../components/RangePagination.jsx";
+import { rangeAll } from "../../lib/rangePagination.js";
 import { Download, Eye, Filter, Trash2 } from "lucide-react";
 
 const PAGE_SIZE = 25;
@@ -128,8 +129,10 @@ export default function SupportTicketManagement({ user, showToast }) {
 
   const load = useCallback(() => {
     setError(null);
-    supportService.list()
-      .then((data) => setTickets(data || []))
+    // Lọc + cắt trang + xuất CSV đều chạy trên toàn bộ ticket ở client →
+    // from/to "lấy tất cả" (xem lib/rangePagination.js).
+    supportService.list(rangeAll())
+      .then((res) => setTickets(res.items || []))
       .catch((e) => setError(e.message));
   }, []);
 
@@ -665,8 +668,8 @@ function UserReportsSection({ showToast }) {
   const [busyId, setBusyId] = useState(null);
 
   const loadReports = useCallback(() => {
-    supportService.listReports()
-      .then((data) => setReports(data || []))
+    supportService.listReports(rangeAll())
+      .then((res) => setReports(res.items || []))
       .catch(() => setReports([]));
   }, []);
 

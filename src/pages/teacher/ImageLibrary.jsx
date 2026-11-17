@@ -39,7 +39,7 @@ export default function ImageLibrary({ user, showToast }) {
     setLoading(true);
     setError(null);
     try {
-      const data = await imageService.list({ folder, perPage: 100 });
+      const data = await imageService.list({ folder, from: 1, to: 100 });
       setImages(data.images || []);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }

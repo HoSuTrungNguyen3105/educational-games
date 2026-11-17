@@ -3,6 +3,7 @@ import { adminGameProgressService, userService } from '../../services/api.js'
 import { getLevelProgress, getLevelTitle, getLevelEmoji } from '../../lib/utils.js'
 import { getRoleLabel } from '../../config/roles.js'
 import { matchesQuery } from '../../lib/searchText.js'
+import { rangeAll } from '../../lib/rangePagination.js'
 import { GridCard, ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid } from '../../components/ui'
 import { useConfirm } from '../../hooks/useConfirm.js'
 import { BarChart3, ClipboardList, Coins, Gamepad2, Pencil, Save, Trash2, Users } from 'lucide-react'
@@ -62,8 +63,10 @@ export default function CoinManagement({ user, showToast }) {
 
   const load = useCallback(() => {
     setProgress(null); setError(null);
-    Promise.all([adminGameProgressService.listAll(), userService.list()])
-      .then(([p, u]) => { setProgress(p); setUsers(u); })
+    // Tổng xu toàn hệ thống + tổng lượt chơi tính trên TOÀN BỘ bản ghi ở
+    // client → cả hai list đều xin khoảng "lấy tất cả" qua from/to.
+    Promise.all([adminGameProgressService.listAll(rangeAll()), userService.list(rangeAll())])
+      .then(([p, u]) => { setProgress(p.items); setUsers(u.items); })
       .catch(e => setError(e.message || "Lỗi tải dữ liệu"));
   }, []);
   useEffect(() => { load(); }, [load]);

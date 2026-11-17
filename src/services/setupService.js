@@ -1,4 +1,4 @@
-import { apiFetch } from "./api.js";
+import { apiFetch, hasRange } from "./api.js";
 
 const cache = {};
 
@@ -13,22 +13,32 @@ function clearCache(key) {
   delete cache[key];
 }
 
+// Có range { from, to } (trang quản lí) → bỏ qua cache dùng chung (cache giữ
+// bản không-range cho dropdown/editor) và xin đúng khoảng từ server; server
+// trả data là mảng đã cắt. Không range → hành vi cũ (cache + toàn bộ list).
+async function rangedGet(path, range, key, loader) {
+  if (hasRange(range)) {
+    try {
+      const list = await apiFetch(`${path}?from=${range.from}&to=${range.to}`);
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  }
+  try {
+    const list = await cachedGet(key, loader);
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
 export const setupService = {
-  async listTemplates() {
-    try {
-      const list = await cachedGet("templates", () => apiFetch("/templates"));
-      return Array.isArray(list) ? list : [];
-    } catch {
-      return [];
-    }
+  async listTemplates(range) {
+    return rangedGet("/templates", range, "templates", () => apiFetch("/templates"));
   },
-  async listCategories() {
-    try {
-      const list = await cachedGet("categories", () => apiFetch("/categories"));
-      return Array.isArray(list) ? list : [];
-    } catch {
-      return [];
-    }
+  async listCategories(range) {
+    return rangedGet("/categories", range, "categories", () => apiFetch("/categories"));
   },
   async createCategory(data) {
     const result = await apiFetch("/categories", { method: "POST", body: data });
@@ -49,13 +59,8 @@ export const setupService = {
     clearCache("categories");
     return result;
   },
-  async listSubjects() {
-    try {
-      const list = await cachedGet("subjects", () => apiFetch("/subjects"));
-      return Array.isArray(list) ? list : [];
-    } catch {
-      return [];
-    }
+  async listSubjects(range) {
+    return rangedGet("/subjects", range, "subjects", () => apiFetch("/subjects"));
   },
   async addSubject(name) {
     const result = await apiFetch("/subjects", { method: "POST", body: { name } });

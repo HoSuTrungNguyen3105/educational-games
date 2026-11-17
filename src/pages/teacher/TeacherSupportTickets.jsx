@@ -24,6 +24,7 @@ import {
   ViewToggle,
 } from "../../components/ui";
 import RangePagination from "../../components/RangePagination.jsx";
+import { rangeAll } from "../../lib/rangePagination.js";
 import { Filter, Eye } from "lucide-react";
 
 const PAGE_SIZE = 25;
@@ -97,8 +98,9 @@ export default function TeacherSupportTickets({ user, showToast }) {
 
   const load = useCallback(() => {
     setError(null);
-    supportService.assigned()
-      .then((data) => setTickets(data || []))
+    // Lọc + cắt trang phía client trên toàn bộ ticket được gán → from/to "lấy tất cả".
+    supportService.assigned(rangeAll())
+      .then((res) => setTickets(res.items || []))
       .catch((e) => setError(e.message));
   }, []);
 

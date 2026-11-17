@@ -4,6 +4,7 @@ import { gameService, questionService, uid } from '../../services/api.js'
 import { THEMES } from '../../lib/setupConstants.js'
 import { useTemplates, useSubjects, useSubjectOptions, useCategories, useTemplateHtml } from '../../lib/hooks.js'
 import { emptyQuestion } from '../../lib/utils.js'
+import { rangeAll } from '../../lib/rangePagination.js'
 import { PrimaryButton, GhostButton, IconButton, Loader, Modal } from '../../components/ui'
 import Field, { TemplateThumb } from '../../components/fields.jsx'
 import QuestionImportModal from './QuestionImportModal.jsx'
@@ -98,7 +99,9 @@ export default function CreateGameFlow({ gameId, onDone, onCancel, showToast }) 
         if (savedKey) { keyTouchedRef.current = true; setConfigKey(savedKey); }
         setStepIdx(1);
       }
-      const qs = await questionService.listByGame(gameId);
+      // Wizard sửa CẢ bộ câu hỏi của game → from/to "lấy tất cả".
+      const res = await questionService.listByGame(gameId, rangeAll());
+      const qs = res.items;
       setQuestions(qs.length ? qs : [emptyQuestion()]);
       setLoading(false);
     })();
@@ -631,7 +634,8 @@ function QuestionPickerModal({ onClose, onPick }) {
         const allQ = [];
         for (const g of allGames) {
           try {
-            const qs = await questionService.listByGame(g._id);
+            const res = await questionService.listByGame(g._id, rangeAll());
+            const qs = res.items;
             if (Array.isArray(qs)) {
               qs.forEach(q => { q.gameId = g._id; });
               allQ.push(...qs);
