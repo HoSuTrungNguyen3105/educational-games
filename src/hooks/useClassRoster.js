@@ -128,6 +128,10 @@ function loadInitialState() {
         ? parsed.classes
             .filter((c) => c && typeof c === "object")
             .map((c) => ({
+              // Giữ nguyên các field phụ theo lớp của các đợt sau
+              // (groups của Chia nhóm, teams của Bảng điểm…) — hook này chỉ
+              // chuẩn hoá id/name/students, không xoá field lạ.
+              ...c,
               id: c.id || uid(),
               name: String(c.name ?? ""),
               students: Array.isArray(c.students) ? c.students.map(normalizeStudent).filter((s) => s.name) : [],
@@ -312,6 +316,10 @@ export function useClassRoster() {
     classes,
     activeClass,
     activeClassId,
+    // patchClass: lối ghi field phụ theo lớp cho các hook companion
+    // (useClassGroups, useClassTeams) — dùng chung một state + một
+    // localStorage key, không hook nào tự giữ bản sao dữ liệu lớp.
+    patchClass,
     setActiveClass,
     addClass,
     removeClass,

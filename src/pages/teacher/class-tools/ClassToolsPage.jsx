@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { Dices } from "lucide-react";
 import { useClassRoster } from "../../../hooks/useClassRoster.js";
 import NamePickerTab from "./NamePickerTab.jsx";
+import GroupsTab from "./GroupsTab.jsx";
+import ScoreTab from "./ScoreTab.jsx";
 
 /**
  * ClassToolsPage — trang "Công cụ lớp học" ở /dashboard/class-tools
@@ -11,12 +14,21 @@ import NamePickerTab from "./NamePickerTab.jsx";
  * localStorage máy giáo viên qua hook useClassRoster.
  *
  * Đợt 1: tab Gọi tên (vòng quay + bốc thăm + xúc xắc / đồng xu / bốc số).
- * Các đợt sau thêm tab Chia nhóm, Bảng điểm (đợt 2) và Chỗ ngồi, Nề nếp
- * (đợt 3) — khung tab dưới đây chỉ liệt kê tab đang hoạt động thật,
- * không dựng tab rỗng.
+ * Đợt 2: tab Chia nhóm (chia cân bằng nam/nữ + gán vai trò) và tab
+ * Bảng điểm (đội thi đua + bảng vàng cá nhân, xuất PDF qua in).
+ * Đợt 3 sẽ thêm Chỗ ngồi, Nề nếp — khung tab chỉ liệt kê tab đang
+ * hoạt động thật, không dựng tab rỗng.
  */
+
+const TABS = [
+  { key: "picker", label: "Gọi tên" },
+  { key: "groups", label: "Chia nhóm" },
+  { key: "score", label: "Bảng điểm" },
+];
+
 export default function ClassToolsPage({ showToast }) {
   const roster = useClassRoster();
+  const [tab, setTab] = useState("picker");
 
   return (
     <div className="flex flex-col gap-4">
@@ -35,12 +47,17 @@ export default function ClassToolsPage({ showToast }) {
       </header>
 
       <div className="inline-flex self-start rounded-2xl bg-ink/5 p-1">
-        <span className="text-sm font-display font-semibold rounded-xl px-4 py-2 bg-white text-ink shadow-sm">
-          Gọi tên
-        </span>
+        {TABS.map((t) => (
+          <button key={t.key} type="button" onClick={() => setTab(t.key)}
+            className={`text-sm font-display font-semibold rounded-xl px-4 py-2 transition ${tab === t.key ? "bg-white text-ink shadow-sm" : "text-ink/50 hover:text-ink"}`}>
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      <NamePickerTab roster={roster} showToast={showToast} />
+      {tab === "picker" && <NamePickerTab roster={roster} showToast={showToast} />}
+      {tab === "groups" && <GroupsTab roster={roster} showToast={showToast} />}
+      {tab === "score" && <ScoreTab roster={roster} showToast={showToast} />}
     </div>
   );
 }

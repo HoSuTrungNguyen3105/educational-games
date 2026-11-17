@@ -1,0 +1,116 @@
+/* Bảng điểm Công cụ lớp học in giấy — @media print khổ A4.
+   Chỉ áp dụng khi body có class `ctp-printing` (PrintSheet gắn trong lúc
+   in) để không ảnh hưởng thao tác in của các trang khác. */
+
+.ctp-root {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 186mm;
+}
+
+.ctp-sheet {
+  color: #1d2e4a;
+  background: #fff;
+  font-family: inherit;
+}
+
+.ctp-title {
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 4px;
+}
+
+.ctp-date {
+  text-align: center;
+  font-size: 13px;
+  color: #555;
+  margin: 0 0 18px;
+}
+
+.ctp-team-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ctp-team {
+  border: 2px solid #999;
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+  break-inside: avoid;
+}
+
+.ctp-team-name {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.ctp-team-points {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  margin: 0;
+}
+
+.ctp-team-unit {
+  font-size: 12px;
+  color: #555;
+  margin: 4px 0 0;
+}
+
+.ctp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.ctp-table th,
+.ctp-table td {
+  border: 1px solid #b9c2cc;
+  padding: 6px 9px;
+  text-align: left;
+}
+
+.ctp-table th {
+  background: #eef2f6;
+  font-weight: 700;
+}
+
+.ctp-table .ctp-num {
+  text-align: center;
+}
+
+.ctp-empty {
+  text-align: center;
+  color: #555;
+  font-size: 14px;
+  padding: 24px 0;
+}
+
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
+@media print {
+  body.ctp-printing * {
+    visibility: hidden;
+  }
+  body.ctp-printing .ctp-sheet,
+  body.ctp-printing .ctp-sheet * {
+    visibility: visible;
+  }
+  body.ctp-printing .ctp-root {
+    position: static !important;
+  }
+  .ctp-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
