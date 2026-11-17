@@ -10,7 +10,7 @@ import { processTaskEvent } from "../services/taskEngineService.js";
 import { getClassById } from "../services/classService.js";
 import { getRolePermissions, getRoleIdentity } from "../services/permissionService.js";
 import {
-  checkRefreshOrigin, issueRefreshToken, rotateRefreshToken, readRefreshCookie,
+  checkRefreshOrigin, issueRefreshToken, rotateRefreshToken, readRefreshToken,
   setRefreshCookie, clearRefreshCookie, revokeAllForUser, refreshUserId, REFRESH_COOKIE_NAME,
   listSessions, revokeOtherSessions, revokeAllForUserCount,
 } from "../services/refreshTokenService.js";
@@ -48,8 +48,13 @@ router.post("/login", async (req, res, next) => {
     }
 
     const token = signToken(user);
-    // Refresh token chỉ đi qua cookie HttpOnly — không bao giờ xuất hiện trong JSON.
-    setRefreshCookie(res, await issueRefreshToken(user, { meta: sessionMeta(req) }));
+    // Refresh token đi qua cookie HttpOnly (đường chính) VÀ trả thêm trong
+    // body (`refreshToken`) cho client iOS: WebKit chặn cookie bên thứ ba
+    // (client github.io ≠ API onrender.com) nên client giữ bản này trong
+    // localStorage và gửi lại qua header `x-refresh-token` — xem
+    // readRefreshToken trong refreshTokenService.
+    const refreshRaw = await issueRefreshToken(user, { meta: sessionMeta(req) });
+    setRefreshCookie(res, refreshRaw);
     trackAction(user.id, "login", 1).catch(() => {});
     processTaskEvent(user.id, { type: "LOGIN" }).catch(() => {});
     audit({
@@ -64,7 +69,7 @@ router.post("/login", async (req, res, next) => {
     // đọc luôn từ đây, khỏi gọi thêm GET /api/users/me/pet.
     const pub = publicUser(user);
     pub.pet = await petService.getFullState(user.id).catch(() => pub.pet);
-    sendSuccess(res, { token, user: pub });
+    sendSuccess(res, { token, user: pub, refreshToken: refreshRaw });
   } catch (e) {
     next(e);
   }
@@ -72,17 +77,21 @@ router.post("/login", async (req, res, next) => {
 
 /**
  * Lõi refresh DÙNG CHUNG cho POST /api/auth/refresh và POST /api/v1/user/refresh
- * (routes/v1User.js): kiểm tra origin → đọc cookie HttpOnly → xoay vòng qua
- * refreshTokenService → set cookie mới. Hai endpoint chỉ khác nhau ở shape
- * của response THÀNH CÔNG; logic và response LỖI là một.
+ * (routes/v1User.js): kiểm tra origin → đọc refresh token (header
+ * `x-refresh-token` → body `refreshToken` → cookie HttpOnly, xem
+ * readRefreshToken) → xoay vòng qua refreshTokenService → set cookie mới +
+ * trả token mới trong body để client không phụ thuộc cookie (iOS) cập nhật
+ * bản lưu của mình. Hai endpoint chỉ khác nhau ở shape của response THÀNH
+ * CÔNG; logic và response LỖI là một.
  *
- * @returns {Promise<string|null>} access token mới khi thành công; `null` khi
- *   thất bại — lúc đó response lỗi đã được gửi rồi, caller không gửi thêm gì.
+ * @returns {Promise<{token: string, refreshToken: string}|null>} access token
+ *   + refresh token MỚI khi thành công; `null` khi thất bại — lúc đó response
+ *   lỗi đã được gửi rồi, caller không gửi thêm gì.
  */
 export async function performRefresh(req, res) {
   if (!requireRefreshOrigin(req, res)) return null;
 
-  const raw = readRefreshCookie(req);
+  const raw = readRefreshToken(req);
   if (!raw) {
     sendError(res, "Không có refresh token", 401);
     return null;
@@ -91,7 +100,7 @@ export async function performRefresh(req, res) {
   try {
     const { token, refreshRaw } = await rotateRefreshToken(raw);
     setRefreshCookie(res, refreshRaw); // xoay vòng: cookie mới thay cookie cũ
-    return token;
+    return { token, refreshToken: refreshRaw };
   } catch (e) {
     // Token hỏng/hết hạn/thu hồi ⇒ cookie cũng vô giá trị, xoá để client không retry lặp.
     clearRefreshCookie(res);
@@ -109,24 +118,26 @@ export async function performRefresh(req, res) {
  * trả theo envelope `{status, code, msg, data}` và client cũ đọc theo kiểu đó.
  */
 router.post("/refresh", async (req, res) => {
-  const token = await performRefresh(req, res);
-  if (token === null) return;
+  const result = await performRefresh(req, res);
+  if (result === null) return;
   return res.json({
     status: true,
     code: 200,
     msg: "refresh.success",
-    Authorization: `Bearer ${token}`,
-    data: { token },
+    Authorization: `Bearer ${result.token}`,
+    data: { token: result.token, refreshToken: result.refreshToken },
   });
 });
 
 /**
  * POST /api/auth/logout — kết thúc phiên: thu hồi refresh token trong DB và xoá cookie.
  * Không yêu cầu access token hợp lệ (phiên đã hết hạn vẫn phải xoá được cookie),
- * nên user được lấy từ chính refresh token trong cookie.
+ * nên user được lấy từ chính refresh token gửi kèm (header/body/cookie).
  */
 router.post("/logout", async (req, res) => {
-  const raw = readRefreshCookie(req);
+  // Đọc hợp nhất header/body/cookie: client iOS không có cookie vẫn phải thu
+  // hồi được family của mình khi đăng xuất.
+  const raw = readRefreshToken(req);
   let userId = null;
   // Logout không cấp thêm quyền hạn, chỉ thu hồi — nên không chặn theo origin.
   try {
@@ -154,7 +165,10 @@ router.post("/register", async (req, res, next) => {
       return sendError(res, "Mật khẩu phải có ít nhất 6 ký tự", 400);
     }
     const result = await registerUser({ username, email, password, name, generatedPassword, ageCode, gender });
-    setRefreshCookie(res, await issueRefreshToken(result.user, { meta: sessionMeta(req) }));
+    // Kèm refreshToken trong body như login — client iOS giữ bản này trong
+    // localStorage vì cookie bên thứ ba bị WebKit chặn.
+    const refreshRaw = await issueRefreshToken(result.user, { meta: sessionMeta(req) });
+    setRefreshCookie(res, refreshRaw);
     audit({
       req,
       actor: { sub: result.user?.id, username: result.user?.username, name: result.user?.name, role: result.user?.role },
@@ -162,7 +176,7 @@ router.post("/register", async (req, res, next) => {
       target: result.user?.username || "",
       message: `Tạo tài khoản mới (${result.user?.role || "student"})`,
     }).catch(() => {});
-    sendCreated(res, result);
+    sendCreated(res, { ...result, refreshToken: refreshRaw });
   } catch (e) {
     const msg = e.message || "Đăng ký thất bại";
     if (msg.includes("tồn tại")) return sendError(res, msg, 409);
@@ -266,10 +280,14 @@ router.post("/change-password", authenticate, async (req, res, next) => {
   try {
     const user = await changePassword(req.user.sub, req.body || {});
     await revokeAllForUser(user.id);
-    setRefreshCookie(res, await issueRefreshToken(user, { meta: sessionMeta(req) }));
+    const refreshRaw = await issueRefreshToken(user, { meta: sessionMeta(req) });
+    setRefreshCookie(res, refreshRaw);
     // Chỉ ghi "đã đổi mật khẩu" — mật khẩu cũ/mới không bao giờ đi vào log.
     audit({ req, action: AUDIT.PASSWORD_CHANGE, target: req.user.username || req.user.sub, message: "Đổi mật khẩu, thu hồi mọi phiên khác" }).catch(() => {});
-    sendSuccess(res, { changed: true, user: publicUser(user) });
+    // Kèm refreshToken mới trong body: phiên này vừa bị thu hồi cùng mọi
+    // phiên khác, client không có cookie (iOS) phải nhận token mới qua đây
+    // mới giữ được đăng nhập.
+    sendSuccess(res, { changed: true, user: publicUser(user), refreshToken: refreshRaw });
   } catch (e) {
     audit({ req, action: AUDIT.PASSWORD_CHANGE, target: req.user.username || req.user.sub, result: "fail", message: e.message }).catch(() => {});
     sendError(res, e.message, 400);
@@ -284,7 +302,7 @@ router.post("/change-password", authenticate, async (req, res, next) => {
  */
 router.get("/sessions", authenticate, async (req, res, next) => {
   try {
-    const items = await listSessions(req.user.sub, readRefreshCookie(req));
+    const items = await listSessions(req.user.sub, readRefreshToken(req));
     const current = items.find((s) => s.current) || null;
     sendSuccess(res, {
       items,
@@ -305,7 +323,7 @@ router.get("/sessions", authenticate, async (req, res, next) => {
 router.delete("/sessions", authenticate, async (req, res, next) => {
   try {
     const keepCurrent = req.query.others === "true" || req.query.others === "1";
-    const raw = readRefreshCookie(req);
+    const raw = readRefreshToken(req);
     const revoked = keepCurrent ? await revokeOtherSessions(req.user.sub, raw) : await revokeAllForUserCount(req.user.sub);
     if (!keepCurrent) clearRefreshCookie(res);
     await audit({

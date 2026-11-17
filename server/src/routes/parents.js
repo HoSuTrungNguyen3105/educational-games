@@ -117,10 +117,13 @@ router.post("/register", async (req, res) => {
       return sendError(res, "Mật khẩu phải có ít nhất 6 ký tự", 400);
     }
     const result = await parentService.registerParent({ username, email, password, name, linkCode });
-    setRefreshCookie(res, await issueRefreshToken(result.user, {
+    // Kèm refreshToken trong body như /auth/login — client iOS giữ bản này
+    // trong localStorage vì cookie bên thứ ba bị WebKit chặn.
+    const refreshRaw = await issueRefreshToken(result.user, {
       meta: { ua: req.headers["user-agent"] || "", ip: req.ip || "" },
-    }));
-    sendCreated(res, result);
+    });
+    setRefreshCookie(res, refreshRaw);
+    sendCreated(res, { ...result, refreshToken: refreshRaw });
   } catch (e) {
     if ((e.message || "").includes("tồn tại") || (e.message || "").includes("được sử dụng")) {
       return sendError(res, e.message, 409);

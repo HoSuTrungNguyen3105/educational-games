@@ -9,14 +9,22 @@ export const API_BASE =
 export const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
 // ── Token ──────────────────────────────────────────────────────────────────
-// Access token sống trong bộ nhớ (src/lib/authToken.js); refresh token là cookie
-// HttpOnly mà JS không đọc được. loadAuth/saveAuth/clearAuth giữ nguyên tên và
-// hành vi cũ vì hơn chục module (offlineGameSync, coinWallet, game iframe…) đang
-// import chúng — xem ghi chú tương thích ở đầu authToken.js.
+// Access token sống trong bộ nhớ (src/lib/authToken.js); refresh token có hai
+// đường — cookie HttpOnly (desktop/Android) và bản localStorage gửi qua
+// header `x-refresh-token` (iOS, nơi WebKit chặn cookie bên thứ ba). Chi tiết
+// ở authToken.js. loadAuth/saveAuth/clearAuth giữ nguyên tên và hành vi cũ vì
+// hơn chục module (offlineGameSync, coinWallet, game iframe…) đang import
+// chúng — xem ghi chú tương thích ở đầu authToken.js.
 import {
   getAuth, setAuth, clearAuth as clearTokenAuth, getToken, isExpired,
-  isUsable, refreshOnce, subscribeAuth,
+  isUsable, refreshOnce, subscribeAuth, getRefreshToken, setRefreshToken,
 } from "../lib/authToken.js";
+
+/** Header mang refresh token bản localStorage; rỗng khi không có (phiên cũ / desktop dùng cookie). */
+function refreshTokenHeaders() {
+  const raw = getRefreshToken();
+  return raw ? { "x-refresh-token": raw } : {};
+}
 
 /** Bản ghi đăng nhập; `null` khi chưa đăng nhập HOẶC token đã hết hạn (như cũ). */
 export function loadAuth() {
@@ -38,9 +46,11 @@ async function postRefreshEndpoint(path) {
       `${API_BASE}${path}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...refreshTokenHeaders() },
         body: "{}",
-        // Cookie chỉ đi kèm khi fetch bật credentials.
+        // Cookie đi kèm khi fetch bật credentials (đường chính desktop/Android);
+        // header x-refresh-token (nếu có) chạy SONG SONG cho iOS — server ưu
+        // tiên header, không có header thì dùng cookie như cũ.
         credentials: "include",
       },
       // Cold start (503) thì chờ; 401 nghĩa là token bị thu hồi → retry cũng vô ích.
@@ -230,12 +240,18 @@ export async function apiFetch(path, options = {}) {
   const url = `${API_BASE}${path}`;
   const method = (options.method || "GET").toUpperCase();
   const { signal, timer, detach } = buildSignal(options);
+  // Headers hợp nhất TÁCH RIÊNG: `...options` ở dưới sẽ ghi đè key `headers`
+  // bằng object thô của caller — caller truyền headers riêng (vd
+  // `x-refresh-token` ở logout/sessions) mà không khôi phục dòng này thì
+  // Content-Type + Authorization bị mất. Trước bản này không caller nào
+  // truyền headers nên lỗi không lộ; giữ nguyên cho mọi caller cũ.
+  const mergedHeaders = {
+    "Content-Type": "application/json",
+    ...(auth && auth.token ? { Authorization: `Bearer ${auth.token}` } : {}),
+    ...(options.headers || {}),
+  };
   const init = {
-    headers: {
-      "Content-Type": "application/json",
-      ...(auth && auth.token ? { Authorization: `Bearer ${auth.token}` } : {}),
-      ...(options.headers || {}),
-    },
+    headers: mergedHeaders,
     // Chỉ các endpoint thực sự dùng cookie HttpOnly (refresh, logout, login, register)
     // mới cần bật credentials: "include". Các API nghiệp vụ (/auth/me, /auth/me/wallet...)
     // xác thực bằng header Authorization (Bearer token) nên để "omit" để tránh bị chặn CORS credentials vô lý.
@@ -249,6 +265,7 @@ export async function apiFetch(path, options = {}) {
   delete init._retries;
   delete init._retried401;
   delete init.timeoutMs;
+  init.headers = mergedHeaders; // khôi phục sau `...options` (xem ghi chú ở trên)
   const withPagination = options._withPagination;
   // `_retries` = SỐ LẦN THỬ LẠI (không tính lần đầu). Mặc định 4 → tổng 5 lần,
   // giữ đúng hành vi cũ. `_retries: 0` → thử đúng 1 lần rồi trả về.
@@ -539,7 +556,12 @@ export const authService = {
    * Server thu hồi mọi phiên khác và cấp lại cookie cho phiên này.
    */
   async changePassword(currentPassword, newPassword) {
-    return apiFetch("/auth/change-password", { method: "POST", body: { currentPassword, newPassword } });
+    const data = await apiFetch("/auth/change-password", { method: "POST", body: { currentPassword, newPassword } });
+    // Server thu hồi MỌI phiên cũ rồi cấp refresh token mới trong body —
+    // phải lưu ngay bản mới, không thì lần refresh sau (nhất là iOS không
+    // cookie) trình token đã chết và bị đá về login.
+    if (data?.refreshToken) setRefreshToken(data.refreshToken);
+    return data;
   },
   /**
    * Danh sách phiên đang hoạt động của CHÍNH tài khoản này (collection
@@ -547,7 +569,7 @@ export const authService = {
    * bản ghi nào là "máy đang dùng".
    */
   async sessions() {
-    return apiFetch("/auth/sessions", { credentials: "include" });
+    return apiFetch("/auth/sessions", { credentials: "include", headers: refreshTokenHeaders() });
   },
   /**
    * Thu hồi phiên. others=true → đá mọi thiết bị KHÁC, giữ máy đang dùng;
@@ -557,6 +579,7 @@ export const authService = {
     return apiFetch(`/auth/sessions?others=${others ? "true" : "false"}`, {
       method: "DELETE",
       credentials: "include",
+      headers: refreshTokenHeaders(),
     });
   },
   /** Access token mới từ cookie refresh (single-flight). null khi phiên đã kết thúc. */
@@ -569,7 +592,10 @@ export const authService = {
    */
   async logout() {
     try {
-      await apiFetch("/auth/logout", { method: "POST", _retries: 0, timeoutMs: 8000 });
+      // Kèm header x-refresh-token để server thu hồi đúng family của phiên
+      // này cả khi không có cookie (iOS) — thiếu nó thì token phía server
+      // vẫn sống sau "đăng xuất".
+      await apiFetch("/auth/logout", { method: "POST", _retries: 0, timeoutMs: 8000, headers: refreshTokenHeaders() });
     } catch { /* mất mạng — bỏ qua, dọn dẹp phía client vẫn chạy */ }
     clearAuth();
     window.dispatchEvent(new Event("edu-auth-expired"));

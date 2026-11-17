@@ -1,10 +1,20 @@
 /**
- * authToken — nơi duy nhất giữ ACCESS TOKEN của trình duyệt.
+ * authToken — nơi duy nhất giữ TOKEN của trình duyệt.
  *
- * Quy ước (update_refresh_token.md §2):
+ * Quy ước (update_refresh_token.md §2 + vá iOS):
  *   - Access token: nằm trong BỘ NHỚ module này, gửi qua header `Authorization`.
- *     Refresh token KHÔNG bao giờ xuất hiện ở đây — nó là cookie HttpOnly nên
- *     JavaScript không đọc (và không cần đọc) được.
+ *   - Refresh token có HAI đường:
+ *       (a) cookie HttpOnly — đường chính, JS không đọc được, desktop/Android
+ *           dùng đường này;
+ *       (b) một bản giữ trong object phiên `edu_games_auth` (localStorage),
+ *           gửi qua header `x-refresh-token` khi refresh — vì client
+ *           (github.io) và API (onrender.com) khác site nên cookie là cookie
+ *           BÊN THỨ BA và WebKit trên iOS chặn nó mặc định (ITP): trên iPhone
+ *           cookie không được lưu/gửi, chỉ còn đường header này giữ được
+ *           phiên. Token vẫn xoay vòng mỗi lần refresh (bản lưu PHẢI được cập
+ *           nhật bằng token mới trong response, xem refreshOnce) và server
+ *           vẫn chỉ lưu hash + reuse-detection thu hồi cả family khi token
+ *           cũ bị trình lại ngoài cửa sổ grace.
  *   - localStorage `edu_games_auth` vẫn được ghi làm BỘ ĐỆM TƯƠNG THÍCH: hơn chục
  *     chỗ đang đọc trực tiếp key này (game iframe, offlineGameSync, coinWallet,
  *     UploadItems, ManageAvatarItems.html…), và web storage bị xoá khi tải lại
@@ -18,7 +28,7 @@
  */
 const AUTH_KEY = "edu_games_auth";
 
-/** @type {{token: string|null, user: object|null} | null} */
+/** @type {{token: string|null, user: object|null, refreshToken: string|null} | null} */
 let memory = null;
 /** Promise đang refresh — null khi không có request nào. */
 let inflight = null;
@@ -90,9 +100,24 @@ function emit() {
 /**
  * Ghi trạng thái đăng nhập. `persist=false` dùng cho trường hợp chỉ nạp token
  * từ bộ nhớ ra lại (không cần viết xuống localStorage).
+ *
+ * `refreshToken`: caller truyền token MỚI (đăng nhập/đăng ký/refresh thành
+ * công) thì thay bản đang giữ; KHÔNG truyền (vd patchUser chỉ đổi `user`)
+ * thì GIỮ NGUYÊN bản hiện tại — tuyệt đối không để các lần ghi phụ làm mất
+ * refresh token, trên iOS mất nó là mất phiên. Object phiên cũ (từ trước bản
+ * này) không có field này → đọc bình thường, coi như null.
  */
 export function setAuth(auth, { persist = true } = {}) {
-  memory = auth && (auth.token || auth.user) ? { token: auth.token ?? null, user: auth.user ?? null } : null;
+  if (!auth || !(auth.token || auth.user)) {
+    memory = null;
+  } else {
+    const prev = memory ?? readStorage();
+    memory = {
+      token: auth.token ?? null,
+      user: auth.user ?? null,
+      refreshToken: auth.refreshToken !== undefined ? auth.refreshToken : (prev?.refreshToken ?? null),
+    };
+  }
   if (persist) writeStorage(memory);
   emit();
   return memory;
@@ -106,13 +131,32 @@ export function setAuth(auth, { persist = true } = {}) {
 export function getAuth() {
   if (memory) return memory;
   const stored = readStorage();
-  if (stored?.token) memory = { token: stored.token, user: stored.user ?? null };
+  if (stored?.token) {
+    memory = { token: stored.token, user: stored.user ?? null, refreshToken: stored.refreshToken ?? null };
+  }
   return memory;
 }
 
 export function getToken() {
   getAuth();
   return memory?.token || null;
+}
+
+/** Refresh token bản localStorage (đường header cho iOS); null nếu không có. */
+export function getRefreshToken() {
+  getAuth();
+  return memory?.refreshToken || null;
+}
+
+/**
+ * Thay riêng refresh token đang giữ (vd sau ĐỔI MẬT KHẨU: server thu hồi mọi
+ * phiên cũ và cấp token mới trong body response — không nhận bản mới này thì
+ * lần refresh sau trên iOS trình token đã chết). Chưa có phiên thì bỏ qua.
+ */
+export function setRefreshToken(raw) {
+  const current = getAuth();
+  if (!current || typeof raw !== "string" || !raw) return;
+  setAuth({ ...current, refreshToken: raw });
 }
 
 export function clearAuth() {
@@ -129,7 +173,8 @@ export function subscribeAuth(cb) {
 }
 
 /**
- * Đổi access token qua cookie refresh.
+ * Đổi access token qua refresh token (cookie HttpOnly, hoặc bản localStorage
+ * gửi qua header `x-refresh-token` trên iOS).
  *
  * @param {(req: {path: string, init: RequestInit}) => Promise<Response>} transport
  *   hàm gọi fetch thật — tiêm vào để module này không phụ thuộc api.js (tránh
@@ -144,8 +189,12 @@ export async function refreshOnce(transport) {
         ? String(json.Authorization).replace(/^Bearer\s+/i, "")
         : json?.data?.token || null;
       if (!token) return null;
+      // Refresh token XOAY VÒNG mỗi lần: response luôn kèm token mới (v1 ở
+      // gốc JSON, endpoint cũ trong data) — PHẢI cập nhật bản lưu, không thì
+      // lần refresh sau trình token đã rotated và chỉ còn grace cứu được.
+      const nextRefresh = json?.refreshToken || json?.data?.refreshToken || null;
       const user = memory?.user ?? readStorage()?.user ?? null;
-      setAuth({ token, user });
+      setAuth({ token, user, ...(nextRefresh ? { refreshToken: nextRefresh } : {}) });
       return token;
     } finally {
       inflight = null;

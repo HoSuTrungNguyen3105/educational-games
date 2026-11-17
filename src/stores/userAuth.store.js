@@ -103,8 +103,12 @@ export const useUserAuthStore = create((set, get) => ({
   login: async (identifier, password) => {
     set({ isLoading: true, error: null });
     try {
-      const { token, user } = await authService.login(identifier, password);
-      saveAuth({ token, user });
+      const { token, user, refreshToken } = await authService.login(identifier, password);
+      // refreshToken (bản localStorage cho iOS) phải vào object phiên ngay
+      // từ đăng nhập — thiếu nó thì lần refresh đầu trên iPhone không có gì
+      // để gửi qua header. Server cũ không trả field này → undefined, setAuth
+      // tự giữ nguyên/không ghi, không crash.
+      saveAuth({ token, user, refreshToken });
       set({ user, token, isLoading: false });
       syncKidFromAccount(user);
       bindSocket(token);
@@ -119,8 +123,8 @@ export const useUserAuthStore = create((set, get) => ({
   register: async ({ username, email, password, name, generatedPassword, ageCode, gender }) => {
     set({ isLoading: true, error: null });
     try {
-      const { token, user } = await authService.register({ username, email, password, name, generatedPassword, ageCode, gender });
-      saveAuth({ token, user });
+      const { token, user, refreshToken } = await authService.register({ username, email, password, name, generatedPassword, ageCode, gender });
+      saveAuth({ token, user, refreshToken });
       set({ user, token, isLoading: false });
       syncKidFromAccount(user);
       bindSocket(token);

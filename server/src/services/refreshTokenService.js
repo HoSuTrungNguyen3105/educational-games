@@ -419,10 +419,36 @@ export async function revokeAllForUserCount(userId) {
   return res.deletedCount || 0;
 }
 
-/** Đọc refresh token từ cookie HttpOnly (không nhận từ body/header — tránh leak qua log). */
+/** Đọc refresh token từ cookie HttpOnly. */
 export function readRefreshCookie(req) {
   const raw = req.cookies?.[config.refreshCookieName];
   return typeof raw === "string" && raw.length > 0 ? raw : null;
+}
+
+/**
+ * Đọc refresh token theo thứ tự ưu tiên: header `x-refresh-token` → body JSON
+ * `refreshToken` → cookie HttpOnly.
+ *
+ * Vì sao cần đường header/body ngoài cookie: client (github.io) và API
+ * (onrender.com) là hai site khác hẳn nhau (cả hai đều nằm trên Public Suffix
+ * List) nên cookie refresh là cookie BÊN THỨ BA. WebKit trên iOS chặn cookie
+ * bên thứ ba mặc định bằng ITP ⇒ cookie không được lưu/gửi, refresh trên
+ * iPhone luôn 401 "Không có refresh token" dù cấu hình cookie đã đúng
+ * (Android Chrome cho phép SameSite=None nên không sao). Client iOS vì vậy
+ * giữ thêm một bản refresh token trong localStorage (cùng object phiên với
+ * access token vốn đã ở đó) và gửi qua header khi refresh/đăng xuất.
+ *
+ * Đánh đổi đã cân nhắc: token rời khỏi HttpOnly, nhưng server vẫn chỉ lưu
+ * hash, token vẫn xoay vòng mỗi lần dùng và reuse-detection ngoài cửa sổ
+ * grace vẫn thu hồi cả family — token bị lộ tự vô hiệu ngay khi chủ thật
+ * hoặc kẻ gian dùng trước. Cookie vẫn là đường chính cho desktop/Android.
+ */
+export function readRefreshToken(req) {
+  const fromHeader = req.headers?.["x-refresh-token"];
+  if (typeof fromHeader === "string" && fromHeader.length > 0) return fromHeader;
+  const fromBody = req.body?.refreshToken;
+  if (typeof fromBody === "string" && fromBody.length > 0) return fromBody;
+  return readRefreshCookie(req);
 }
 
 /**
