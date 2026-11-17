@@ -645,6 +645,30 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // Đính chính kiến thức (AI Studio Tab 2 — Knowledge Override): mỗi
+    // document là một bản vá kiến thức do giáo viên/admin soạn để Gia sư
+    // AI dùng THAY cho nội dung sai trong giáo trình. Truy xuất bằng khớp
+    // TỪ KHOÁ với ưu tiên cao nhất (aiChatContext.searchCorrections) —
+    // hệ thống không có embedding/Vector DB. subject/level để "" nghĩa
+    // là áp dụng cho mọi môn/mọi cấp; active=false = tạm tắt, không dùng
+    // khi truy xuất nhưng vẫn giữ trong danh sách quản lý.
+    ai_corrections: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "subject", "level", "topic", "content", "createdBy", "active", "createdAt", "updatedAt"],
+        properties: {
+          id: { bsonType: "string" },
+          subject: { bsonType: "string" },
+          level: { bsonType: "string" },
+          topic: { bsonType: "string" },
+          content: { bsonType: "string" },
+          createdBy: { bsonType: ["string", "null"] },
+          active: { bsonType: "bool" },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
     // ai_usage_daily — bộ đếm mức dùng AI theo TỪNG MODEL × NGÀY UTC của
     // đường Groq (aiUsageService): requests = số lượt gọi model thành
     // công, tokens = tổng usage.total_tokens các lượt đó,
@@ -874,6 +898,11 @@ async function _runHeavyInit(database) {
     // người hỏi; chỉ số tổng quan toàn cục theo thời gian.
     ["ai_chat_logs", { userId: 1, createdAt: -1 }],
     ["ai_chat_logs", { createdAt: -1 }],
+
+    // ai_corrections — danh sách quản lý đọc mới nhất trước; truy xuất
+    // khi chat lọc theo active.
+    ["ai_corrections", { id: 1 }, { unique: true }],
+    ["ai_corrections", { active: 1, createdAt: -1 }],
 
     // ai_usage_daily — một document cho mỗi (model, ngày UTC); upsert
     // $inc của aiUsageService dựa vào index unique này để không nhân đôi.

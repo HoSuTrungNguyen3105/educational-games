@@ -132,6 +132,22 @@ export function chatSystem(displayName, subject, topic, ctx = {}) {
     sb += "\n";
   }
 
+  const corrections = Array.isArray(ctx.corrections) ? ctx.corrections : [];
+  if (corrections.length > 0) {
+    sb += "\nĐÍNH CHÍNH KIẾN THỨC — ƯU TIÊN CAO NHẤT (Backend truy xuất từ các bản ghi "
+      + "đính chính do giáo viên/quản trị viên đã kiểm chứng ở AI Studio — đây là kiến "
+      + "thức CHUẨN để vá chỗ sai trong giáo trình: nếu nội dung đính chính MÂU THUẪN "
+      + "với TÀI LIỆU BÀI HỌC LIÊN QUAN ở dưới thì BẮT BUỘC theo nội dung đính chính "
+      + "này, không theo tài liệu cũ):\n";
+    for (const c of corrections) {
+      const meta = [c.subject ? "môn " + c.subject : null].filter(Boolean).join(", ");
+      sb += "- Chủ đề \"" + safe(c.topic, 160) + "\"" + (meta ? " (" + meta + ")" : "") + ": "
+        + safe(c.content, 800) + "\n";
+    }
+    sb += "Khi học sinh hỏi đúng các chủ đề trên, trả lời theo nội dung đính chính và "
+      + "có thể nói rõ đây là kiến thức đã được thầy cô đính chính.\n";
+  }
+
   const materials = Array.isArray(ctx.materials) ? ctx.materials : [];
   if (materials.length > 0) {
     sb += "\nTÀI LIỆU BÀI HỌC LIÊN QUAN (Backend truy xuất từ các bài học đã xuất bản trong "

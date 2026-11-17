@@ -32,7 +32,10 @@ import {
   computeLearningMetrics, fallbackNarrative, withinPeriod, validatePeriod,
   ANALYSIS_DISCLAIMER,
 } from "./aiLearningMetrics.js";
-import { buildChatContext, searchLessonMaterials, vietnamNowText } from "./aiChatContext.js";
+import { buildChatContext, searchLessonMaterials, searchCorrections, vietnamNowText } from "./aiChatContext.js";
+import {
+  resolveEffectiveTutorConfig, levelKeyForGrade, levelLabelForKey, levelKeyForLabel,
+} from "./aiTutorConfigService.js";
 import { recordChatLog } from "./aiChatLogService.js";
 import { getEffectiveGroqModel } from "./aiModelConfig.js";
 import { config } from "../config.js";
@@ -182,6 +185,26 @@ async function directChat(body, req) {
   // chính user, đoạn bài học liên quan) — buildChatContext không bao giờ ném
   // lỗi: thiếu phần nào thì system prompt thiếu phần đó, chat vẫn chạy.
   const context = await buildChatContext(req, message);
+
+  // Môn của ngữ cảnh lượt này: môn client đang học (nếu có) — không có
+  // thì lấy môn của bài học truy xuất đầu tiên. Dùng cho CẢ truy xuất
+  // đính chính lẫn tra cấu hình Gia sư đã lưu theo (cấp × môn).
+  const chatSubject = (typeof body.subject === "string" && body.subject.trim() !== "")
+    ? body.subject.trim().slice(0, 80)
+    : (context.materials[0]?.subject || null);
+  const studentLevelKey = levelKeyForGrade(context.identity?.grade ?? null);
+
+  // Đính chính kiến thức (AI Studio Tab 2): truy xuất từ khoá ƯU TIÊN
+  // CAO NHẤT, chèn vào prompt trước tài liệu bài học qua chatSystem.
+  // Lỗi đọc phụ bị nuốt như mọi ngữ cảnh khác — thiếu đính chính thì
+  // chat vẫn chạy bình thường.
+  let corrections = [];
+  try {
+    corrections = await searchCorrections(message, { subject: chatSubject, levelKey: studentLevelKey });
+  } catch (e) {
+    console.warn(`[ai] Không truy xuất được đính chính kiến thức cho chat: ${e?.message || e}`);
+  }
+
   // Tách prompt theo VAI TRÒ (update_features.md §5.2): vai trò + khối lớp
   // lấy từ ngữ cảnh Backend dựng (hồ sơ DB), không tin client. CHỈ admin
   // dùng adminSystemPrompt (kèm kết quả tra cứu thật nếu câu hỏi là câu
@@ -203,6 +226,7 @@ async function directChat(body, req) {
     modelProvider: config.ollama.provider === "groq" ? "Groq" : "Ollama",
     learning: context.learning,
     materials: context.materials,
+    corrections,
     grade: context.identity?.grade ?? null,
     // Cờ vượt lớp do Backend nhận diện cho lượt này (aiChatContext) —
     // studentSystemPrompt dùng để chèn chỉ thị bắt buộc; prompt admin
@@ -211,13 +235,47 @@ async function directChat(body, req) {
     identityRole,
     adminData: context.adminData,
   };
-  const system = identityRole === "admin"
+  let system = identityRole === "admin"
     ? adminSystemPrompt(displayName, body.subject, body.topic, promptCtx)
     : identityRole === "teacher"
       ? chatSystem(displayName, body.subject, body.topic, promptCtx)
       : studentSystemPrompt(displayName, body.subject, body.topic, promptCtx);
   const messages = chatMessages(history, message);
-  const answer = await llmComplete(system, messages);
+
+  // Cấu hình Gia sư ĐÃ LƯU (AI Studio Tab 1 → aiTutorConfigService): áp
+  // cho học sinh/giáo viên (admin dùng prompt quản trị riêng, không áp).
+  // resolve trả null khi CHƯA có cấu hình nào — khi đó lượt chat chạy
+  // NGUYÊN VẸN như trước (cùng prompt, cùng lời gọi gateway mặc định).
+  const tutorResolved = identityRole === "admin"
+    ? null
+    : await resolveEffectiveTutorConfig({ grade: context.identity?.grade ?? null, subject: chatSubject });
+  const tutorEntry = tutorResolved?.config || null;
+
+  // Guardrail phạm vi của cấu hình đã lưu, chốt ở TẦNG BACKEND như
+  // playground: công tắc phạm vi bật mà lượt này KHÔNG truy xuất được
+  // ngữ cảnh nào (cả bài học lẫn đính chính đều rỗng) → trả thông điệp
+  // từ chối theo khuôn, KHÔNG gọi model.
+  const tutorScopeRefusal = !!tutorEntry
+    && (tutorEntry.scopeOnly || tutorEntry.refuseOffTopic)
+    && context.materials.length === 0
+    && corrections.length === 0;
+
+  let answer;
+  if (tutorScopeRefusal) {
+    answer = TUTOR_SCOPE_REFUSAL;
+  } else if (tutorEntry) {
+    system += savedTutorConfigSection({
+      systemPrompt: tutorEntry.systemPrompt || null,
+      strictScope: tutorEntry.scopeOnly === true,
+      requireCitation: tutorEntry.requireCitation === true,
+      refuseOffTopic: tutorEntry.refuseOffTopic === true,
+      level: levelLabelForKey(tutorResolved.level),
+      subject: chatSubject || tutorResolved.subject || null,
+    }, context.materials);
+    answer = await llmCompleteWithOptions(system, messages, { temperature: tutorEntry.temperature });
+  } else {
+    answer = await llmComplete(system, messages);
+  }
 
   let cleaned = stripLeadingQuotes(String(answer).trim());
   let truncated = false;
@@ -266,7 +324,10 @@ async function directChat(body, req) {
 // ─────────────── Kiểm thử Gia sư AI (AI Studio — playground) ───────────────
 //
 // POST /api/ai/playground/chat — giáo viên/admin THỬ cấu hình nháp của Tab
-// "Cấu hình Gia sư AI" (AI Studio) trước khi có cơ chế lưu chính thức.
+// "Cấu hình Gia sư AI" (AI Studio). Bản nháp KHÔNG phải cấu hình đã lưu:
+// cấu hình chính thức (Tab 1 lưu qua /api/ai/tutor-config) được áp vào
+// chat THẬT ở directChat; playground luôn chạy theo bản nháp gửi kèm để
+// giáo viên xem trước tác động trước khi lưu.
 // Dùng lại ĐÚNG pipeline của chat thật: cùng module truy xuất bài học đã
 // xuất bản theo từ khoá (aiChatContext.searchLessonMaterials — KHÔNG phải
 // vector RAG/embedding, hệ thống chưa có hạ tầng đó), cùng prompt gia sư
@@ -299,6 +360,16 @@ const STRICT_SCOPE_REFUSAL =
   + "và cấu hình đang bật chế độ “Chỉ trả lời trong phạm vi bài học hiện tại” nên Gia sư AI "
   + "không trả lời bằng kiến thức ngoài bài. Hãy thử câu hỏi thuộc nội dung bài học đã xuất "
   + "bản, hoặc tắt công tắc phạm vi ở Tab Cấu hình rồi kiểm thử lại.";
+
+/**
+ * Bản từ chối tương ứng cho CHAT THẬT khi cấu hình Gia sư ĐÃ LƯU bật công
+ * tắc phạm vi mà lượt hỏi không truy xuất được ngữ cảnh nào — câu chữ
+ * hướng tới học sinh, không nhắc tới trang cấu hình/kiểm thử.
+ */
+const TUTOR_SCOPE_REFUSAL =
+  "Câu hỏi này nằm ngoài phạm vi các đoạn bài học đã xuất bản mà hệ thống truy xuất được, "
+  + "và Gia sư AI đang được cấu hình chỉ trả lời trong phạm vi bài học hiện tại nên không "
+  + "trả lời bằng kiến thức ngoài bài. Con hãy thử hỏi nội dung thuộc bài học đã xuất bản nhé.";
 
 /** Chuẩn hoá cấu hình nháp từ client — mọi field đều tuỳ chọn, sai kiểu thì bỏ qua. */
 function normalizePlaygroundConfig(raw) {
@@ -333,18 +404,20 @@ function applyPromptVariables(text, { subject, level, lessonTitle }) {
     .replaceAll("{ten_bai_hoc}", lessonTitle || "bài học hiện tại");
 }
 
-/** Khối chỉ thị cấu hình nháp chèn CUỐI system prompt — bổ sung, không thay thế ràng buộc cứng. */
-function playgroundConfigSection(cfg, materials) {
-  const lines = ["\nCẤU HÌNH ĐANG KIỂM THỬ (AI Studio — bản nháp do giáo viên/quản trị viên soạn để THỬ, chưa phải cấu hình chính thức):"];
-  const scope = [
-    cfg.level ? "cấp học " + cfg.level : null,
-    cfg.subject ? "môn " + cfg.subject : null,
-  ].filter(Boolean).join(", ");
-  if (scope) lines.push("- Phạm vi cấu hình đang thử: " + scope + ".");
+/**
+ * Các dòng CHỈ THỊ dùng chung cho khối cấu hình Gia sư — DÙNG CHUNG cho
+ * cả bản NHÁP ở playground (Tab 1 chưa lưu) lẫn bản ĐÃ LƯU áp vào chat
+ * thật, để hai đường không lệch nhau: cùng cách thay biến trong
+ * systemPrompt, cùng câu chữ của 3 công tắc. `cfg` ở đây đã chuẩn hoá về
+ * shape của playground ({ systemPrompt, strictScope, requireCitation,
+ * refuseOffTopic, level: NHÃN cấp, subject }); chỉ dòng giới thiệu khối
+ * prompt và dòng phạm vi là khác nhau theo ngữ cảnh gọi.
+ */
+function tutorDirectiveLines(cfg, materials, { promptIntro, scopeLine }) {
+  const lines = [];
+  if (scopeLine) lines.push(scopeLine);
   if (cfg.systemPrompt) {
-    lines.push("- CHỈ THỊ HÀNH VI BỔ SUNG từ bản nháp (áp dụng cho lượt kiểm thử này; nếu xung đột "
-      + "với các Nguyên tắc bắt buộc ở trên — đặc biệt an toàn với học sinh, chống gian lận, không "
-      + "bịa dữ kiện/nguồn — thì Nguyên tắc bắt buộc thắng):");
+    lines.push(promptIntro);
     lines.push(applyPromptVariables(cfg.systemPrompt, {
       subject: cfg.subject,
       level: cfg.level,
@@ -365,6 +438,45 @@ function playgroundConfigSection(cfg, materials) {
     lines.push("- Công tắc “Từ chối câu hỏi ngoài lề” ĐANG BẬT: nếu câu hỏi không liên quan tới môn "
       + "học/bài học trong ngữ cảnh trên, hãy từ chối nhẹ nhàng và mời hỏi nội dung trong giáo trình.");
   }
+  return lines;
+}
+
+function configScopeText(cfg) {
+  return [
+    cfg.level ? "cấp học " + cfg.level : null,
+    cfg.subject ? "môn " + cfg.subject : null,
+  ].filter(Boolean).join(", ");
+}
+
+/** Khối chỉ thị cấu hình nháp chèn CUỐI system prompt — bổ sung, không thay thế ràng buộc cứng. */
+function playgroundConfigSection(cfg, materials) {
+  const scope = configScopeText(cfg);
+  const lines = ["\nCẤU HÌNH ĐANG KIỂM THỬ (AI Studio — bản nháp do giáo viên/quản trị viên soạn để THỬ, chưa phải cấu hình chính thức):"];
+  lines.push(...tutorDirectiveLines(cfg, materials, {
+    scopeLine: scope ? "- Phạm vi cấu hình đang thử: " + scope + "." : null,
+    promptIntro: "- CHỈ THỊ HÀNH VI BỔ SUNG từ bản nháp (áp dụng cho lượt kiểm thử này; nếu xung đột "
+      + "với các Nguyên tắc bắt buộc ở trên — đặc biệt an toàn với học sinh, chống gian lận, không "
+      + "bịa dữ kiện/nguồn — thì Nguyên tắc bắt buộc thắng):",
+  }));
+  return lines.join("\n") + "\n";
+}
+
+/**
+ * Khối chỉ thị cấu hình ĐÃ LƯU (AI Studio Tab 1 → aiTutorConfigService)
+ * chèn CUỐI system prompt của chat THẬT — cùng cơ chế với bản nháp ở
+ * playground (chỉ khác dòng giới thiệu: đây là cấu hình chính thức).
+ * `cfg` là bản đã chuẩn hoá về shape playground (scopeOnly → strictScope,
+ * level đã đổi sang NHÃN cấp để thay biến {cap_hoc}).
+ */
+function savedTutorConfigSection(cfg, materials) {
+  const scope = configScopeText(cfg);
+  const lines = ["\nCẤU HÌNH GIA SƯ AI ĐÃ LƯU (AI Studio — cấu hình chính thức do giáo viên/quản trị viên thiết lập, áp dụng cho lượt trả lời này):"];
+  lines.push(...tutorDirectiveLines(cfg, materials, {
+    scopeLine: scope ? "- Phạm vi cấu hình đang áp dụng: " + scope + "." : null,
+    promptIntro: "- CHỈ THỊ HÀNH VI BỔ SUNG từ cấu hình đã lưu (áp dụng cho lượt trả lời này; nếu xung đột "
+      + "với các Nguyên tắc bắt buộc ở trên — đặc biệt an toàn với học sinh, chống gian lận, không "
+      + "bịa dữ kiện/nguồn — thì Nguyên tắc bắt buộc thắng):",
+  }));
   return lines.join("\n") + "\n";
 }
 
@@ -403,20 +515,50 @@ async function directPlaygroundChat(body, req) {
     console.warn(`[ai] Không truy xuất được bài học cho playground: ${e?.message || e}`);
   }
 
-  // Nguồn trả về client: dữ liệu truy xuất THẬT kèm điểm khớp từ khoá.
-  const sources = materials.map((m) => omitNulls({
-    title: m.title,
-    subject: m.subject,
-    grade: m.grade,
-    score: m.score,
-    matchedKeywords: m.matchedKeywords?.length ? m.matchedKeywords : undefined,
-    matchedPhrases: m.matchedPhrases?.length ? m.matchedPhrases : undefined,
-    excerpts: (m.excerpts || []).map((text, i) => ({ text, score: m.excerptScores?.[i] ?? null })),
-  }));
+  // Đính chính kiến thức (AI Studio Tab 2) — CÙNG truy xuất với chat
+  // thật: khớp từ khoá, ưu tiên cao nhất, tôn trọng phạm vi môn/cấp của
+  // cấu hình nháp đang thử.
+  let corrections = [];
+  try {
+    corrections = await searchCorrections(message, {
+      subject: cfg.subject,
+      levelKey: levelKeyForLabel(cfg.level),
+    });
+  } catch (e) {
+    console.warn(`[ai] Không truy xuất được đính chính kiến thức cho playground: ${e?.message || e}`);
+  }
 
-  // Guardrail phạm vi ở tầng Backend: bật strictScope mà không có đoạn
-  // nào khớp → từ chối theo khuôn, KHÔNG gọi model.
-  if (cfg.strictScope && materials.length === 0) {
+  // Nguồn trả về client: dữ liệu truy xuất THẬT kèm điểm khớp từ khoá.
+  // Đính chính đứng TRƯỚC nguồn bài học và mang `type: "correction"` để
+  // UI phân biệt nhãn "Đính chính kiến thức" với nguồn bài học thường.
+  const correctionSources = corrections.map((c) => omitNulls({
+    type: "correction",
+    title: c.topic,
+    subject: c.subject || undefined,
+    score: c.score,
+    matchedKeywords: c.matchedKeywords?.length ? c.matchedKeywords : undefined,
+    matchedPhrases: c.matchedPhrases?.length ? c.matchedPhrases : undefined,
+    excerpts: [{ text: c.content, score: c.score }],
+  }));
+  const sources = [
+    ...correctionSources,
+    ...materials.map((m) => omitNulls({
+      type: "lesson",
+      title: m.title,
+      subject: m.subject,
+      grade: m.grade,
+      score: m.score,
+      matchedKeywords: m.matchedKeywords?.length ? m.matchedKeywords : undefined,
+      matchedPhrases: m.matchedPhrases?.length ? m.matchedPhrases : undefined,
+      excerpts: (m.excerpts || []).map((text, i) => ({ text, score: m.excerptScores?.[i] ?? null })),
+    })),
+  ];
+
+  // Guardrail phạm vi ở tầng Backend: bật strictScope mà không có ngữ
+  // cảnh nào (cả đoạn bài học lẫn đính chính đều rỗng) → từ chối theo
+  // khuôn, KHÔNG gọi model. Đính chính khớp được tính là ngữ cảnh hợp lệ
+  // vì đó là kiến thức chuẩn giáo viên đã duyệt cho đúng chủ đề này.
+  if (cfg.strictScope && materials.length === 0 && corrections.length === 0) {
     logPlaygroundTurn(req, { question: message, answer: STRICT_SCOPE_REFUSAL, materials: [] });
     return { answer: STRICT_SCOPE_REFUSAL, refused: true, refusalReason: "strict_scope_no_context", sources: [] };
   }
@@ -426,6 +568,7 @@ async function directPlaygroundChat(body, req) {
     modelName: (config.ollama.provider === "groq" ? await getEffectiveGroqModel() : config.ollama.model) || null,
     modelProvider: config.ollama.provider === "groq" ? "Groq" : "Ollama",
     materials,
+    corrections,
   };
   const system = chatSystem(displayName, cfg.subject, null, promptCtx)
     + playgroundConfigSection(cfg, materials);

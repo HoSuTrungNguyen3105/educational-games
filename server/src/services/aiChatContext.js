@@ -292,6 +292,77 @@ export async function searchLessonMaterials(message, options = {}) {
   });
 }
 
+// ─────────── Đính chính kiến thức (AI Studio Tab 2) — ưu tiên cao nhất ───────────
+
+const CORRECTIONS_SCAN_LIMIT = 200;
+const MAX_CORRECTIONS = 3;
+/** Điểm cộng khi bản ghi khớp ĐÚNG môn của ngữ cảnh (bản ghi "" = mọi môn, không cộng). */
+const CORRECTION_SUBJECT_BONUS = 3;
+
+/**
+ * Truy xuất các bản ghi ĐÍNH CHÍNH KIẾN THỨC (collection ai_corrections,
+ * giáo viên/admin soạn ở AI Studio Tab 2) khớp với câu hỏi — bằng ĐÚNG cơ
+ * chế khớp từ khoá của searchLessonMaterials (cụm 2 từ = 2 điểm, từ đơn
+ * = 1 điểm), KHÔNG phải embedding/vector. Khác tài liệu bài học ở 3 điểm:
+ *  - Chỉ lấy bản ghi `active: true`.
+ *  - Điểm ưu tiên chủ đề: điểm khớp trên `topic` NHÂN ĐÔI vì topic là
+ *    "câu hỏi/chủ đề cần đính chính" — khớp topic là tín hiệu mạnh nhất
+ *    cho thấy học sinh đang hỏi đúng chỗ kiến thức đã bị vá; điểm trên
+ *    `content` tính như thường. Cộng thêm điểm khi môn của bản ghi khớp
+ *    đúng môn của ngữ cảnh.
+ *  - Lọc phạm vi: bản ghi có subject khác môn của ngữ cảnh (khi biết môn)
+ *    hoặc level khác cấp của người hỏi (khi biết cấp) bị LOẠI — đính
+ *    chính của môn/cấp khác chèn vào prompt sẽ làm sai lệch câu trả lời.
+ * Ngưỡng dùng: tổng điểm thô (topic + content, chưa nhân/chưa cộng) ≥ 2
+ * như ngưỡng đoạn bài học. Tối đa 3 bản ghi, điểm cao trước.
+ *
+ * @param {string} message
+ * @param {{ subject?: string|null, levelKey?: string|null }} [options]
+ *   subject: môn của ngữ cảnh lượt chat (từ request/bài học truy xuất);
+ *   levelKey: mã cấp của người hỏi ("tieu-hoc"… — aiTutorConfigService).
+ * @returns {Promise<Array<{id, topic, content, subject, level, score,
+ *   matchedKeywords, matchedPhrases}>>} `score` là điểm khớp TỪ KHOÁ đã
+ *   tính trọng số ưu tiên — không phải độ tương đồng vector.
+ */
+export async function searchCorrections(message, options = {}) {
+  const keywords = extractKeywords(message);
+  const phrases = extractPhrases(message);
+  if (keywords.length === 0 && phrases.length === 0) return [];
+  const ctxSubject = typeof options?.subject === "string" && options.subject.trim() !== ""
+    ? options.subject.trim() : null;
+  const ctxLevel = typeof options?.levelKey === "string" && options.levelKey !== ""
+    ? options.levelKey : null;
+
+  const records = await getCollection("ai_corrections")
+    .find({ active: true })
+    .sort({ updatedAt: -1 })
+    .limit(CORRECTIONS_SCAN_LIMIT)
+    .toArray();
+
+  const scored = [];
+  for (const rec of records) {
+    if (ctxSubject && rec.subject && rec.subject !== ctxSubject) continue;
+    if (ctxLevel && rec.level && rec.level !== ctxLevel) continue;
+    const topicDetails = matchDetails(rec.topic, keywords, phrases);
+    const contentDetails = matchDetails(rec.content, keywords, phrases);
+    if (topicDetails.score + contentDetails.score < 2) continue;
+    const subjectBonus = ctxSubject && rec.subject && rec.subject === ctxSubject
+      ? CORRECTION_SUBJECT_BONUS : 0;
+    scored.push({
+      id: rec.id,
+      topic: rec.topic,
+      content: rec.content,
+      subject: rec.subject || "",
+      level: rec.level || "",
+      score: topicDetails.score * 2 + contentDetails.score + subjectBonus,
+      matchedKeywords: [...new Set([...topicDetails.keywords, ...contentDetails.keywords])],
+      matchedPhrases: [...new Set([...topicDetails.phrases, ...contentDetails.phrases])],
+    });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, MAX_CORRECTIONS);
+}
+
 // ─────────── Danh tính theo vai trò + khối lớp (update_features.md) ───────────
 
 /**

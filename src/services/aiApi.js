@@ -320,6 +320,111 @@ export async function playgroundChat({ message, history = [], config, signal } =
 }
 
 /**
+ * Cấu hình Gia sư AI ĐÃ LƯU (AI Studio Tab 1) — chỉ giáo viên/admin.
+ * Lưu ở system_config phía backend theo khoá (cấp × môn) và áp vào chat
+ * THẬT của học sinh; khác với `config` nháp gửi kèm playgroundChat.
+ *
+ * @param {string} level   "default" | "tieu-hoc" | "thcs" | "thpt" | "dai-hoc"
+ * @param {string} subject tên môn, "" = mọi môn
+ * @returns {Promise<{level: string, subject: string, config: null | {
+ *   systemPrompt: string, temperature: number, scopeOnly: boolean,
+ *   requireCitation: boolean, refuseOffTopic: boolean, updatedAt: string|null}}>}
+ *   `config: null` = khoá đó chưa có cấu hình riêng.
+ */
+export async function getTutorConfig(level, subject) {
+  const params = new URLSearchParams();
+  if (level) params.set("level", level);
+  if (subject) params.set("subject", subject);
+  const qs = params.toString();
+  const json = await aiFetch(`/api/ai/tutor-config${qs ? `?${qs}` : ""}`, { method: "GET" });
+  if (!json || typeof json !== "object") {
+    throw new AiServiceError("Không đọc được cấu hình Gia sư AI.", { kind: "badResponse" });
+  }
+  return json;
+}
+
+/**
+ * Lưu cấu hình Gia sư AI cho một khoá (cấp × môn).
+ * @param {object} p { level, subject, systemPrompt, temperature,
+ *   scopeOnly, requireCitation, refuseOffTopic }
+ * @returns {Promise<{level: string, subject: string, config: object}>}
+ */
+export async function saveTutorConfig(p = {}) {
+  const json = await aiFetch("/api/ai/tutor-config", {
+    method: "PUT",
+    body: {
+      level: p.level || "default",
+      subject: p.subject || "",
+      systemPrompt: p.systemPrompt || "",
+      temperature: typeof p.temperature === "number" ? p.temperature : 0.2,
+      scopeOnly: p.scopeOnly === true,
+      requireCitation: p.requireCitation === true,
+      refuseOffTopic: p.refuseOffTopic === true,
+    },
+  });
+  if (!json || !json.config) {
+    throw new AiServiceError("Không lưu được cấu hình Gia sư AI.", { kind: "badResponse" });
+  }
+  return json;
+}
+
+/**
+ * Đính chính kiến thức (AI Studio Tab 2) — chỉ giáo viên/admin. Bản ghi
+ * được Gia sư AI truy xuất theo TỪ KHOÁ với ưu tiên cao nhất khi học
+ * sinh hỏi đúng chủ đề (hệ thống không có embedding/vector).
+ *
+ * @returns {Promise<{items: Array<{id: string, subject: string, level: string,
+ *   topic: string, content: string, active: boolean, createdAt: string,
+ *   updatedAt: string}>}>}
+ */
+export async function listCorrections() {
+  const json = await aiFetch("/api/ai/corrections", { method: "GET" });
+  if (!json || !Array.isArray(json.items)) {
+    throw new AiServiceError("Không đọc được danh sách đính chính kiến thức.", { kind: "badResponse" });
+  }
+  return json;
+}
+
+/** Tạo bản ghi đính chính mới. `subject`/`level` để "" = áp dụng mọi môn/mọi cấp. */
+export async function createCorrection(p = {}) {
+  const json = await aiFetch("/api/ai/corrections", {
+    body: {
+      subject: p.subject || "",
+      level: p.level || "",
+      topic: String(p.topic || ""),
+      content: String(p.content || ""),
+    },
+  });
+  if (!json || !json.id) {
+    throw new AiServiceError("Không lưu được đính chính kiến thức.", { kind: "badResponse" });
+  }
+  return json;
+}
+
+/** Sửa bản ghi đính chính (gửi field nào đổi field đó; `active` để bật/tắt). */
+export async function updateCorrection(id, p = {}) {
+  const body = {};
+  for (const key of ["subject", "level", "topic", "content"]) {
+    if (p[key] !== undefined) body[key] = String(p[key]);
+  }
+  if (p.active !== undefined) body.active = p.active === true;
+  const json = await aiFetch(`/api/ai/corrections/${encodeURIComponent(id)}`, { method: "PUT", body });
+  if (!json || !json.id) {
+    throw new AiServiceError("Không cập nhật được đính chính kiến thức.", { kind: "badResponse" });
+  }
+  return json;
+}
+
+/** Xoá bản ghi đính chính. */
+export async function deleteCorrection(id) {
+  const json = await aiFetch(`/api/ai/corrections/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!json || !json.id) {
+    throw new AiServiceError("Không xoá được đính chính kiến thức.", { kind: "badResponse" });
+  }
+  return json;
+}
+
+/**
  * Phân tích kết quả học tập.
  *
  * `studentId` là TUỲ CHỌN và KHÔNG ĐƯỢC TIN: học sinh chỉ xem được chính mình, giáo viên
