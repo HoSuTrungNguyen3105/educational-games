@@ -6,7 +6,7 @@
 // DIỆN MẠO MÀ APP VẼ = `look` (bộ đồ DressUp trong hồ sơ `users.pet`), KHÔNG
 // phải `species`/`color`/`outfits` của `userPets`. Hai hệ này từng song song và
 // người chơi sửa trong game "Tiệm thay đồ thú cưng" / trang Profile rồi ra home
-// vẫn thấy con chó mặc định — nên GET /api/pet trả kèm `look`, client chỉ vẽ
+// vẫn thấy con chó mặc định — nên GET /api/users/me/pet trả kèm `look`, client chỉ vẽ
 // `look`. `species`/`color`/`outfits` vẫn tồn tại cho trang quản lý danh mục
 // (petCatalog) và cho dữ liệu cũ, nhưng không còn là nguồn hiển thị.
 //
@@ -97,6 +97,17 @@ export async function getOrCreate(userId, name) {
 
 export async function getByUser(userId) {
   return getOrCreate(userId);
+}
+
+/**
+ * Trạng thái pet ĐẦY ĐỦ cho hồ sơ (profile): pet đã serialize kèm `look` —
+ * đúng payload mà GET /api/users/me/pet trả. Hồ sơ (GET /api/auth/me,
+ * response login, GET /api/users/me) nhúng thẳng kết quả này vào field
+ * `pet` để client chỉ cần đọc hồ sơ là đủ, khỏi gọi thêm endpoint pet.
+ */
+export async function getFullState(userId) {
+  const pet = await getByUser(userId);
+  return serialize(pet, await getLook(userId));
 }
 
 /**

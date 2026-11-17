@@ -7,7 +7,7 @@
 // sửa file này KHÔNG còn áp dụng cho database đã có dữ liệu.
 //
 // Muốn đưa lại giá trị mặc định: dùng nút "Khôi phục danh mục" trong trang
-// admin quản lý pet, hoặc POST /api/pet/admin/reset-catalog.
+// admin quản lý pet, hoặc POST /api/users/admin/pet-catalog/reset.
 
 /** Bảng màu thân — dùng chung cho mọi loài. */
 export const COLORS = [

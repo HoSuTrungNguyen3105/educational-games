@@ -9,11 +9,11 @@
 //   response — đúng thứ đề bài cấm. Service này chỉ gom các thao tác cấp cao,
 //   mọi request vẫn đi qua petApi.
 //
-// API backend đang dùng (xem server/src/routes/pet.js):
-//   GET  /api/pet            → pet (cấp/EXP/tâm tính/tên) + `look` DressUp
-//   PUT  /api/pet            → đổi tên (loài/màu/trang phục legacy: vẫn nhận
+// API backend đang dùng (server/src/routes/users.js — đã gộp từ /api/pet cũ):
+//   GET  /api/users/me/pet   → pet (cấp/EXP/tâm tính/tên) + `look` DressUp
+//   PUT  /api/users/me/pet   → đổi tên (loài/màu/trang phục legacy: vẫn nhận
 //                              nhưng không màn hình nào vẽ nữa)
-//   POST /api/pet/exp        → cộng EXP
+//   POST /api/users/me/pet/exp → cộng EXP
 //   PUT  /api/auth/me { pet } → lưu bộ đồ DressUp đang hiển thị (saveLook)
 //
 // DIỆN MẠO CHỈ CÓ MỘT NGUỒN: `pet.look` (bộ đồ DressUp trong hồ sơ), cùng nguồn

@@ -4,7 +4,7 @@
 //
 // Nguồn sự thật là collection Mongo `petCatalog` (mỗi document = 1 mục, kèm
 // `kind` để phân biệt species / color / outfit). Admin sửa trực tiếp trên web
-// qua /api/pet/admin/*, không cần sửa code rồi deploy lại.
+// qua /api/users/admin/pet-catalog*, không cần sửa code rồi deploy lại.
 //
 // Vì `validateLook` / `getSpecies` … được gọi từ nhiều nơi dưới dạng HÀM ĐỒNG
 // BỘ, catalog được nạp vào cache trong RAM. Mọi entry point gọi vào đều phải

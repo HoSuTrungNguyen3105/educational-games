@@ -5,7 +5,7 @@ import path from "path";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError, sendCreated } from "../utils/response.js";
 import { getCollection } from "../db.js";
-import { renderItemHtml, renderItemParts } from "../lib/avatarRenderer.js";
+import { renderItemParts } from "../lib/avatarRenderer.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,11 +36,6 @@ const LAYER_ORDER = CATEGORIES.map((c) => c.id);
  * chỉ là một `code` trỏ tới registry frontend — server không lưu, không
  * kiểm tra, không render body.
  */
-const DEFAULT_LOADOUT = {
-  body: "body_boy_01", skin: "skin_01", face: "face_01", hair: "hair_boy_01", shirt: "shirt_boy_01",
-  pants: "pants_boy_01", shoes: "shoes_boy_01", hat: null, glasses: null, accessory: null,
-};
-
 const DEFAULT_TEMPLATE = {
   skin: { x: 0, y: 0, width: 512, height: 700, zIndex: 1 },
   face: { x: 0, y: 0, width: 512, height: 700, zIndex: 2 },
@@ -291,20 +286,15 @@ async function ensureTemplate() {
 }
 
 // ─── PUBLIC ──────────────────────────────────────────────────────
-
-router.get("/categories", (_req, res) => {
-  sendSuccess(res, {
-    categories: CATEGORIES,
-    layerOrder: LAYER_ORDER,
-    // Body do frontend quản lý — server chỉ báo cho client biết có bao nhiêu
-    // body và mã tương ứng để hiển thị, không lưu ở đây.
-    bodies: [
-      { code: "body_boy_01", label: "Body bé trai", gender: "boy" },
-      { code: "body_girl_01", label: "Body bé gái", gender: "girl" },
-      { code: "body_custom_01", label: "Rồng xanh", gender: "any" },
-    ],
-  });
-});
+//
+// Chỉ còn GET /items. Các endpoint avatar cũ (GET /categories,
+// GET|PUT /template, GET /inventory, POST /buy, POST /save,
+// POST /admin/items/batch, DELETE /admin/items[/:code],
+// POST /admin/reset-items, POST /admin/preview) đã bị GỠ vì không còn
+// caller nào trong client: bộ đồ avatar nằm trong hồ sơ
+// (GET/PUT /api/auth/me → `avatar`), hình vẽ nằm ở frontend, các trang
+// quản trị avatar đọc dữ liệu cứng phía client. Ba endpoint còn lại ở
+// file này là đúng những gì trang UploadItems đang gọi.
 
 router.get("/items", async (req, res, next) => {
   try {
@@ -329,81 +319,6 @@ router.get("/items", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.get("/template", async (_req, res, next) => {
-  try {
-    await ensureTemplate();
-    const tmpl = await getCollection(TEMPLATE).findOne({ _id: "default" });
-    sendSuccess(res, { template: tmpl?.categories || DEFAULT_TEMPLATE });
-  } catch (e) { next(e); }
-});
-
-router.get("/inventory", authenticate, async (req, res, next) => {
-  try {
-    const user = await getCollection(USERS).findOne({ id: req.user.sub });
-    if (!user) return sendError(res, "Không tìm thấy người dùng", 404);
-    sendSuccess(res, { inventory: user.inventory || [] });
-  } catch (e) { next(e); }
-});
-
-/**
- * `GET /api/avatar/loadout` đã bị gỡ: bộ đồ avatar + thú cưng giờ nằm trong hồ
- * sơ (`GET/PUT /api/auth/me` → `avatar`, `pet`) và được cache ở localStorage.
- * Game nhận SVG avatar qua postMessage `init` (xem `HtmlGameLoader.jsx`).
- */
-
-router.post("/buy", authenticate, async (req, res, next) => {
-  try {
-    const { itemCode } = req.body || {};
-    if (!itemCode) return sendError(res, "Thiếu itemCode", 400);
-    await ensureSeeded();
-    const item = await getCollection(ITEMS).findOne({ code: itemCode });
-    if (!item) return sendError(res, "Item không tồn tại", 404);
-    const user = await getCollection(USERS).findOne({ id: req.user.sub });
-    if (!user) return sendError(res, "Không tìm thấy người dùng", 404);
-    if (item.price === 0 || item.default) {
-      return sendSuccess(res, { owned: true, inventory: user.inventory || [], coins: user.coins || 0 });
-    }
-    if ((user.inventory || []).includes(itemCode)) {
-      return sendSuccess(res, { owned: true, inventory: user.inventory, coins: user.coins || 0 });
-    }
-    const coins = user.coins || 0;
-    if (coins < item.price) return sendError(res, `Không đủ coin. Cần ${item.price}, bạn có ${coins}`, 400);
-    const newCoins = coins - item.price;
-    const newInventory = [...(user.inventory || []), itemCode];
-    await getCollection(USERS).updateOne({ id: req.user.sub }, { $set: { coins: newCoins, inventory: newInventory } });
-    sendSuccess(res, { owned: true, inventory: newInventory, coins: newCoins });
-  } catch (e) { next(e); }
-});
-
-router.post("/save", authenticate, async (req, res, next) => {
-  try {
-    const { loadout } = req.body || {};
-    if (!loadout || typeof loadout !== "object") return sendError(res, "Thiếu loadout", 400);
-    await ensureSeeded();
-    const user = await getCollection(USERS).findOne({ id: req.user.sub });
-    if (!user) return sendError(res, "Không tìm thấy người dùng", 404);
-    const inventory = user.inventory || [];
-
-    const clean = {};
-    for (const [layer, itemCode] of Object.entries(loadout)) {
-      // Body: chỉ lưu code, không validate (registry ở frontend lo).
-      if (layer === "body") { clean.body = itemCode || DEFAULT_LOADOUT.body; continue; }
-      if (itemCode === null) { clean[layer] = null; continue; }
-      if (!LAYER_ORDER.includes(layer)) return sendError(res, `Layer không hợp lệ: ${layer}`, 400);
-      const item = await getCollection(ITEMS).findOne({ code: itemCode });
-      if (!item) return sendError(res, `Item không tồn tại: ${itemCode}`, 400);
-      if (item.category !== layer) return sendError(res, `Item ${itemCode} không thuộc layer ${layer}`, 400);
-      if (item.price > 0 && !item.default && !inventory.includes(itemCode)) {
-        return sendError(res, `Bạn chưa sở hữu item: ${item.name}`, 400);
-      }
-      clean[layer] = itemCode;
-    }
-
-    await getCollection(USERS).updateOne({ id: req.user.sub }, { $set: { avatarLoadout: clean } });
-    sendSuccess(res, { loadout: clean });
-  } catch (e) { next(e); }
-});
-
 // ─── ADMIN ──────────────────────────────────────────────────────
 //
 // Trước đây các route /admin/* chỉ dùng `authenticate` — học sinh đăng nhập là
@@ -412,19 +327,6 @@ router.post("/save", authenticate, async (req, res, next) => {
 const adminOnly = [authenticate, requireRoles("teacher", "admin")];
 
 const uid = () => `av-${Math.random().toString(36).slice(2, 9)}`;
-
-router.put("/template", ...adminOnly, async (req, res, next) => {
-  try {
-    const { categories } = req.body || {};
-    if (!categories || typeof categories !== "object") return sendError(res, "Thiếu categories", 400);
-    await getCollection(TEMPLATE).updateOne(
-      { _id: "default" },
-      { $set: { categories } },
-      { upsert: true }
-    );
-    sendSuccess(res, { template: categories });
-  } catch (e) { next(e); }
-});
 
 router.post("/admin/items", ...adminOnly, async (req, res, next) => {
   try {
@@ -469,79 +371,6 @@ router.put("/admin/items/:code", ...adminOnly, async (req, res, next) => {
     await getCollection(ITEMS).updateOne({ code }, { $set: updates });
     const updated = await getCollection(ITEMS).findOne({ code });
     sendSuccess(res, updated);
-  } catch (e) { next(e); }
-});
-
-router.post("/admin/items/batch", ...adminOnly, async (req, res, next) => {
-  try {
-    const { items } = req.body || {};
-    if (!Array.isArray(items) || items.length === 0) return sendError(res, "Thiếu items array", 400);
-    if (items.length > 100) return sendError(res, "Tối đa 100 item mỗi lần", 400);
-    const created = [];
-    for (const it of items) {
-      const { category, name, params, price, default: isDefault, gender } = it || {};
-      if (!category || !name) return sendError(res, "Thiếu category hoặc name", 400);
-      if (!CATEGORIES.find(c => c.id === category)) return sendError(res, `Category không hợp lệ: ${category}`, 400);
-      const p = params || {};
-      const item = {
-        code: uid(), category, name: String(name).trim(),
-        params: p, price: Math.max(0, Number(price) || 0), default: !!isDefault,
-        ...(gender ? { gender } : {}),
-        ...deriveMarkup({ category, params: p }),
-      };
-      await getCollection(ITEMS).insertOne(item);
-      created.push(item);
-    }
-    sendCreated(res, { items: created, count: created.length });
-  } catch (e) { next(e); }
-});
-
-router.delete("/admin/items/:code", ...adminOnly, async (req, res, next) => {
-  try {
-    const { code } = req.params;
-    const existing = await getCollection(ITEMS).findOne({ code });
-    if (!existing) return sendError(res, "Item không tồn tại", 404);
-    if (existing.default) return sendError(res, "Không thể xóa item mặc định", 400);
-
-    // Gỡ khỏi túi đồ và loadout của người chơi, nếu không họ sẽ mang item
-    // không tồn tại và không đổi được bất cứ layer nào.
-    const users = getCollection(USERS);
-    await users.updateMany({ inventory: code }, { $pull: { inventory: code } });
-    await users.updateMany({ [`avatarLoadout.${existing.category}`]: code }, { $set: { [`avatarLoadout.${existing.category}`]: null } });
-
-    await getCollection(ITEMS).deleteOne({ code });
-    sendSuccess(res, { deleted: code });
-  } catch (e) { next(e); }
-});
-
-/** Xoá sạch item rồi seed lại danh mục phụ kiện mặc định. */
-router.post("/admin/reset-items", ...adminOnly, async (_req, res, next) => {
-  try {
-    await ensureSeeded(true);
-    sendSuccess(res, { message: "Đã xóa tất cả items và seed lại từ đầu" });
-  } catch (e) { next(e); }
-});
-
-router.delete("/admin/items", ...adminOnly, async (_req, res, next) => {
-  try {
-    const result = await getCollection(ITEMS).deleteMany({});
-    sendSuccess(res, { message: "Đã xóa toàn bộ items", deletedCount: result.deletedCount });
-  } catch (e) { next(e); }
-});
-
-/**
- * Render thử 1 phụ kiện từ `params` mà không cần lưu.
- *
- * Trang admin dùng endpoint này để xem trước khi bấm "Lưu", nhờ vậy frontend
- * không phải chép lại bộ sinh markup của server (trước đây chính vì thế mà
- * có 2 bản renderer lệch nhau).
- */
-router.post("/admin/preview", ...adminOnly, async (req, res, next) => {
-  try {
-    const { category, params } = req.body || {};
-    if (!CATEGORIES.find(c => c.id === category)) return sendError(res, "Category không hợp lệ", 400);
-    const parts = renderItemParts(category, params || {});
-    sendSuccess(res, { back: parts.back, front: parts.front, html: parts.back + parts.front });
   } catch (e) { next(e); }
 });
 

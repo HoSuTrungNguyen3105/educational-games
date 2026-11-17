@@ -2,7 +2,8 @@
 //
 // Thú cưng: đồng bộ với API, fallback về localStorage khi chưa đăng nhập / mất mạng.
 //
-//   server : GET/PUT /api/pet, POST /api/pet/exp|mood|reset  (cấp / EXP / tâm tính)
+//   server : GET/PUT /api/users/me/pet, POST /api/users/me/pet/exp|mood|reset
+//            (cấp / EXP / tâm tính — đã gộp từ /api/pet cũ vào API hồ sơ)
 //   client : localStorage `edu_pet_v2` (khách) / `edu_pet_v2.u<id>` (theo tài
 //            khoản) — cache để mở app tức thì, và chỗ lưu khi offline.
 //
@@ -13,11 +14,11 @@
 //   "Tiệm thay đồ thú cưng" lưu vào hồ sơ. Trước đây hai bên không biết nhau nên
 //   sửa pet trong Profile xong ra home vẫn thấy con chó mặc định.
 //
-//   • GET /api/pet trả kèm `look` (đọc từ `users.pet`) → lưu vào `lookRemote`.
+//   • GET /api/users/me/pet trả kèm `look` (đọc từ `users.pet`) → lưu vào `lookRemote`.
 //   • `look` = bản chọn ra từ `lookRemote` và cache máy `eg-outfit-pet-v1`, theo
 //     đúng `resolveOutfit()` của trang Profile → hai nơi không thể hiện khác nhau.
 //   • Đổi diện mạo: saveLook() → PUT /api/auth/me { pet } + cache máy.
-//   • Đổi tên / loài legacy: updateLook() → PUT /api/pet.
+//   • Đổi tên / loài legacy: updateLook() → PUT /api/users/me/pet.
 
 import { useSyncExternalStore } from "react";
 import { API_BASE, userService } from "../services/api.js";
@@ -107,7 +108,7 @@ const PET_TIPS = [
  * Cache theo từng tài khoản.
  *
  * Một key dùng chung cho cả máy nghĩa là đăng xuất rồi đăng nhập hồ sơ khác vẫn
- * thấy Lv/EXP/tên thú cưng của người trước (chờ `GET /api/pet` về mới đổi).
+ * thấy Lv/EXP/tên thú cưng của người trước (chờ `GET /api/users/me/pet` về mới đổi).
  * Khách (chưa đăng nhập) giữ nguyên key cũ `edu_pet_v2`.
  */
 const ownerUid = (authState) => {
@@ -211,7 +212,7 @@ function authHeader() {
 
 async function call(path, options = {}) {
   // API_BASE đã chứa sẵn hậu tố /api (xem services/api.js)
-  const res = await fetch(`${API_BASE}/pet${path}`, {
+  const res = await fetch(`${API_BASE}/users/me/pet${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -249,7 +250,7 @@ export function moodLabel(mood = state.mood) {
  * Nạp pet từ server.
  *
  * Danh mục (loài / màu / trang phục) KHÔNG gọi API nữa — luôn dùng
- * `CATALOG_FALLBACK` ngay trong file này. Chỉ còn `GET /api/pet/` cho phần
+ * `CATALOG_FALLBACK` ngay trong file này. Chỉ còn `GET /api/users/me/pet` cho phần
  * "diện mạo của bé" lưu trên server.
  */
 export async function loadPet() {
