@@ -252,7 +252,6 @@
 }
 .gq-iconbtn--on { background: #ffd45e; }
 /* Huy hiệu số xu/sao ở trạng thái ĐANG TẢI ví: nền xám nhạt thay vì số 0. */
-.gq-iconbtn__n--load { background: #e6ecf6; color: var(--gq-mute); }
 
 /* Pill ví Xu/Sao: icon trong vòng tròn màu + giá trị dạng chữ — thay cho
    nút icon + huy hiệu góc của bản cũ, theo đúng ảnh mẫu. */

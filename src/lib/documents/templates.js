@@ -1,23 +1,35 @@
-// Thư viện mẫu tài liệu (template catalog) đã được gỡ bỏ.
-// File này giữ tương thích API cũ để tránh import lỗi; không còn dữ liệu mẫu.
+// templates.js — Điểm vào tương thích cho thư viện 20 mẫu tài liệu.
+//
+// Toàn bộ dữ liệu mẫu nằm trong templateCatalog.js. File này giữ lại các
+// tên API cũ (templateSourceFor + hai hằng mẫu đầu tiên) để các màn hình
+// đã viết trước đây không phải sửa import, đồng thời re-export API mới.
+export {
+  GRADE_FILTERS,
+  POWERPOINT_TEMPLATES,
+  PPT_CATEGORY_FILTERS,
+  TEMPLATE_CATALOG,
+  WORD_CATEGORY_FILTERS,
+  WORD_TEMPLATES,
+  getTemplate,
+  sourceForTemplate,
+  templateModel,
+  templatesFor,
+} from "./templateCatalog.js";
 
-export const GRADE_FILTERS = [];
-export const POWERPOINT_TEMPLATES = [];
-export const PPT_CATEGORY_FILTERS = [];
-export const TEMPLATE_CATALOG = [];
-export const WORD_CATEGORY_FILTERS = [];
-export const WORD_TEMPLATES = [];
+import {
+  POWERPOINT_TEMPLATES,
+  WORD_TEMPLATES,
+  templateSourceFor,
+} from "./templateCatalog.js";
 
-export const getTemplate = () => null;
-export const sourceForTemplate = () => "";
-export const templateModel = () => null;
-export const templatesFor = () => [];
-export const templateSourceFor = () => "";
+// Các hằng cũ từng được dùng trong tài liệu/đoạn mã mẫu.
+export const WORD_HTML_TEMPLATE = WORD_TEMPLATES[0].html;
+export const POWERPOINT_HTML_TEMPLATE = POWERPOINT_TEMPLATES[0].html;
+export const WORD_JSON_TEMPLATE_OBJ = WORD_TEMPLATES[0].json;
+export const PPT_JSON_TEMPLATE_OBJ = POWERPOINT_TEMPLATES[0].json;
+export const WORD_JSON_TEMPLATE = WORD_TEMPLATES[0].sourceFor("json");
+export const PPT_JSON_TEMPLATE = POWERPOINT_TEMPLATES[0].sourceFor("json");
+export const POWERPOINT_JSON_TEMPLATE = PPT_JSON_TEMPLATE;
 
-export const WORD_HTML_TEMPLATE = "";
-export const POWERPOINT_HTML_TEMPLATE = "";
-export const WORD_JSON_TEMPLATE_OBJ = null;
-export const PPT_JSON_TEMPLATE_OBJ = null;
-export const WORD_JSON_TEMPLATE = "";
-export const PPT_JSON_TEMPLATE = "";
-export const POWERPOINT_JSON_TEMPLATE = "";
+// Giữ chữ ký cũ: templateSourceFor(docType, mode, templateId?)
+export { templateSourceFor };

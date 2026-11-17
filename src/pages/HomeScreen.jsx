@@ -1384,6 +1384,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               ))}
             </HomeRail>
           </section>
+        )}
 
         {/* ─────────── ĐIỂM DANH MỖI NGÀY ───────────
             Ngay dưới khối hero/playbar, chỉ học sinh đã đăng nhập. Bản
