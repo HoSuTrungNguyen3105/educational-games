@@ -52,6 +52,8 @@ const RULES = [
   { re: /^\/users\/me$/, perms: [PROFILE] },
   { re: /^\/users\/me\/games/, perms: [PLAY, "games.view"] },   // tiến độ game của bản thân
   { re: /^\/users\/me\/check-in/, perms: [PROFILE] },      // điểm danh mỗi ngày của bản thân (checkinService)
+  { re: /^\/users\/me\/pet/, perms: [PROFILE] },           // thú cưng của bản thân (đã gộp từ /api/pet cũ)
+  { re: /^\/users\/admin\/pet-catalog/, feature: "pet_catalog" }, // danh mục thú cưng — admin (đã gộp từ /api/pet/admin cũ)
   { re: /^\/users\/me\/exam-results/, perms: [PLAY, "assignments.view"] },
   { re: /^\/users\/game-progress/, feature: "coins" },     // admin xem/sửa JSON save của user
   { re: /^\/users\/exam-results/, feature: "reports" },    // admin xem điểm thi
@@ -93,7 +95,6 @@ const RULES = [
   { re: /^\/game-attempts/, perms: [PLAY] },
   { re: /^\/game-plays/, perms: [PLAY, "coins.edit"] },
   { re: /^\/game-events/, perms: [PLAY] },
-  { re: /^\/game-sessions/, perms: [PLAY] },
   { re: /^\/game-invites/, perms: [PLAY] },
   { m: "DELETE", re: /^\/mini\/users\//, feature: "games" },
   { re: /^\/mini\//, perms: [PLAY, "reports.view"] },
@@ -132,8 +133,6 @@ const RULES = [
   { re: /^\/garden/, perms: [PLAY] },
   { re: /^\/plant-types/, m: "GET", perms: [PLAY, "plant_types.view"] },
   { re: /^\/plant-types/, feature: "plant_types" },
-  { re: /^\/pet\/admin/, feature: "pet_catalog" },
-  { re: /^\/pet/, perms: [PLAY] },
   { re: /^\/avatar\/admin\//, feature: "avatar_items" },
   { m: "PUT", re: /^\/avatar\/template$/, feature: "avatar_templates" },
   { re: /^\/avatar\/(inventory|buy|save)$/, perms: [PROFILE] },

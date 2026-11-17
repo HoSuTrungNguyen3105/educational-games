@@ -19,7 +19,7 @@ import { AlertTriangle, Gift, Info, Palette, PawPrint, RotateCcw, Save, Shirt } 
  */
 
 /**
- * `kind` là giá trị gửi lên server và lưu trong DB (`/pet/admin/<kind>`).
+ * `kind` là giá trị gửi lên server và lưu trong DB (`/users/admin/pet-catalog/<kind>`).
  * `key` là tên trường server TRẢ VỆ — số nhiều, khác `kind`. Tra nhầm hai thứ
  * này làm bảng rỗng im lặng.
  */
@@ -85,7 +85,7 @@ export default function PetCatalogManagement({ showToast }) {
     setData(null);
     setError(null);
     try {
-      const res = await apiFetch('/pet/admin/catalog');
+      const res = await apiFetch('/users/admin/pet-catalog');
       setData(res);
     } catch (e) { setError(e.message); }
   }, []);
@@ -149,10 +149,10 @@ export default function PetCatalogManagement({ showToast }) {
     try {
       if (editingId) {
         delete body.id;   // id là khoá, không cho đổi
-        await apiFetch(`/pet/admin/${tab}/${editingId}`, { method: 'PUT', body });
+        await apiFetch(`/users/admin/pet-catalog/${tab}/${editingId}`, { method: 'PUT', body });
         showToast(`Đã cập nhật "${form.name}"`, 'success');
       } else {
-        await apiFetch(`/pet/admin/${tab}`, { method: 'POST', body });
+        await apiFetch(`/users/admin/pet-catalog/${tab}`, { method: 'POST', body });
         showToast(`Đã thêm "${form.name}"`, 'success');
       }
       closeModal();
@@ -171,7 +171,7 @@ export default function PetCatalogManagement({ showToast }) {
       confirmLabel: 'Xóa',
       onConfirm: async () => {
         try {
-          const res = await apiFetch(`/pet/admin/${tab}/${entry.id}`, { method: 'DELETE' });
+          const res = await apiFetch(`/users/admin/pet-catalog/${tab}/${entry.id}`, { method: 'DELETE' });
           showToast(res.affectedPets > 0 ? `Đã xóa, cập nhật ${res.affectedPets} pet` : 'Đã xóa', 'success');
           load();
         } catch (e) { showToast(e.message || 'Lỗi xóa', 'error'); }
@@ -186,7 +186,7 @@ export default function PetCatalogManagement({ showToast }) {
       confirmLabel: 'Khôi phục',
       onConfirm: async () => {
         try {
-          await apiFetch('/pet/admin/reset-catalog', { method: 'POST', body: {} });
+          await apiFetch('/users/admin/pet-catalog/reset', { method: 'POST', body: {} });
           showToast('Đã khôi phục danh mục pet', 'success');
           load();
         } catch (e) { showToast(e.message || 'Lỗi khôi phục', 'error'); }

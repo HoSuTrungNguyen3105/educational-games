@@ -1,0 +1,250 @@
+// services/petService.js
+//
+// Lưu thú cưng trên server (collection `userPets`) — mỗi người dùng 1 pet.
+// File này giữ phần "nurture": cấp, EXP, tâm tính, độ gắn kết, tên.
+//
+// DIỆN MẠO MÀ APP VẼ = `look` (bộ đồ DressUp trong hồ sơ `users.pet`), KHÔNG
+// phải `species`/`color`/`outfits` của `userPets`. Hai hệ này từng song song và
+// người chơi sửa trong game "Tiệm thay đồ thú cưng" / trang Profile rồi ra home
+// vẫn thấy con chó mặc định — nên GET /api/users/me/pet trả kèm `look`, client chỉ vẽ
+// `look`. `species`/`color`/`outfits` vẫn tồn tại cho trang quản lý danh mục
+// (petCatalog) và cho dữ liệu cũ, nhưng không còn là nguồn hiển thị.
+//
+// Màu / trang phục / loài legacy đều kiểm tra theo petCatalog nên không thể gán
+// giá trị bừa. Loài và đồ mới thêm vào catalog là dùng được, không phải sửa file
+// này.
+//
+// petCatalog giờ đọc từ Mongo (`petCatalog`) và nạp vào cache ở RAM, nên mọi
+// hàm ở đây phải `await catalog.ensureLoaded()` TRƯỚC khi đọc catalog — nếu
+// không, `getSpecies`/`validateLook` sẽ trả null và chặn nhầm người chơi.
+
+import { getCollection } from "../db.js";
+import * as catalog from "./petCatalog.js";
+import { sanitizePet } from "../lib/outfitCatalog.js";
+
+const COLLECTION = "userPets";
+const USERS = "users";
+
+const uid = () => `upet-${Math.random().toString(36).slice(2, 9)}`;
+const nowIso = () => new Date().toISOString();
+
+/** 7 ô trang phục, dùng khi tạo pet mới và khi reset. */
+function emptyOutfits() {
+  return Object.fromEntries(catalog.SLOTS.map((s) => [s, null]));
+}
+
+/** EXP cần để lên cấp tiếp theo. */
+export function expNeededFor(level) {
+  return Math.round(200 * Math.pow(1.18, Math.max(0, level - 1)));
+}
+
+/** Pet mặc định: chó, màu kem, chưa mặc gì. */
+export const DEFAULT_PET_NAME = "Cún của tôi";
+/** Tên mặc định thời kỳ đầu — chỉ để nâng cấp pet cũ sang tên mới. */
+const LEGACY_DEFAULT_NAMES = new Set(["Bồng"]);
+
+export function buildDefault(userId, name = DEFAULT_PET_NAME) {
+  const sp = catalog.getSpecies("dog") || { id: "dog" };
+  const col = catalog.defaultColorFor("dog") || { id: "cream" };
+  return {
+    _id: uid(),
+    userId,
+    species: sp.id,
+    name: String(name || DEFAULT_PET_NAME).slice(0, 24),
+    color: col.id,
+    outfits: emptyOutfits(),
+    level: 1,
+    exp: 0,
+    expNeeded: expNeededFor(1),
+    mood: "happy",
+    bonded: 10,
+    totalCorrect: 0,
+    totalWrong: 0,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+}
+
+/** Bảo đảm luôn có 1 document pet cho user (tạo nếu chưa có). */
+export async function getOrCreate(userId, name) {
+  await catalog.ensureLoaded();
+  const col = getCollection(COLLECTION);
+  let doc = await col.findOne({ userId });
+  if (doc) {
+    // Pet tạo trước đây vẫn mang tên mặc định cũ "Bồng" → đổi sang tên mới.
+    if (LEGACY_DEFAULT_NAMES.has(doc.name)) {
+      await col.updateOne(
+        { _id: doc._id },
+        { $set: { name: DEFAULT_PET_NAME, updatedAt: nowIso() } },
+      );
+      doc = { ...doc, name: DEFAULT_PET_NAME };
+    }
+    return doc;
+  }
+
+  const fresh = buildDefault(userId, name);
+  try {
+    await col.insertOne(fresh);
+  } catch (e) {
+    // Hai request song song có thể cùng tạo → đọc lại bản đã có
+    if (e?.code !== 11000) throw e;
+    doc = await col.findOne({ userId });
+    if (doc) return doc;
+    throw e;
+  }
+  return fresh;
+}
+
+export async function getByUser(userId) {
+  return getOrCreate(userId);
+}
+
+/**
+ * Trạng thái pet ĐẦY ĐỦ cho hồ sơ (profile): pet đã serialize kèm `look` —
+ * đúng payload mà GET /api/users/me/pet trả. Hồ sơ (GET /api/auth/me,
+ * response login, GET /api/users/me) nhúng thẳng kết quả này vào field
+ * `pet` để client chỉ cần đọc hồ sơ là đủ, khỏi gọi thêm endpoint pet.
+ */
+export async function getFullState(userId) {
+  const pet = await getByUser(userId);
+  return serialize(pet, await getLook(userId));
+}
+
+/**
+ * Diện mạo thật của bé = bộ đồ DressUp đã lưu trong hồ sơ (`users.pet`).
+ * Đây là field mà modal "Tùy chỉnh Thú cưng" ở trang Profile và game
+ * "Tiệm thay đồ thú cưng" ghi vào, nên lấy từ đây thì mọi màn hình khớp nhau.
+ * Trả null nếu hồ sơ chưa chọn bộ đồ nào — client khi đó dùng bộ mặc định.
+ */
+export async function getLook(userId) {
+  const user = await getCollection(USERS).findOne({ id: userId }, { projection: { pet: 1 } });
+  const clean = sanitizePet(user?.pet);
+  if (!clean) return null;
+  return { ...clean, updatedAt: user.pet.updatedAt || null };
+}
+
+/** Bỏ trường private trước khi trả về cho client. */
+export function serialize(doc, look) {
+  if (!doc) return null;
+  // Bỏ các trường nội bộ trước khi trả về cho client.
+  const out = { ...doc, id: String(doc._id) };
+  delete out._id;
+  delete out.userId;
+  if (look !== undefined) out.look = look;
+  return out;
+}
+
+/**
+ * Cập nhật diện mạo (loài, màu, trang phục, tên).
+ * Chỉ nhận các trường được chỉ định; trường khác bị bỏ qua.
+ * @returns {{ ok: boolean, pet?: object, errors?: string[], locked?: string[] }}
+ */
+export async function updateLook(userId, patch = {}) {
+  const current = await getOrCreate(userId);
+  const set = { updatedAt: nowIso() };
+
+  if (patch.name != null) {
+    const n = String(patch.name).trim().slice(0, 24);
+    if (!n) return { ok: false, errors: ["Tên không được để trống"] };
+    set.name = n;
+  }
+
+  // Gom species/color/outfits lại rồi kiểm tra 1 lần theo catalog
+  const wantsLook =
+    patch.species != null || patch.color != null || patch.outfits != null;
+
+  if (wantsLook) {
+    const candidate = {
+      species: patch.species ?? current.species,
+      color: patch.color ?? current.color,
+      outfits: { ...current.outfits, ...(patch.outfits || {}) },
+    };
+    const check = catalog.validateLook(candidate);
+    if (!check.ok) return { ok: false, errors: check.errors };
+
+    // Chỉ cho dùng loài / trang phục đã mở khoá theo cấp
+    const locked = [];
+    const sp = catalog.getSpecies(check.value.species);
+    if (sp.minLevel > current.level) locked.push(`Loài "${sp.name}" cần cấp ${sp.minLevel}`);
+
+    for (const slot of Object.keys(check.value.outfits)) {
+      const entry = check.value.outfits[slot];
+      if (!entry) continue;
+      const item = catalog.getOutfit(entry.id);
+      if (item && item.minLevel > current.level) locked.push(`"${item.name}" cần cấp ${item.minLevel}`);
+    }
+    if (locked.length) return { ok: false, errors: locked, locked };
+
+    set.species = check.value.species;
+    set.color = check.value.color;
+    set.outfits = check.value.outfits;
+  }
+  await getCollection(COLLECTION).updateOne({ _id: current._id }, { $set: set });
+  return { ok: true, pet: serialize({ ...current, ...set }) };
+}
+
+/**
+ * Cộng EXP, tự lên cấp. Trả về cờ levelUp để UI bật hiệu ứng.
+ * @param {string} userId
+ * @param {number} amount
+ * @param {object} stats   { correct, wrong } — tích luỹ số câu đúng/sai
+ */
+export async function addExp(userId, amount = 5, stats = {}) {
+  const pet = await getOrCreate(userId);
+
+  let exp = pet.exp + Math.max(0, Number(amount) || 0);
+  let level = pet.level;
+  let expNeeded = pet.expNeeded || expNeededFor(level);
+  const levelsGained = [];
+
+  while (exp >= expNeeded && level < 99) {
+    exp -= expNeeded;
+    level += 1;
+    expNeeded = expNeededFor(level);
+    levelsGained.push(level);
+  }
+
+  // Độ gắn kết tăng theo cấp, tối đa 100
+  const bonded = Math.min(100, pet.bonded + levelsGained.length * 5 + (stats.correct || 0));
+
+  const set = {
+    exp,
+    level,
+    expNeeded,
+    bonded,
+    mood: levelsGained.length ? "excited" : "happy",
+    totalCorrect: (pet.totalCorrect || 0) + (stats.correct || 0),
+    totalWrong: (pet.totalWrong || 0) + (stats.wrong || 0),
+    updatedAt: nowIso(),
+  };
+
+  await getCollection(COLLECTION).updateOne({ _id: pet._id }, { $set: set });
+  return { ok: true, pet: serialize({ ...pet, ...set }), levelUp: levelsGained.length > 0, levelsGained };
+}
+
+/** Đổi tâm tính (mood). */
+export async function setMood(userId, mood) {
+  if (!catalog.MOOD_LIST[mood]) return { ok: false, errors: [`mood không hợp lệ: ${mood}`] };
+  const pet = await getOrCreate(userId);
+  const set = { mood, updatedAt: nowIso() };
+  await getCollection(COLLECTION).updateOne({ _id: pet._id }, { $set: set });
+  return { ok: true, pet: serialize({ ...pet, ...set }) };
+}
+
+/** Đặt lại về mặc định (giữ nguyên tên và cấp độ). */
+export async function reset(userId) {
+  await catalog.ensureLoaded();
+  const pet = await getOrCreate(userId);
+  const sp = catalog.getSpecies("dog") || { id: "dog" };
+  const col = catalog.defaultColorFor("dog") || { id: "cream" };
+  const set = {
+    species: sp.id,
+    color: col.id,
+    outfits: emptyOutfits(),
+    mood: "happy",
+    updatedAt: nowIso(),
+  };
+  await getCollection(COLLECTION).updateOne({ _id: pet._id }, { $set: set });
+  return { ok: true, pet: serialize({ ...pet, ...set }) };
+}
+
