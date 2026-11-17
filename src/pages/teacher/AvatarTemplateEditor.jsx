@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { ManagementHeader, GhostButton } from '../../components/ui';
+import { GhostButton } from '../../components/ui';
 import { KID_LAYERS, kidPresets, kidPreset, renderKid } from '../../lib/dressUpCatalog.js';
 
-export default function AvatarTemplateEditor() {
+/* Panel tab "Mẫu Avatar" của trang gộp AvatarManagement — trước đây là trang
+ * riêng /dashboard/avatar-template. onSwitchTab do trang gộp truyền xuống. */
+export default function AvatarTemplateEditor({ onSwitchTab }) {
   const [kind, setKind] = useState('boy');
   const svg = renderKid(kidPreset(kind));
 
   return (
     <div className="space-y-4">
-      <ManagementHeader subtitle="Thứ tự lớp cố định của hệ DressUp" title="Avatar Template" />
-
       <div className="note-card p-3 text-xs text-ink/60">
         Chỉ tham khảo — dữ liệu nằm trong file mã nguồn (dressUpAvatarData.js), muốn thay đổi phải sửa file rồi build lại.
       </div>
@@ -64,7 +64,7 @@ export default function AvatarTemplateEditor() {
         <p className="mt-1">Body rồng bỏ qua toàn bộ lớp phụ kiện. Mặc váy sẽ tự ẩn lớp quần.</p>
       </div>
 
-      <GhostButton onClick={() => window.location.hash = '#/dashboard/avatar-items'}>
+      <GhostButton onClick={() => onSwitchTab?.('items')}>
         Mở Avatar Items
       </GhostButton>
     </div>
