@@ -7,7 +7,8 @@
 //   • Không có from lẫn to → { present: false } — route giữ NGUYÊN hành vi
 //     và shape response hiện tại (không trang nào được gãy).
 //   • Có from và/hoặc to → response envelope chung { status, code, msg }
-//     kèm { data: [...đoạn đã cắt...], total, from, to, pagination }.
+//     kèm { data: [...đoạn đã cắt...], pagination } — total/from/to CHỈ nằm
+//     trong pagination, không lặp ở cấp đầu.
 //     from thiếu → 1; to thiếu → from + 9 (một "trang" 10 bản ghi).
 //   • Giá trị không hợp lệ (không phải số nguyên, < 1, to < from) → 400 với
 //     message rõ ràng.
@@ -69,8 +70,9 @@ export function sliceRange(items, range) {
 
 /**
  * Gửi response theo hợp đồng from/to: envelope chung + data đã cắt +
- * total/from/to ở cấp đầu (và lặp lại trong pagination cho client cũ vốn
- * đọc pagination.total / pagination.from / pagination.to như /api/games).
+ * pagination (total/from/to CHỈ nằm trong pagination — client đọc
+ * pagination.total / pagination.from / pagination.to như /api/games,
+ * không lặp ở cấp đầu để response khỏi dư field).
  * `data` phải là đoạn ĐÃ cắt; `total` là tổng số bản ghi trước khi cắt.
  */
 export function sendRangedList(res, data, range, total, msg = "success") {
@@ -87,9 +89,6 @@ export function sendRangedList(res, data, range, total, msg = "success") {
     code: 200,
     msg,
     data,
-    total,
-    from: range.from,
-    to: range.to,
     pagination,
   });
 }

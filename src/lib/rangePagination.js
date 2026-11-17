@@ -3,9 +3,10 @@
 // Hợp đồng với server (server/src/utils/rangeList.js, PR #111): mọi API lấy
 // DANH SÁCH ở khu quản trị chỉ nhận hai tham số phân trang `from`/`to`
 // (số thứ tự bản ghi, tính từ 1) — KHÔNG dùng page/perPage/limit/offset nữa.
-// Có from/to thì server trả envelope { data: [đoạn đã cắt], total, from, to,
-// pagination }; các service trong src/services/api.js chuẩn hoá kết quả có
-// range về dạng { items, total, pagination }.
+// Có from/to thì server trả envelope { data: [đoạn đã cắt], pagination }
+// (total/from/to CHỈ nằm trong pagination); các service trong
+// src/services/api.js chuẩn hoá kết quả có range về dạng
+// { items, total, pagination } với total lấy từ pagination.total.
 //
 // Trang có UI phân trang thật: dùng rangeForPage(page, pageSize) và lấy tổng
 // số bản ghi từ field `total` của kết quả để vẽ phân trang.
@@ -31,12 +32,14 @@ export function rangeAll() {
 
 /**
  * Tổng số bản ghi từ kết quả đã chuẩn hoá của service ({ items, total,
- * pagination }) hoặc từ envelope thô ({ data, total, pagination }).
+ * pagination }) hoặc từ envelope thô ({ data, pagination }) — luôn ưu tiên
+ * pagination.total (nguồn sự thật duy nhất phía server); field total ở cấp
+ * đầu chỉ còn là giá trị đã chuẩn hoá phía client.
  */
 export function rangeTotal(result, fallback = 0) {
   if (!result) return fallback;
-  if (typeof result.total === "number") return result.total;
   if (typeof result.pagination?.total === "number") return result.pagination.total;
+  if (typeof result.total === "number") return result.total;
   if (Array.isArray(result.items)) return result.items.length;
   if (Array.isArray(result.data)) return result.data.length;
   if (Array.isArray(result)) return result.length;
