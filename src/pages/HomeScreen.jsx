@@ -70,6 +70,7 @@ import {
   History,
   ShieldCheck,
   Layers,
+  Languages,
 } from 'lucide-react'
 
 
@@ -199,6 +200,7 @@ const MORE_ITEMS = (userAuth) => ([
   { key: "assignment", icon: IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "lessons", icon: BookOpen, label: "Bài học", type: "path", path: "/lessons", show: !!userAuth?.user },
   { key: "question-sets", icon: Layers, label: "Bộ đề luyện tập", type: "path", path: "/question-sets", show: !!userAuth?.user },
+  { key: "english-b1", icon: Languages, label: "Tiếng Anh B1", type: "path", path: "/english-b1", show: true },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
   { key: "profile", icon: IconUser, label: "Hồ sơ", type: "path", path: "/profile", show: !!userAuth?.user },
 ]);
@@ -225,6 +227,7 @@ const SIDEBAR_ITEMS = (userAuth) => ([
   { key: "assignment", icon: IconFile, label: "Bài tập", type: "path", path: "/assignment", show: !!userAuth?.user },
   { key: "lessons", icon: BookOpen, label: "Bài học", type: "path", path: "/lessons", show: !!userAuth?.user },
   { key: "question-sets", icon: Layers, label: "Bộ đề luyện tập", type: "path", path: "/question-sets", show: !!userAuth?.user },
+  { key: "english-b1", icon: Languages, label: "Tiếng Anh B1", type: "path", path: "/english-b1", show: true },
   { key: "spin", icon: ShipWheel, label: "Vòng quay", type: "path", path: "/spin-wheel", show: !!userAuth?.user },
 ]);
 
