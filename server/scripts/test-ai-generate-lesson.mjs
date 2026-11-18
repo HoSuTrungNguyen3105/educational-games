@@ -35,15 +35,40 @@ const VALID_LESSON = {
   sections: [
     {
       heading: "1. Phân số là gì?",
+      hook: "Đã bao giờ em chia một chiếc bánh cho bạn chưa?",
+      emoji: "🍕",
       content: "Phân số dùng để chỉ một phần của một đơn vị được chia thành các phần bằng nhau.",
       example: "Chia một chiếc bánh thành 4 phần bằng nhau, lấy 1 phần ta được 1/4 chiếc bánh.",
       key_takeaway: "Phân số gồm tử số và mẫu số, ngăn cách bởi dấu gạch ngang.",
+      simulation: {
+        title: "Chia bánh thành 4 phần",
+        intro: "Cùng chia chiếc bánh pizza thành các phần bằng nhau nhé!",
+        steps: [
+          "Chia chiếc bánh thành 4 phần bằng nhau.",
+          "Lấy ra 1 phần để ăn.",
+          "Lấy thêm 2 phần nữa, tất cả được 3 phần.",
+        ],
+        visual: { kind: "fraction", numerator: 3, denominator: 4 },
+      },
     },
     {
       heading: "2. Tử số và mẫu số",
+      hook: "Nhìn phân số 3/5, em đoán số nào nằm ở trên, số nào nằm ở dưới?",
+      emoji: "🔢",
       content: "Mẫu số viết dưới dấu gạch ngang, cho biết đơn vị được chia thành bao nhiêu phần bằng nhau. Tử số viết trên dấu gạch ngang, cho biết số phần được lấy ra.",
       example: "Trong phân số 3/5, mẫu số là 5 và tử số là 3.",
       key_takeaway: "Mẫu số ở dưới, tử số ở trên.",
+      simulation: {
+        title: "Chia kẹo thành nhóm",
+        intro: "Chia kẹo vào các túi nhỏ để đếm cho dễ.",
+        steps: [
+          "Đếm tất cả số kẹo trên bàn.",
+          "Chia kẹo vào từng túi.",
+          "Đếm số túi và số kẹo trong mỗi túi.",
+        ],
+        // groups = 9 VƯỢT trần 6 → visual phải bị BỎ, mô phỏng vẫn giữ.
+        visual: { kind: "groups", groups: 9, perGroup: 3 },
+      },
     },
   ],
   summary: "Phân số gồm tử số và mẫu số.\nMẫu số cho biết số phần bằng nhau của đơn vị.\nTử số cho biết số phần được lấy.",
@@ -160,14 +185,46 @@ check("meta: 2 câu quiz dùng được", meta.generatedQuestions, 2);
 check("meta: 1 câu bị loại vì correct_answer không khớp", meta.droppedQuestions, 1);
 check("meta: tổng câu AI trả", meta.quizReturned, 3);
 
-// Cấu trúc trang: 2 trang section + 1 trang tổng kết + 1 trang quiz (2 câu).
-check("tổng số trang", lesson.pages?.length, 4);
-const [sec1, sec2, summaryPage, quizPage] = lesson.pages || [];
-check("trang section 1: phần tử theo thứ tự title/text/text/note",
-  (sec1?.elements || []).map((e) => e.type), ["title", "text", "text", "note"]);
+// Cấu trúc trang: section 1 + trang mô phỏng 1 + section 2 + trang mô
+// phỏng 2 + trang tổng kết + trang quiz (2 câu) = 6 trang.
+check("tổng số trang", lesson.pages?.length, 6);
+const [sec1, simPage1, sec2, simPage2, summaryPage, quizPage] = lesson.pages || [];
+check("trang section 1: phần tử theo thứ tự title/decor/text(hook)/text/text/note",
+  (sec1?.elements || []).map((e) => e.type), ["title", "decor", "text", "text", "text", "note"]);
 check("heading → phần tử title", sec1?.elements?.[0]?.props?.text, "1. Phân số là gì?");
-check("key_takeaway → phần tử note", sec1?.elements?.[3]?.props?.text, VALID_LESSON.sections[0].key_takeaway);
-check("trang section 2 có đủ phần tử", (sec2?.elements || []).length, 4);
+check("key_takeaway → phần tử note",
+  (sec1?.elements || []).find((e) => e.type === "note")?.props?.text, VALID_LESSON.sections[0].key_takeaway);
+check("trang section 2 có đủ phần tử", (sec2?.elements || []).length, 6);
+
+// hook → phần tử text ĐẦU TIÊN của trang section, mang màu hook riêng;
+// emoji hợp lệ → phần tử decor góc trang.
+const sec1Texts = (sec1?.elements || []).filter((e) => e.type === "text");
+check("hook → phần tử text đầu tiên", sec1Texts[0]?.props?.text, VALID_LESSON.sections[0].hook);
+check("hook mang màu riêng #B45309", sec1Texts[0]?.props?.color, "#B45309");
+check("content đứng ngay sau hook", sec1Texts[1]?.props?.text, VALID_LESSON.sections[0].content);
+check("emoji hợp lệ → phần tử decor", (sec1?.elements || []).find((e) => e.type === "decor")?.props?.emoji, "🍕");
+
+// Trang mô phỏng RIÊNG ngay sau trang section: visual hợp lệ giữ nguyên.
+check("meta: 2 mô phỏng được đặt", meta.simulations, 2);
+check("meta: 0 mô phỏng bị loại", meta.droppedSimulations, 0);
+check("trang mô phỏng 1 có tiêu đề 'Mô phỏng: …'", simPage1?.title, "Mô phỏng: Chia bánh thành 4 phần");
+const simEl1 = (simPage1?.elements || [])[0] || {};
+check("phần tử mô phỏng đúng type", simEl1.type, "simulation");
+check("mô phỏng 1 giữ nguyên visual fraction", simEl1.props?.visual, { kind: "fraction", numerator: 3, denominator: 4 });
+check("mô phỏng 1 giữ đủ 3 bước", simEl1.props?.steps?.length, 3);
+check("mô phỏng 1 giữ intro", simEl1.props?.intro, VALID_LESSON.sections[0].simulation.intro);
+// visual SAI (groups=9 vượt trần) → visual bị bỏ, mô phỏng vẫn còn.
+const simEl2 = (simPage2?.elements || [])[0] || {};
+check("mô phỏng 2 vẫn là phần tử simulation", simEl2.type, "simulation");
+check("visual sai bị bỏ khỏi mô phỏng 2", simEl2.props?.visual ?? null, null);
+check("mô phỏng 2 vẫn giữ các bước", simEl2.props?.steps?.length, 3);
+
+// Mọi trang đều có background pastel hợp lệ; trang tổng kết tông riêng.
+checkTrue("mọi trang có background { type: color, #RRGGBB }",
+  (lesson.pages || []).every((p) => p.background?.type === "color" && /^#[0-9a-fA-F]{6}$/.test(p.background?.value || "")),
+  JSON.stringify((lesson.pages || []).map((p) => p.background)));
+check("trang đầu dùng màu đầu bảng pastel", sec1?.background?.value, "#FFF6E0");
+check("trang tổng kết dùng tông riêng", summaryPage?.background?.value, "#EDE9FE");
 check("summary → trang riêng 'Tổng kết bài học'", summaryPage?.title, "Tổng kết bài học");
 checkTrue("trang tổng kết chứa nội dung summary", String(summaryPage?.elements?.[1]?.props?.text || "").includes("Mẫu số cho biết"));
 check("trang quiz có tiêu đề Kiểm tra nhanh", quizPage?.title, "Kiểm tra nhanh");
@@ -201,12 +258,16 @@ checkTrue("prompt chứa cấp học thật", sentUser.includes("Lớp 4"));
 checkTrue("prompt chứa yêu cầu của giáo viên", sentUser.includes("nhiều ví dụ bánh kẹo"));
 const sentSystem = sentBody.messages?.find((m) => m.role === "system")?.content || "";
 checkTrue("system prompt theo đặc tả (chuyên gia thiết kế chương trình)", sentSystem.includes("chuyên gia thiết kế chương trình giáo dục"));
+checkTrue("system prompt v2 yêu cầu hook + emoji cho mỗi phần", sentSystem.includes("hook") && sentSystem.includes("emoji"));
+checkTrue("system prompt v2 có hướng dẫn simulation", sentSystem.includes("simulation"));
 
 // ── 4. Endpoint KHÔNG tự lưu DB; bản nháp qua được validator THẬT ──
 check("chưa có bài học nào trong DB sau generate", await db.getCollection("lessons").countDocuments({}), 0);
 const created = await lessonService.createLesson("user-gv-gl", lesson);
 checkTrue("createLesson nhận bản nháp (đủ required của schema thật)", typeof created?.id === "string" && created.id.length > 0);
-check("bài đã lưu giữ nguyên số trang", created?.pages?.length, 4);
+check("bài đã lưu giữ nguyên số trang", created?.pages?.length, 6);
+const createdSim = (created?.pages || []).flatMap((p) => p.elements || []).find((e) => e.type === "simulation");
+check("bài đã lưu giữ visual của mô phỏng qua validate thật", createdSim?.props?.visual, { kind: "fraction", numerator: 3, denominator: 4 });
 check("bài đã lưu objectives vẫn là chuỗi", typeof created?.objectives, "string");
 const published = await lessonService.publishLesson(created.id, { id: "user-gv-gl", role: "teacher" });
 check("publishLesson đạt (quiz hợp lệ để xuất bản)", published?.status, "published");
@@ -232,6 +293,79 @@ stubContent = JSON.stringify({ title: "Bài thiếu nội dung", objectives: [],
 const rNoSections = await gen(teacher, GOOD_INPUT);
 check("thiếu sections → 502", rNoSections.status, 502);
 checkTrue("thông điệp nói rõ thiếu cấu trúc", String(rNoSections.body?.msg || "").includes("cấu trúc"), rNoSections.body?.msg);
+
+// ── 8. Biên mô phỏng: vượt trần 2/bài + mô phỏng hỏng → droppedSimulations;
+//        emoji lẫn chữ → không có decor; emoji thuần → có decor ──
+const EDGE_LESSON = {
+  title: "Bài kiểm tra biên mô phỏng",
+  estimated_time: "30 phút",
+  objectives: ["Mục tiêu biên"],
+  sections: [
+    {
+      heading: "Phần một", content: "Nội dung một", emoji: "abc123",
+      simulation: { title: "Mô phỏng trục số", steps: ["Bước 1", "Bước 2"], visual: { kind: "numberline", from: 0, to: 10, highlight: 7 } },
+    },
+    {
+      heading: "Phần hai", content: "Nội dung hai", emoji: "⭐",
+      simulation: { title: "Mô phỏng hai", steps: ["Bước 1", "Bước 2"] },
+    },
+    {
+      heading: "Phần ba", content: "Nội dung ba",
+      // Mô phỏng thứ 3 — vượt trần 2/bài → bị loại.
+      simulation: { title: "Mô phỏng vượt trần", steps: ["Bước 1", "Bước 2"] },
+    },
+    {
+      heading: "Phần bốn", content: "Nội dung bốn",
+      // Chỉ 1 bước — sai cấu trúc → bị loại.
+      simulation: { title: "Mô phỏng hỏng", steps: ["Chỉ một bước duy nhất"] },
+    },
+  ],
+  summary: "Tổng kết biên",
+  quick_quiz: [
+    { question: "1 + 1 = ?", options: ["2", "3"], correct_answer: "2", explanation: "" },
+  ],
+};
+stubContent = JSON.stringify(EDGE_LESSON);
+const rEdge = await gen(teacher, GOOD_INPUT);
+check("bài biên → 200", rEdge.status, 200);
+const edgeLesson = rEdge.body?.data?.lesson || {};
+const edgeMeta = rEdge.body?.data?.meta || {};
+check("meta: chỉ 2 mô phỏng được đặt", edgeMeta.simulations, 2);
+check("meta: 2 mô phỏng bị loại (1 vượt trần + 1 hỏng)", edgeMeta.droppedSimulations, 2);
+const edgeSims = (edgeLesson.pages || []).flatMap((p) => p.elements || []).filter((e) => e.type === "simulation");
+check("bản nháp chỉ còn 2 phần tử simulation", edgeSims.length, 2);
+check("visual numberline hợp lệ được giữ", edgeSims[0]?.props?.visual, { kind: "numberline", from: 0, to: 10, highlight: 7 });
+const edgeSec1 = (edgeLesson.pages || [])[0] || {};
+checkTrue("emoji lẫn chữ/số → KHÔNG có decor", !(edgeSec1.elements || []).some((e) => e.type === "decor"));
+const edgeSec2 = (edgeLesson.pages || [])[2] || {};
+check("emoji thuần hợp lệ → có decor ⭐", (edgeSec2.elements || []).find((e) => e.type === "decor")?.props?.emoji, "⭐");
+const createdEdge = await lessonService.createLesson("user-gv-gl", edgeLesson);
+checkTrue("bản nháp biên qua được createLesson", typeof createdEdge?.id === "string" && createdEdge.id.length > 0);
+
+// ── 9. Validate THẬT của lessonService cho type simulation ──
+const simLesson = (props) => ({
+  title: "Bài tay có mô phỏng", subject: "Toán", grade: 3, description: "", objectives: "",
+  pages: [{ id: "pg-sim", title: "Trang mô phỏng", elements: [{ id: "el-sim", type: "simulation", x: 140, y: 80, w: 1000, h: 560, props }] }],
+});
+const expect400 = async (name, props) => {
+  try {
+    await lessonService.createLesson("user-gv-gl", simLesson(props));
+    checkTrue(name, false, "createLesson không ném lỗi");
+  } catch (e) {
+    check(name, e.status, 400);
+  }
+};
+await expect400("simulation thiếu tiêu đề → 400", { steps: ["Bước 1", "Bước 2"] });
+await expect400("simulation chỉ 1 bước → 400", { title: "Mô phỏng", steps: ["Bước 1"] });
+await expect400("simulation 6 bước → 400", { title: "Mô phỏng", steps: ["1", "2", "3", "4", "5", "6"] });
+await expect400("simulation steps không phải mảng → 400", { title: "Mô phỏng", steps: "hai bước" });
+const okVisualBad = await lessonService.createLesson("user-gv-gl",
+  simLesson({ title: "Mô phỏng", steps: ["Bước 1", "Bước 2"], visual: { kind: "fraction", numerator: 5, denominator: 99 } }));
+check("visual sai khoảng → bị BỎ, bài vẫn lưu", okVisualBad?.pages?.[0]?.elements?.[0]?.props?.visual ?? null, null);
+const okVisualGood = await lessonService.createLesson("user-gv-gl",
+  simLesson({ title: "Mô phỏng", intro: "Giới thiệu", steps: ["Bước 1", "Bước 2", "Bước 3"], visual: { kind: "groups", groups: 3, perGroup: 4 } }));
+check("visual groups hợp lệ được giữ nguyên", okVisualGood?.pages?.[0]?.elements?.[0]?.props?.visual, { kind: "groups", groups: 3, perGroup: 4 });
+check("steps giữ nguyên qua validate", okVisualGood?.pages?.[0]?.elements?.[0]?.props?.steps?.length, 3);
 
 console.log(failed === 0 ? "\nALL PASS" : `\n${failed} CHECK(S) FAILED`);
 server.close();

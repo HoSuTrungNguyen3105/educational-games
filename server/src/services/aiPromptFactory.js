@@ -423,13 +423,20 @@ export function lessonSystem() {
 Nhiệm vụ: soạn MỘT bài học hoàn chỉnh theo yêu cầu của giáo viên, bám sát chương trình giáo dục phổ thông và đúng trình độ lớp được yêu cầu.
 
 Yêu cầu bắt buộc:
-1. Toàn bộ nội dung bằng tiếng Việt, từ ngữ đơn giản, gần gũi, phù hợp lứa tuổi của lớp được yêu cầu; câu văn ngắn gọn, dễ hiểu.
-2. Nội dung trình bày logic theo từng phần (sections): mỗi phần có tiêu đề (heading), nội dung giải thích (content), ví dụ minh hoạ thực tế (example) và điểm cần ghi nhớ (key_takeaway). Trong content/example có thể dùng ký tự xuống dòng để tách ý; KHÔNG dùng markdown (không **, không #), không dùng HTML.
-3. Ví dụ phải cụ thể, gần với đời sống của học sinh (đồ vật, con vật, tình huống quen thuộc).
-4. objectives: 2–4 mục tiêu ngắn gọn, mỗi mục tiêu là một câu ngắn bắt đầu bằng động từ (ví dụ "Nhận biết…", "Vận dụng…").
-5. summary: tóm tắt ngắn gọn toàn bài, có thể tách thành 3 ý bằng ký tự xuống dòng.
-6. estimated_time: thời lượng học dự kiến, dạng "45 phút".
-7. Câu hỏi kiểm tra (quick_quiz): mỗi câu có đúng 4 phương án, chỉ DUY NHẤT một phương án đúng; phương án nhiễu hợp lý (sai nhưng dễ gây nhầm), không trùng lặp, không vô nghĩa; \`correct_answer\` phải CHÉP NGUYÊN VĂN một phương án có trong \`options\`, không thêm số thứ tự hay dấu ngoặc.
+1. Toàn bộ nội dung bằng tiếng Việt, từ ngữ đơn giản, gần gũi, phù hợp lứa tuổi của lớp được yêu cầu; câu văn NGẮN, sinh động, như đang kể cho học sinh nghe. Ví dụ phải lấy từ đời sống thật của các em: bánh kẹo, đồ chơi, sân trường, con vật, bữa ăn gia đình…
+2. Nội dung trình bày logic theo từng phần (sections): mỗi phần có tiêu đề (heading), câu dẫn nhập (hook), nội dung giải thích (content), ví dụ minh hoạ thực tế (example) và điểm cần ghi nhớ (key_takeaway). Trong content/example có thể dùng ký tự xuống dòng để tách ý; KHÔNG dùng markdown (không **, không #), không dùng HTML.
+3. hook: ĐÚNG 1 câu dẫn nhập ngắn mở đầu phần, gợi tò mò hoặc gắn với một tình huống đời thường (ví dụ "Đã bao giờ em chia một chiếc bánh cho bạn chưa?").
+4. emoji: ĐÚNG 1 emoji duy nhất hợp chủ đề của phần (ví dụ 🍕, 🔢, 🐶). Chỉ 1 emoji, không kèm chữ hay ký tự nào khác.
+5. example: ví dụ cụ thể kèm LỜI GIẢI THEO TỪNG BƯỚC NGẮN — mỗi bước một dòng riêng (ngăn cách bằng ký tự xuống dòng), bước cuối nêu đáp số/kết luận.
+6. simulation (TUỲ CHỌN, tối đa 2 mô phỏng trong TOÀN BÀI): chỉ thêm khi chủ đề thật sự hợp — toán về phân số, trục số, nhóm vật đếm được; hoặc một quy trình/thí nghiệm làm được theo từng bước. simulation gồm: title (tên mô phỏng ngắn), intro (1 câu giới thiệu), steps (3–5 bước NGẮN, mỗi bước là một hành động/quan sát cụ thể theo đúng thứ tự diễn ra), và visual (hình minh hoạ — chỉ khi số liệu khớp hẳn với steps thì mới thêm, không hợp thì bỏ hẳn trường visual):
+   - { "kind": "fraction", "numerator": <số phần lấy, 0..denominator>, "denominator": <tổng số phần bằng nhau, 2..12> } — cho bài phân số/chia phần.
+   - { "kind": "numberline", "from": <số bắt đầu>, "to": <số kết thúc>, "highlight": <số đích nằm giữa from và to> } — cho bài trục số/đếm tiến lùi (số nguyên từ -100 đến 100, from nhỏ hơn to).
+   - { "kind": "groups", "groups": <số nhóm, 1..6>, "perGroup": <số vật mỗi nhóm, 1..10> } — cho bài chia nhóm/gộp nhóm đếm vật.
+   Số liệu trong visual PHẢI nhất quán với nội dung steps (ví dụ steps nói "lấy 3 phần trong 4 phần" thì fraction là numerator 3, denominator 4). Phần nào không hợp mô phỏng thì KHÔNG có trường simulation.
+7. objectives: 2–4 mục tiêu ngắn gọn, mỗi mục tiêu là một câu ngắn bắt đầu bằng động từ (ví dụ "Nhận biết…", "Vận dụng…").
+8. summary: tóm tắt ngắn gọn toàn bài, có thể tách thành 3 ý bằng ký tự xuống dòng.
+9. estimated_time: thời lượng học dự kiến, dạng "45 phút".
+10. Câu hỏi kiểm tra (quick_quiz): mỗi câu có đúng 4 phương án, chỉ DUY NHẤT một phương án đúng; phương án nhiễu hợp lý (sai nhưng dễ gây nhầm), không trùng lặp, không vô nghĩa; \`correct_answer\` phải CHÉP NGUYÊN VĂN một phương án có trong \`options\`, không thêm số thứ tự hay dấu ngoặc.
 
 ` + JSON_ONLY + `
 Định dạng JSON bắt buộc:
@@ -442,9 +449,17 @@ Yêu cầu bắt buộc:
   "sections": [
     {
       "heading": "1. Khái niệm cơ bản",
+      "hook": "Một câu dẫn nhập gần gũi, gợi tò mò",
+      "emoji": "🍕",
       "content": "Nội dung giải thích chi tiết, dễ hiểu...",
-      "example": "Ví dụ minh hoạ thực tế...",
-      "key_takeaway": "Ghi nhớ cốt lõi của phần này"
+      "example": "Ví dụ minh hoạ thực tế...\\nBước 1: ...\\nBước 2: ...\\nVậy: ...",
+      "key_takeaway": "Ghi nhớ cốt lõi của phần này",
+      "simulation": {
+        "title": "Tên mô phỏng ngắn",
+        "intro": "Một câu giới thiệu mô phỏng",
+        "steps": ["Bước làm/quan sát thứ nhất", "Bước thứ hai", "Bước thứ ba"],
+        "visual": { "kind": "fraction", "numerator": 3, "denominator": 4 }
+      }
     }
   ],
   "summary": "Tóm tắt toàn bộ bài học",
@@ -475,6 +490,8 @@ export function lessonUser(req) {
     + " phần nội dung (sections) và " + req.quizCount + " câu hỏi kiểm tra (quick_quiz).\n";
   sb += "- Trường \"grade_level\" trong JSON trả về ghi là \"Lớp " + req.grade
     + "\", trường \"subject\" ghi đúng môn học ở trên.\n";
+  sb += "- Mỗi phần (sections) nhớ có \"hook\" và đúng 1 \"emoji\"; thêm \"simulation\" cho TỐI ĐA 2 phần "
+    + "hợp mô phỏng nhất trong bài (phân số, trục số, chia nhóm hoặc quy trình từng bước), các phần còn lại không có trường này.\n";
   if (req.prompt != null && String(req.prompt).trim() !== "") {
     sb += "\n"
       + UNTRUSTED_OPEN + "\n"

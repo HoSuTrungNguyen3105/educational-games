@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, FileText, RotateCcw, Save, Sparkles } from "lucide-react";
+import { ArrowLeft, FileText, FlaskConical, RotateCcw, Save, Sparkles } from "lucide-react";
 import { navigate } from "../../../lib/router.js";
 import { generateLesson } from "../../../services/aiApi.js";
 import { lessonService } from "../../../services/lessonService.js";
 import { setupService } from "../../../services/setupService.js";
 import { isLessonAnswerCorrect } from "../../../components/studio/lessonAnswer.js";
-import LessonPlayer from "../../../components/studio/LessonPlayer.jsx";
+import { LessonPageView } from "../../../components/studio/LessonPlayer.jsx";
 import { ConfirmModal, GhostButton, PrimaryButton, Select } from "../../../components/ui";
 import { useConfirm } from "../../../hooks/useConfirm.js";
 import "./studio.css";
@@ -15,14 +15,17 @@ import "./studio.css";
 //
 // Luồng: giáo viên chọn Môn học (danh mục subjects thật) + Lớp 1–5 + Độ
 // dài, nhập prompt → POST /api/ai/generate-lesson → Backend trả BẢN NHÁP
-// đã đúng schema `lessons` THẬT (chưa lưu DB). Màn hình chia đôi:
-//   • TRÁI: form nhập; sau khi sinh xong là trình sửa CẤU TRÚC của bản
-//     nháp (tiêu đề/mô tả/mục tiêu, từng section, trang tổng kết, từng
-//     câu quiz) — mọi sửa đổi ghi thẳng vào draft.pages theo id phần tử
-//     nên preview cập nhật ngay, không có logic layout thứ hai ở client.
-//   • PHẢI: preview bằng ĐÚNG LessonPlayer thật (chế độ embedded) render
-//     bản nháp hiện tại; bấm vào một phần tử chữ trong preview thì focus
-//     về đúng ô sửa của phần tử đó ở panel trái (ánh xạ qua id phần tử).
+// đã đúng schema `lessons` THẬT (chưa lưu DB). Bố cục khi có bản nháp:
+//   • TRÁI (sticky ở màn hình rộng): trình sửa CẤU TRÚC của bản nháp
+//     (tiêu đề/mô tả/mục tiêu, từng section gồm câu dẫn nhập, các trang
+//     mô phỏng, trang tổng kết, từng câu quiz) — mọi sửa đổi ghi thẳng
+//     vào draft.pages theo id phần tử nên preview cập nhật ngay, không
+//     có logic layout thứ hai ở client.
+//   • PHẢI: bản xem trước DỌC — MỌI trang của bản nháp xếp chồng trong
+//     một cột cuộn, render bằng đúng LessonPageView của LessonPlayer
+//     (không phân trang, không tab ẩn ở bất kỳ kích thước màn hình nào).
+//     Bấm vào BẤT KỲ phần tử nào trong bản dọc → phần tử đó được chọn +
+//     viền nhấn, và panel trái nhảy tới đúng ô sửa của nó (ánh xạ qua id).
 // Lưu: lessonService.create (API lessons hiện hữu) với status draft do
 // server gán → quay về danh sách, mở sửa tiếp bằng StudioEditor như bài
 // thường. Không có endpoint lưu riêng cho luồng AI này.
@@ -42,19 +45,30 @@ const PROMPT_SUGGESTIONS = [
 
 const LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
 const TEXT_TYPES = new Set(["title", "text", "note"]);
+// Màu chữ Backend gán cho phần tử câu dẫn nhập (hook) — khớp hằng số
+// LESSON_HOOK_COLOR phía server (aiDirectService). Nhận diện hook bằng
+// màu này để không nhầm với khối nội dung (cùng cỡ chữ, không có màu).
+const HOOK_COLOR = "#B45309";
 
 /**
  * Dựng bảng ánh xạ cấu trúc từ draft.pages: section nào gồm những phần tử
- * nào (theo đúng thứ tự Backend sinh ra: title → text(content) →
- * text(example) → note(key_takeaway)), trang tổng kết, các câu quiz.
- * Panel sửa và cơ chế click-để-focus đều đi qua bảng này (theo id phần tử).
+ * nào (theo đúng thứ tự Backend sinh ra: title → text(hook, có màu riêng)
+ * → text(content) → text(example) → note(key_takeaway), decor emoji bỏ
+ * qua), các trang mô phỏng, trang tổng kết, các câu quiz. Panel sửa và
+ * cơ chế click-để-chọn đều đi qua bảng này (theo id phần tử).
  */
 function buildBindings(draft) {
   const sections = [];
   const quiz = [];
+  const simulations = [];
   let summary = null;
   for (const page of draft?.pages || []) {
     const elements = page.elements || [];
+    const simEl = elements.find((e) => e.type === "simulation");
+    if (simEl) {
+      simulations.push({ pageId: page.id, elId: simEl.id });
+      continue;
+    }
     const questionEls = elements.filter((e) => e.type === "question");
     if (questionEls.length > 0) {
       for (const el of questionEls) quiz.push({ pageId: page.id, elId: el.id });
@@ -66,15 +80,24 @@ function buildBindings(draft) {
       summary = { pageId: page.id, textElId: textEls[0]?.id || null };
       continue;
     }
+    // Phần tử chữ đầu tiên mang màu hook → câu dẫn nhập; các khối còn lại
+    // giữ thứ tự content → example như trước.
+    let hookElId = null;
+    let restTextEls = textEls;
+    if (textEls.length > 0 && textEls[0].props?.color === HOOK_COLOR) {
+      hookElId = textEls[0].id;
+      restTextEls = textEls.slice(1);
+    }
     sections.push({
       pageId: page.id,
       headingElId: elements.find((e) => e.type === "title")?.id || null,
-      contentElId: textEls[0]?.id || null,
-      exampleElId: textEls[1]?.id || null,
+      hookElId,
+      contentElId: restTextEls[0]?.id || null,
+      exampleElId: restTextEls[1]?.id || null,
       takeawayElId: elements.find((e) => e.type === "note")?.id || null,
     });
   }
-  return { sections, summary, quiz };
+  return { sections, summary, quiz, simulations };
 }
 
 function findElement(draft, elId) {
@@ -92,6 +115,15 @@ function validateDraftForSave(draft) {
   if (!Array.isArray(draft.pages) || draft.pages.length === 0) return "Bài học chưa có trang nội dung nào.";
   for (const page of draft.pages) {
     for (const el of page.elements || []) {
+      if (el.type === "simulation") {
+        // Mirror validate phía server (lessonService): mô phỏng bắt buộc
+        // có tiêu đề + 2–5 bước có nội dung, chặn sớm để khỏi lưu lỗi 400.
+        const p = el.props || {};
+        if (!String(p.title || "").trim()) return "Có mô phỏng đang trống tiêu đề — hãy đặt tiêu đề cho mô phỏng trước khi lưu.";
+        const steps = (Array.isArray(p.steps) ? p.steps : []).filter((s) => String(s || "").trim());
+        if (steps.length < 2 || steps.length > 5) return "Mỗi mô phỏng cần từ 2 đến 5 bước có nội dung — hãy kiểm tra lại các bước của mô phỏng.";
+        continue;
+      }
       if (el.type !== "question") continue;
       const p = el.props || {};
       if (!String(p.prompt || "").trim()) return "Có câu hỏi kiểm tra đang trống nội dung — hãy bổ sung nội dung câu hỏi trước khi lưu.";
@@ -103,12 +135,13 @@ function validateDraftForSave(draft) {
   return null;
 }
 
-/** Payload lưu: bỏ phần tử example/ghi nhớ/tổng kết bị giáo viên xoá trắng
- *  (chúng là phần tuỳ chọn), giữ nguyên phần còn lại đúng như bản nháp. */
+/** Payload lưu: bỏ phần tử hook/example/ghi nhớ/tổng kết bị giáo viên xoá
+ *  trắng (chúng là phần tuỳ chọn), giữ nguyên phần còn lại đúng như bản nháp. */
 function buildSavePayload(draft, bindings) {
   const payload = JSON.parse(JSON.stringify(draft));
   const optionalIds = new Set();
   for (const s of bindings.sections) {
+    if (s.hookElId) optionalIds.add(s.hookElId);
     if (s.exampleElId) optionalIds.add(s.exampleElId);
     if (s.takeawayElId) optionalIds.add(s.takeawayElId);
   }
@@ -132,6 +165,53 @@ function buildSavePayload(draft, bindings) {
   };
 }
 
+/**
+ * Bản xem trước DỌC: render MỌI trang của bản nháp xếp chồng trong một
+ * cột — mỗi trang là đúng LessonPageView mà LessonPlayer dùng (nền
+ * trang, phần tử, câu hỏi bấm trả lời thử được, mô phỏng bấm từng bước
+ * được), kèm dải tiêu đề "Trang N · tên trang". Không phân trang, không
+ * tab: trang nào cũng có mặt trong DOM ngay khi bản nháp hiện ra, ở mọi
+ * kích thước màn hình. Trạng thái trả lời thử giữ nội bộ ở đây (remount
+ * theo key draftVersion khi tạo bài mới nên tự sạch).
+ */
+export function VerticalPreview({ draft, selectedElId, onElementClick }) {
+  const [answers, setAnswers] = useState({});
+  const onAnswerChange = (elId, next) => setAnswers((prev) => ({ ...prev, [elId]: next }));
+  const pages = draft?.pages || [];
+  if (pages.length === 0) {
+    return <p className="text-center text-sm text-ink/55 py-10">Bản nháp chưa có trang nào.</p>;
+  }
+  return (
+    <div className="space-y-5">
+      {pages.map((page, i) => {
+        const hasSim = (page.elements || []).some((e) => e.type === "simulation");
+        return (
+          <div key={page.id} className="rounded-2xl border border-ink/10 bg-white/70 p-3 shadow-sm">
+            <div className="flex items-center gap-2 px-1 pb-2">
+              <span className="rounded-full bg-ink px-2.5 py-0.5 text-xs font-bold text-paper">Trang {i + 1}</span>
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{page.title || `Trang ${i + 1}`}</span>
+              {hasSim && (
+                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold text-white"
+                  style={{ background: "linear-gradient(90deg,#0E7490,#1B998B)" }}>
+                  <FlaskConical className="w-3 h-3" /> Có mô phỏng
+                </span>
+              )}
+            </div>
+            <LessonPageView
+              page={page}
+              answers={answers}
+              onAnswerChange={onAnswerChange}
+              checkAnswer={(el, value) => isLessonAnswerCorrect(el, value)}
+              onElementClick={onElementClick}
+              highlightId={selectedElId}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AiLessonGenerator({ showToast }) {
   const { askConfirm, confirmProps } = useConfirm();
   const [subjects, setSubjects] = useState([]);
@@ -144,7 +224,9 @@ export default function AiLessonGenerator({ showToast }) {
   const [dirty, setDirty] = useState(false);
   const [draftVersion, setDraftVersion] = useState(0);
   const [focusElId, setFocusElId] = useState(null);
+  const [selectedElId, setSelectedElId] = useState(null);
   const fieldRefs = useRef(new Map());
+  const cardRefs = useRef(new Map());
   const focusTimer = useRef(null);
 
   useEffect(() => {
@@ -172,6 +254,12 @@ export default function AiLessonGenerator({ showToast }) {
     else fieldRefs.current.delete(elId);
   };
 
+  const refForCard = (elId) => (node) => {
+    if (!elId) return;
+    if (node) cardRefs.current.set(elId, node);
+    else cardRefs.current.delete(elId);
+  };
+
   /** Bấm vào phần tử chữ trong preview → focus + cuộn tới ô sửa của nó. */
   const focusFieldForElement = (el) => {
     if (!el || !TEXT_TYPES.has(el.type)) return;
@@ -182,6 +270,23 @@ export default function AiLessonGenerator({ showToast }) {
     setFocusElId(el.id);
     if (focusTimer.current) clearTimeout(focusTimer.current);
     focusTimer.current = setTimeout(() => setFocusElId(null), 1800);
+  };
+
+  /**
+   * Bấm vào BẤT KỲ phần tử nào trong bản xem trước dọc → chọn phần tử đó
+   * (viền nhấn trong bản dọc + khoanh thẻ sửa tương ứng ở panel trái):
+   * phần tử chữ thì focus thẳng vào ô nhập như trước; câu hỏi/mô phỏng
+   * thì cuộn tới thẻ sửa của chúng.
+   */
+  const handlePreviewElementClick = (el) => {
+    if (!el) return;
+    setSelectedElId(el.id);
+    if (TEXT_TYPES.has(el.type)) {
+      focusFieldForElement(el);
+      return;
+    }
+    const card = cardRefs.current.get(el.id);
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   const patchDraft = (mutate) => {
@@ -203,6 +308,8 @@ export default function AiLessonGenerator({ showToast }) {
     const el = findElement(d, elId);
     if (el) el.props = { ...(el.props || {}), ...patch };
   });
+  // Cùng cơ chế patch props cho phần tử mô phỏng.
+  const setSimulationProps = setQuestionProps;
   const setOptionContent = (elId, optId, content) => patchDraft((d) => {
     const el = findElement(d, elId);
     if (el) {
@@ -226,6 +333,7 @@ export default function AiLessonGenerator({ showToast }) {
       setDraft(lesson);
       setMeta(m);
       setDirty(false);
+      setSelectedElId(null);
       setDraftVersion((v) => v + 1);
       showToast?.("AI đã soạn xong bản nháp — hãy xem lại nội dung trước khi lưu.", "success");
     } catch (e) {
@@ -250,7 +358,7 @@ export default function AiLessonGenerator({ showToast }) {
   };
 
   const handleBackToForm = () => {
-    const reset = () => { setDraft(null); setMeta(null); setError(""); setDirty(false); };
+    const reset = () => { setDraft(null); setMeta(null); setError(""); setDirty(false); setSelectedElId(null); };
     if (dirty) {
       askConfirm({
         title: "Bỏ bản nháp hiện tại?",
@@ -299,7 +407,7 @@ export default function AiLessonGenerator({ showToast }) {
             <Sparkles className="w-5 h-5 text-[#8B5CF6]" /> Tạo bài học với AI
           </h1>
           <p className="text-sm text-ink/60">
-            AI soạn bản nháp hoàn chỉnh — bạn xem trước như học sinh, bấm vào đoạn chữ trong bản xem trước để sửa, rồi lưu vào danh sách bài học.
+            AI soạn bản nháp hoàn chỉnh kèm mô phỏng tương tác — bản xem trước hiện toàn bộ các trang xếp dọc như học sinh sẽ học, bấm vào phần tử bất kỳ trong bản xem trước để sửa, rồi lưu vào danh sách bài học.
           </p>
         </div>
         {draft && (
@@ -321,8 +429,8 @@ export default function AiLessonGenerator({ showToast }) {
       )}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(400px,5fr)_7fr] items-start">
-        {/* ── Panel trái: form nhập / trình sửa cấu trúc ── */}
-        <section className="note-card p-4 sm:p-5">
+        {/* ── Panel trái: form nhập / trình sửa cấu trúc (sticky ở màn hình rộng) ── */}
+        <section className="note-card p-4 sm:p-5 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
           {!draft ? (
             <div>
               <span className="studio-field-label">Môn học</span>
@@ -392,7 +500,7 @@ export default function AiLessonGenerator({ showToast }) {
                 </GhostButton>
               </div>
               <p className="text-xs text-ink/55 mb-3">
-                Mẹo: bấm vào một đoạn chữ trong bản xem trước bên phải để nhảy tới đúng ô sửa của đoạn đó.
+                Mẹo: bấm vào bất kỳ phần tử nào trong bản xem trước bên phải để nhảy tới đúng chỗ sửa của phần tử đó.
               </p>
 
               <span className="studio-field-label">Tiêu đề bài học</span>
@@ -425,6 +533,7 @@ export default function AiLessonGenerator({ showToast }) {
 
               {bindings.sections.map((s, i) => {
                 const headingEl = s.headingElId ? findElement(draft, s.headingElId) : null;
+                const hookEl = s.hookElId ? findElement(draft, s.hookElId) : null;
                 const contentEl = s.contentElId ? findElement(draft, s.contentElId) : null;
                 const exampleEl = s.exampleElId ? findElement(draft, s.exampleElId) : null;
                 const takeawayEl = s.takeawayElId ? findElement(draft, s.takeawayElId) : null;
@@ -436,6 +545,13 @@ export default function AiLessonGenerator({ showToast }) {
                         <span className="studio-field-label">Tiêu đề phần</span>
                         <input className="studio-field" ref={refFor(s.headingElId)} value={headingEl.props?.text || ""}
                           onChange={(e) => setElementText(s.headingElId, e.target.value)} maxLength={200} />
+                      </div>
+                    )}
+                    {hookEl && (
+                      <div className={fieldWrapClass(s.hookElId)}>
+                        <span className="studio-field-label">Câu dẫn nhập (xoá trắng nếu không cần)</span>
+                        <textarea className="studio-field" ref={refFor(s.hookElId)} rows={2} value={hookEl.props?.text || ""}
+                          onChange={(e) => setElementText(s.hookElId, e.target.value)} />
                       </div>
                     )}
                     {contentEl && (
@@ -463,6 +579,43 @@ export default function AiLessonGenerator({ showToast }) {
                 );
               })}
 
+              {bindings.simulations.map((sim, i) => {
+                const el = findElement(draft, sim.elId);
+                if (!el) return null;
+                const p = el.props || {};
+                return (
+                  <div key={sim.elId} ref={refForCard(sim.elId)}
+                    className={`mt-4 rounded-2xl border bg-paper2/60 p-3 transition ${
+                      selectedElId === sim.elId ? "border-[#0E7490] ring-2 ring-[#0E7490]/40" : "border-ink/10"
+                    }`}>
+                    <p className="font-display font-semibold text-sm text-ink mb-2 flex items-center gap-1.5">
+                      <FlaskConical className="w-4 h-4 text-[#0E7490]" /> Mô phỏng {bindings.simulations.length > 1 ? i + 1 : ""}
+                      <span className="text-xs font-normal text-ink/55">— nằm ở trang riêng ngay sau phần của nó, bấm từng bước ngay trong bản xem trước</span>
+                    </p>
+                    <span className="studio-field-label">Tiêu đề mô phỏng</span>
+                    <input className="studio-field" value={p.title || ""}
+                      onChange={(e) => setSimulationProps(sim.elId, { title: e.target.value })} maxLength={120} />
+                    <span className="studio-field-label">Giới thiệu (có thể để trống)</span>
+                    <input className="studio-field" value={p.intro || ""}
+                      onChange={(e) => setSimulationProps(sim.elId, { intro: e.target.value })} maxLength={300} />
+                    <span className="studio-field-label">Các bước mô phỏng (mỗi dòng một bước, từ 2 đến 5 bước)</span>
+                    <textarea className="studio-field" rows={5}
+                      value={(Array.isArray(p.steps) ? p.steps : []).join("\n")}
+                      onChange={(e) => setSimulationProps(sim.elId, { steps: e.target.value.split("\n") })} />
+                    {p.visual && (
+                      <p className="mt-1 text-xs text-ink/55">
+                        Hình minh hoạ: {p.visual.kind === "fraction"
+                          ? `thanh phân số ${p.visual.numerator}/${p.visual.denominator}`
+                          : p.visual.kind === "numberline"
+                            ? `trục số từ ${p.visual.from} đến ${p.visual.to}, đích ${p.visual.highlight}`
+                            : `${p.visual.groups} nhóm × ${p.visual.perGroup} vật`}
+                        {" "}(AI tạo sẵn theo nội dung bài — sửa số liệu trong Studio sau khi lưu nếu cần).
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+
               {bindings.summary?.textElId && (() => {
                 const summaryEl = findElement(draft, bindings.summary.textElId);
                 return summaryEl ? (
@@ -485,7 +638,10 @@ export default function AiLessonGenerator({ showToast }) {
                     if (!el) return null;
                     const p = el.props || {};
                     return (
-                      <div key={q.elId} className="mb-3 rounded-2xl border border-ink/10 bg-paper2/60 p-3">
+                      <div key={q.elId} ref={refForCard(q.elId)}
+                        className={`mb-3 rounded-2xl border bg-paper2/60 p-3 transition ${
+                          selectedElId === q.elId ? "border-[#8B5CF6] ring-2 ring-[#8B5CF6]/40" : "border-ink/10"
+                        }`}>
                         <span className="studio-field-label">Câu {qi + 1}</span>
                         <textarea className="studio-field" rows={2} value={p.prompt || ""}
                           onChange={(e) => setQuestionProps(q.elId, { prompt: e.target.value })} />
@@ -514,8 +670,8 @@ export default function AiLessonGenerator({ showToast }) {
           )}
         </section>
 
-        {/* ── Panel phải: xem trước bằng LessonPlayer thật ── */}
-        <section className="xl:sticky xl:top-4">
+        {/* ── Panel phải: bản xem trước DỌC — mọi trang hiện cùng lúc ── */}
+        <section>
           {meta?.warnings?.length > 0 && draft && (
             <div className="mb-3 rounded-2xl border border-gold/50 bg-gold/10 px-4 py-3 text-sm text-ink/80">
               <ul className="list-disc pl-5 space-y-0.5">
@@ -523,49 +679,52 @@ export default function AiLessonGenerator({ showToast }) {
               </ul>
             </div>
           )}
-          <div className="relative h-[calc(100vh-230px)] min-h-[560px] rounded-2xl overflow-hidden border border-ink/10 shadow-sm bg-[#FFFBF2]">
-            {generating ? (
-              <div className="absolute inset-0 p-6 animate-pulse" aria-label="AI đang soạn bài">
-                <div className="h-8 w-2/3 rounded-lg bg-ink/10 mb-6" />
-                <div className="space-y-3">
-                  <div className="h-4 rounded bg-ink/10" />
-                  <div className="h-4 rounded bg-ink/10 w-11/12" />
-                  <div className="h-4 rounded bg-ink/10 w-4/5" />
-                  <div className="h-4 rounded bg-ink/10 w-3/5" />
-                </div>
-                <div className="mt-8 h-40 rounded-2xl bg-ink/10" />
-                <div className="mt-6 space-y-3">
-                  <div className="h-4 rounded bg-ink/10 w-2/3" />
-                  <div className="h-4 rounded bg-ink/10 w-1/2" />
-                </div>
-                <p className="mt-8 text-center text-sm text-ink/50 font-medium">AI đang soạn bài, thường mất vài chục giây…</p>
+          {generating ? (
+            <div className="rounded-2xl border border-ink/10 shadow-sm bg-[#FFFBF2] p-6 animate-pulse min-h-[560px]" aria-label="AI đang soạn bài">
+              <div className="h-8 w-2/3 rounded-lg bg-ink/10 mb-6" />
+              <div className="space-y-3">
+                <div className="h-4 rounded bg-ink/10" />
+                <div className="h-4 rounded bg-ink/10 w-11/12" />
+                <div className="h-4 rounded bg-ink/10 w-4/5" />
+                <div className="h-4 rounded bg-ink/10 w-3/5" />
               </div>
-            ) : draft ? (
-              <LessonPlayer
+              <div className="mt-8 h-40 rounded-2xl bg-ink/10" />
+              <div className="mt-6 space-y-3">
+                <div className="h-4 rounded bg-ink/10 w-2/3" />
+                <div className="h-4 rounded bg-ink/10 w-1/2" />
+              </div>
+              <p className="mt-8 text-center text-sm text-ink/50 font-medium">AI đang soạn bài, thường mất vài chục giây…</p>
+            </div>
+          ) : draft ? (
+            <>
+              <VerticalPreview
                 key={draftVersion}
-                embedded
-                preview
-                lesson={draft}
-                checkAnswer={(el, value) => isLessonAnswerCorrect(el, value)}
-                onElementClick={focusFieldForElement}
+                draft={draft}
+                selectedElId={selectedElId}
+                onElementClick={handlePreviewElementClick}
               />
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
-                <Sparkles className="w-10 h-10 text-[#8B5CF6]/60" />
-                <p className="font-display font-semibold text-ink">Bản xem trước sẽ hiện ở đây</p>
-                <p className="text-sm text-ink/60 max-w-sm">
-                  Chọn môn học, lớp và mô tả bài bạn muốn soạn ở panel bên trái, rồi bấm
-                  “✨ Tạo bài học với AI”. Bản nháp hiện ra đúng như học sinh sẽ thấy.
+              {meta && (
+                <p className="mt-3 text-xs text-ink/55">
+                  Bản nháp: {meta.sections ?? bindings.sections.length} phần nội dung
+                  {(meta.simulations ?? bindings.simulations.length) > 0
+                    ? ` · ${meta.simulations ?? bindings.simulations.length} mô phỏng tương tác`
+                    : ""}
+                  {" "}· {meta.generatedQuestions ?? bindings.quiz.length} câu kiểm tra
+                  {meta.droppedQuestions > 0 ? ` · ${meta.droppedQuestions} câu bị AI trả sai định dạng đã được loại` : ""}
+                  {meta.droppedSimulations > 0 ? ` · ${meta.droppedSimulations} mô phỏng bị AI trả sai cấu trúc đã được loại` : ""}.
+                  Toàn bộ {draft.pages?.length || 0} trang đang hiện ở trên — cuộn xuống để xem hết, bấm vào phần tử bất kỳ để sửa nhanh.
                 </p>
-              </div>
-            )}
-          </div>
-          {draft && meta && (
-            <p className="mt-2 text-xs text-ink/55">
-              Bản nháp: {meta.sections ?? bindings.sections.length} phần nội dung · {meta.generatedQuestions ?? bindings.quiz.length} câu kiểm tra
-              {meta.droppedQuestions > 0 ? ` · ${meta.droppedQuestions} câu bị AI trả sai định dạng đã được loại` : ""}.
-              Bấm vào đoạn chữ trong bản xem trước để sửa nhanh.
-            </p>
+              )}
+            </>
+          ) : (
+            <div className="rounded-2xl border border-ink/10 shadow-sm bg-[#FFFBF2] min-h-[420px] flex flex-col items-center justify-center gap-3 p-8 text-center">
+              <Sparkles className="w-10 h-10 text-[#8B5CF6]/60" />
+              <p className="font-display font-semibold text-ink">Bản xem trước sẽ hiện ở đây</p>
+              <p className="text-sm text-ink/60 max-w-sm">
+                Chọn môn học, lớp và mô tả bài bạn muốn soạn ở panel bên trái, rồi bấm
+                “✨ Tạo bài học với AI”. Bản nháp hiện ra đầy đủ mọi trang xếp dọc, đúng như học sinh sẽ học.
+              </p>
+            </div>
           )}
         </section>
       </div>

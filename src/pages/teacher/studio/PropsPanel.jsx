@@ -17,6 +17,7 @@ import { DECOR_EMOJIS } from "./pageTemplates.js";
 const TYPE_LABELS = {
   title: "Tiêu đề", text: "Đoạn văn", note: "Ghi chú",
   image: "Hình ảnh", question: "Câu hỏi", game: "Trò chơi", decor: "Trang trí",
+  simulation: "Mô phỏng",
 };
 
 /** Ô nhập số: hiện text cục bộ, sửa transient, chốt khi blur/Enter.

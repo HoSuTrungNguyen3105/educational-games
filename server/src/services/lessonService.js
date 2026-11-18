@@ -37,7 +37,7 @@ export const MAX_ELEMENTS_PER_PAGE = 100;    // tối đa 100 phần tử / tran
 export const MAX_PAGES_JSON_BYTES = 2 * 1024 * 1024;
 export const MAX_OPTIONS_PER_QUESTION = 10;
 
-export const ELEMENT_TYPES = ["title", "text", "note", "image", "question", "game", "decor"];
+export const ELEMENT_TYPES = ["title", "text", "note", "image", "question", "game", "decor", "simulation"];
 export const QUESTION_TYPES = ["single", "fill"];
 const TEXT_ALIGNS = ["left", "center", "right"];
 const GRADES = [1, 2, 3, 4, 5];
@@ -154,9 +154,76 @@ function normalizeProps(type, rawProps, elLabel) {
     return out;
   }
 
+  if (type === "simulation") {
+    // Mô phỏng tương tác: tiêu đề + các bước ngắn + hình minh hoạ tuỳ chọn.
+    // title/steps là BẮT BUỘC về cấu trúc (thiếu → 400 như mọi lỗi cấu
+    // trúc khác); `visual` thì khoan dung như background của trang: sai
+    // dạng → BỎ visual, không chặn cả lần lưu.
+    const title = normText(props.title, 120).trim();
+    if (!title) {
+      throw fail(400, `${elLabel}: mô phỏng phải có tiêu đề (tối đa 120 ký tự)`);
+    }
+    const out = { title };
+    const intro = normText(props.intro, 300).trim();
+    if (intro) out.intro = intro;
+    if (!Array.isArray(props.steps)) {
+      throw fail(400, `${elLabel}: mô phỏng phải có steps là mảng các bước`);
+    }
+    const steps = props.steps
+      .map((s) => normText(s, 220).trim())
+      .filter(Boolean);
+    if (steps.length < 2 || steps.length > 5) {
+      throw fail(400, `${elLabel}: mô phỏng cần từ 2 đến 5 bước (nhận ${steps.length} bước có nội dung)`);
+    }
+    out.steps = steps;
+    const visual = normalizeSimulationVisual(props.visual);
+    if (visual) out.visual = visual;
+    return out;
+  }
+
   // type === "game": CHỈ giữ tham chiếu gameId (game online trong collection
   // `games`) — không chép HTML/config vào bài học. Runtime thuộc đợt 3.
   return { gameId: normText(props.gameId, 64).trim() };
+}
+
+/**
+ * Hình minh hoạ của phần tử simulation — validate NGẶT từng kind nhưng
+ * khoan dung ở cấp phần tử: bất kỳ sai lệch nào (kind lạ, số ngoài
+ * khoảng, highlight ngoài trục…) đều trả undefined để normalizeProps BỎ
+ * visual thay vì 400 cả bài (cùng triết lý với normalizeBackground).
+ *   fraction:   { numerator: 0..denominator, denominator: 2..12 }
+ *   numberline: { from, to: −100..100, from < to, highlight ∈ [from, to] }
+ *   groups:     { groups: 1..6, perGroup: 1..10 }
+ */
+function normalizeSimulationVisual(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const kind = String(raw.kind || "");
+  const intIn = (v, min, max) => {
+    const n = Number(v);
+    return Number.isInteger(n) && n >= min && n <= max ? n : null;
+  };
+  if (kind === "fraction") {
+    const denominator = intIn(raw.denominator, 2, 12);
+    if (denominator === null) return undefined;
+    const numerator = intIn(raw.numerator, 0, denominator);
+    if (numerator === null) return undefined;
+    return { kind, numerator, denominator };
+  }
+  if (kind === "numberline") {
+    const from = intIn(raw.from, -100, 100);
+    const to = intIn(raw.to, -100, 100);
+    if (from === null || to === null || from >= to) return undefined;
+    const highlight = intIn(raw.highlight, from, to);
+    if (highlight === null) return undefined;
+    return { kind, from, to, highlight };
+  }
+  if (kind === "groups") {
+    const groups = intIn(raw.groups, 1, 6);
+    const perGroup = intIn(raw.perGroup, 1, 10);
+    if (groups === null || perGroup === null) return undefined;
+    return { kind, groups, perGroup };
+  }
+  return undefined;
 }
 
 function normalizeElement(raw, pageLabel) {
