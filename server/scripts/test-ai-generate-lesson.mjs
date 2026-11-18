@@ -6,6 +6,9 @@
 // qua được validator thật (createLesson + publishLesson) của lessonService.
 // Cùng mẫu test-ai-playground: Mongo in-memory + stub fetch tới
 // https://ollama.com, nội dung JSON của "model" đổi được theo từng ca.
+// Mục 10–12: fallback khi JSON mode THROW lỗi gateway (Groq 400 với
+// prompt v2 trên production sau PR #132) — stub trả HTTP lỗi cho lượt
+// JSON mode qua `stubGateway`, service phải lùi về completion thường.
 // KHÔNG dùng key thật, KHÔNG gọi mạng ra ngoài.
 //   node server/scripts/test-ai-generate-lesson.mjs
 import { MongoMemoryServer } from "mongodb-memory-server";
@@ -24,6 +27,10 @@ process.env.MONGODB_DB = "ai_generate_lesson_test";
 process.env.OLLAMA_BASE_URL = "https://ollama.com";
 process.env["OLLAMA" + "_KEY"] = "stub-cloud-key";
 process.env.OLLAMA_MODEL = "gpt-oss:20b";
+// Tắt field `think`: gateway Ollama có retry NỘI BỘ riêng khi HTTP 400 kèm
+// field này (không thuộc phạm vi test) — tắt để 1 lượt gọi model trong stub
+// = đúng 1 request HTTP, đếm lượt gọi ở các ca fallback mới được chính xác.
+process.env.OLLAMA_THINK = "omit";
 
 // ── Stub "model": trả nội dung do test đặt trong `stubContent` ──
 const VALID_LESSON = {
@@ -95,6 +102,13 @@ const VALID_LESSON = {
   ],
 };
 let stubContent = JSON.stringify(VALID_LESSON);
+// Mô phỏng lỗi GATEWAY cho các ca fallback (mục 10–12): khi stubGateway
+// khác null, lượt gọi JSON mode (body.format === "json") nhận HTTP
+// `jsonStatus` thay vì nội dung — gateway THROW AiBackendError TRƯỚC khi
+// có nội dung, đúng lỗi production của Groq sau PR #132. Lượt completion
+// thường (không có format) vẫn trả nội dung: `plainContent` nếu đặt,
+// không thì stubContent như thường. null = hành vi gốc của stub.
+let stubGateway = null;
 
 const realFetch = globalThis.fetch;
 const chatRequests = [];
@@ -108,7 +122,13 @@ globalThis.fetch = async (url, options = {}) => {
     if (u.endsWith("/api/chat")) {
       const body = JSON.parse(options.body || "{}");
       chatRequests.push(body);
-      return json({ message: { role: "assistant", content: stubContent }, done: true });
+      if (stubGateway && body.format === "json") {
+        return new Response(JSON.stringify({ error: "stub provider error" }), {
+          status: stubGateway.jsonStatus, headers: { "Content-Type": "application/json" },
+        });
+      }
+      const content = stubGateway?.plainContent ?? stubContent;
+      return json({ message: { role: "assistant", content }, done: true });
     }
   }
   return realFetch(url, options);
@@ -129,6 +149,10 @@ const base = `http://127.0.0.1:${server.address().port}`;
 
 const student = signToken({ id: "user-hs-gl", username: "hsgl", role: "student", name: "Học Sinh GL" });
 const teacher = signToken({ id: "user-gv-gl", username: "gvgl", role: "teacher", name: "Giáo Viên GL" });
+// Giáo viên thứ hai cho các ca fallback (mục 10–12): rate limit bucket
+// "quiz" tính theo từng user (trần 10/phút) — dùng user riêng để các ca
+// mới không đụng trần của các ca trước trong cùng phút.
+const teacher2 = signToken({ id: "user-gv-gl2", username: "gvgl2", role: "teacher", name: "Giáo Viên GL 2" });
 
 let failed = 0;
 const check = (name, actual, expected) => {
@@ -366,6 +390,66 @@ const okVisualGood = await lessonService.createLesson("user-gv-gl",
   simLesson({ title: "Mô phỏng", intro: "Giới thiệu", steps: ["Bước 1", "Bước 2", "Bước 3"], visual: { kind: "groups", groups: 3, perGroup: 4 } }));
 check("visual groups hợp lệ được giữ nguyên", okVisualGood?.pages?.[0]?.elements?.[0]?.props?.visual, { kind: "groups", groups: 3, perGroup: 4 });
 check("steps giữ nguyên qua validate", okVisualGood?.pages?.[0]?.elements?.[0]?.props?.steps?.length, 3);
+
+// ── 10. FALLBACK: JSON mode THROW lỗi gateway 400 (đúng lỗi production
+//        sau PR #132) → completion thường trả JSON bọc trong lời dẫn +
+//        fence markdown → trích JSON thành công, bản nháp đầy đủ như ca
+//        chuẩn, và có log cảnh báo phân biệt lượt fallback ──
+const chatBeforeFallback = chatRequests.length;
+const warns = [];
+const origWarn = console.warn;
+console.warn = (...args) => { warns.push(args.map(String).join(" ")); origWarn(...args); };
+stubGateway = {
+  jsonStatus: 400,
+  plainContent: "Đây là bài học mình soạn cho lớp của cô:\n```json\n"
+    + JSON.stringify(VALID_LESSON) + "\n```\nCô xem thử nhé!",
+};
+const rFallback = await gen(teacher2, GOOD_INPUT);
+console.warn = origWarn;
+stubGateway = null;
+check("JSON mode 400 → fallback thường → vẫn 200", rFallback.status, 200);
+const fbLesson = rFallback.body?.data?.lesson || {};
+const fbMeta = rFallback.body?.data?.meta || {};
+check("fallback: title lấy từ JSON trích được", fbLesson.title, VALID_LESSON.title);
+check("fallback: đủ 6 trang như ca chuẩn", fbLesson.pages?.length, 6);
+check("fallback: 2 mô phỏng còn nguyên", fbMeta.simulations, 2);
+check("fallback: visual fraction giữ nguyên",
+  (fbLesson.pages || []).flatMap((p) => p.elements || []).find((e) => e.type === "simulation")?.props?.visual,
+  { kind: "fraction", numerator: 3, denominator: 4 });
+checkTrue("fallback: mọi trang có background pastel",
+  (fbLesson.pages || []).every((p) => p.background?.type === "color" && /^#[0-9a-fA-F]{6}$/.test(p.background?.value || "")));
+const fbReqs = chatRequests.slice(chatBeforeFallback);
+check("fallback: đúng 2 lượt gọi model (1 JSON + 1 thường)", fbReqs.length, 2);
+check("fallback: lượt đầu là JSON mode", fbReqs[0]?.format, "json");
+check("fallback: lượt hai là completion THƯỜNG (không format)", fbReqs[1]?.format ?? null, null);
+const fbUser = fbReqs[1]?.messages?.find((m) => m.role === "user")?.content || "";
+checkTrue("fallback: prompt thường kèm chỉ thị ép JSON", fbUser.includes("Chỉ trả về ĐÚNG MỘT đối tượng JSON"), fbUser.slice(-200));
+checkTrue("fallback: có log warn phân biệt lượt fallback",
+  warns.some((w) => w.includes("generate-lesson") && w.includes("completion thường")), warns.join(" | "));
+
+// ── 11. FALLBACK THẤT BẠI: JSON mode throw 400 + completion thường trả
+//        rác ở mọi lượt → lỗi thân thiện 502 như cũ, đúng trần 3 lượt gọi
+//        (1 JSON + 2 thường), không tạo dữ liệu ──
+const chatBeforeFbFail = chatRequests.length;
+stubGateway = { jsonStatus: 400, plainContent: "Xin lỗi cô, đây là câu trả lời thường, không có JSON nào cả {{{" };
+const rFbFail = await gen(teacher2, GOOD_INPUT);
+stubGateway = null;
+check("fallback trả rác → 502", rFbFail.status, 502);
+checkTrue("fallback rác: thông điệp lỗi thân thiện như cũ",
+  String(rFbFail.body?.msg || "").includes("định dạng bài học"), rFbFail.body?.msg);
+check("fallback rác: đúng trần 3 lượt gọi model", chatRequests.length - chatBeforeFbFail, 3);
+check("fallback rác: response không kèm bản nháp", rFbFail.body?.data ?? null, null);
+
+// ── 12. 429 từ JSON mode → ném ra NGAY: không fallback, không thử lại
+//        (đúng 1 lượt gọi model), envelope mang errorCode AI_RATE_LIMITED ──
+const chatBefore429 = chatRequests.length;
+stubGateway = { jsonStatus: 429 };
+const r429 = await gen(teacher2, GOOD_INPUT);
+stubGateway = null;
+check("429 từ JSON mode → HTTP 429", r429.status, 429);
+check("429: errorCode AI_RATE_LIMITED", r429.body?.errorCode, "AI_RATE_LIMITED");
+check("429: chỉ đúng 1 lượt gọi model (không fallback)", chatRequests.length - chatBefore429, 1);
+check("429: lượt duy nhất là JSON mode", chatRequests[chatBefore429]?.format, "json");
 
 console.log(failed === 0 ? "\nALL PASS" : `\n${failed} CHECK(S) FAILED`);
 server.close();
