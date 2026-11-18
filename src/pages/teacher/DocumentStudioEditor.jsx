@@ -44,8 +44,10 @@ import "./documents/docstudio.css";
 //
 // Hai chế độ soạn (HTML/CSS ⇄ JSON) dùng chung MỘT mô hình trung gian
 // (src/lib/documents):
-//   • "Áp dụng" (Apply) mới đưa mã nguồn vào preview — mã lỗi thì preview
-//     giữ bản hợp lệ gần nhất, nội dung đang sửa không bao giờ bị mất.
+//   • Áp dụng REALTIME: mã nguồn tự đưa vào preview sau 600ms ngừng sửa
+//     (không còn nút "Áp dụng thay đổi") — mã lỗi thì preview giữ bản
+//     hợp lệ gần nhất, nội dung đang sửa không bao giờ bị mất; autosave
+//     chỉ lưu khi bản nháp hiện tại đã áp dụng thành công.
 //   • Mỗi chế độ có bản nháp riêng trong state; chuyển tab không ghi đè
 //     nhau. Chế độ đích đang trống → tự chuyển đổi từ chế độ hiện tại;
 //     muốn đồng bộ lại khi đích đã có nháp → nút "Chuyển đổi từ …" (có
@@ -96,6 +98,11 @@ const RAIL_ITEMS = [
 ];
 
 const MAX_PREVIEW_ZOOM = 2;
+
+// Áp dụng realtime: ngừng sửa 600ms là mã nguồn tự chạy qua pipeline áp
+// dụng vào preview — đủ lâu để gõ liên tục không giật, đủ nhanh để giáo
+// viên thấy preview bám theo gần như tức thì.
+const APPLY_DEBOUNCE_MS = 600;
 
 // Tên hiển thị của hai chế độ soạn (REFACTOR_EDITOR §1): giá trị nội bộ
 // vẫn là "json" / "html" như cũ, chỉ nhãn cho giáo viên đổi — Normal =
@@ -173,6 +180,11 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     [savedSnapshot, name, docType, mode, draft]);
   const validApplied = applied && applied.docType === docType ? applied : null;
   const appliedStale = validApplied ? appliedSource !== draft || validApplied.mode !== mode : false;
+  // Trạng thái áp dụng realtime ở chân khung soạn: "error" (lần áp dụng
+  // gần nhất thất bại — preview đang giữ bản hợp lệ gần nhất), "pending"
+  // (bản nháp đã khác bản đang xem trước, đang chờ nhịp debounce),
+  // "applied" (preview khớp đúng bản nháp hiện tại).
+  const applyStatus = applyErrors.length ? "error" : appliedStale ? "pending" : "applied";
   // Thống kê chân khung soạn: tính từ model đã áp dụng (khớp preview).
   const docStats = useMemo(() => documentStats(validApplied?.model), [validApplied]);
   const draftKb = useMemo(() => new Blob([draft]).size / 1024, [draft]);
@@ -248,24 +260,44 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     return () => { alive = false; };
   }, [documentId]);
 
-  // ── Áp dụng mã nguồn hiện tại vào preview ─────────────────────────────
-  const doApply = useCallback((src, md, dt) => {
+  // ── Áp dụng mã nguồn vào preview (pipeline dùng chung) ────────────────
+  // Thành công → thay `applied` + xoá lỗi. Thất bại → CHỈ ghi lỗi, preview
+  // giữ nguyên bản hợp lệ gần nhất (không ghi đè tài liệu tốt). Tuỳ chọn
+  // keepSlide: áp dụng realtime trong lúc soạn thì GIỮ slide đang xem
+  // (chỉ kẹp lại khi slide đó đã bị xoá) thay vì nhảy về slide đầu như
+  // các lần áp dụng chủ động (chuyển chế độ, nạp mẫu…).
+  const doApply = useCallback((src, md, dt, opts = {}) => {
     const res = applySource(src, md, dt);
     if (res.ok) {
       setApplied(buildApplied(md, dt, res));
       setAppliedSource(src);
       setApplyErrors([]);
-      setSlideIndex(0); // nội dung mới áp dụng → preview về slide đầu (như đợt 1)
+      if (opts.keepSlide) {
+        const count = Array.isArray(res.model?.slides) ? res.model.slides.length : 0;
+        if (count > 0) setSlideIndex((i) => Math.min(i, count - 1));
+      } else {
+        setSlideIndex(0); // nội dung mới áp dụng → preview về slide đầu (như đợt 1)
+      }
       return true;
     }
     setApplyErrors(res.errors);
     return false;
   }, []);
 
-  const handleApply = () => {
-    if (doApply(draft, mode, docType)) showToast?.("Đã áp dụng — preview đã cập nhật", "success");
-    else showToast?.("Mã nguồn đang có lỗi — preview giữ bản hợp lệ gần nhất", "error");
-  };
+  // ── Áp dụng REALTIME: ngừng sửa 600ms là tự áp dụng ───────────────────
+  // Mọi thay đổi ở khung mã nguồn (gõ tay, chèn snippet, Format, dán…)
+  // đều chảy qua `drafts` nên chỉ cần MỘT effect canh bản nháp hiện tại:
+  // sau APPLY_DEBOUNCE_MS không đổi nữa thì chạy ĐÚNG pipeline doApply.
+  // Các thao tác vốn đã áp dụng ngay tại chỗ (chuyển chế độ, nạp mẫu,
+  // nhập file, thao tác slide, chèn khối JSON…) khiến appliedSource khớp
+  // bản nháp → effect tự bỏ qua: không áp dụng hai lần, không vòng lặp
+  // (áp dụng xong appliedSource === draft, effect dừng hẳn).
+  useEffect(() => {
+    if (loading) return undefined;
+    if (applied && appliedSource === draft && applied.mode === mode && applied.docType === docType) return undefined;
+    const t = setTimeout(() => { doApply(draft, mode, docType, { keepSlide: true }); }, APPLY_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [loading, draft, mode, docType, applied, appliedSource, doApply]);
 
   // ── Click editor → preview cuộn tới + bôi xanh đoạn tương ứng ─────────
   // Con trỏ đặt vào dòng nào thì ánh xạ sang khối/slide (JSON) hoặc thẻ
@@ -432,8 +464,13 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
 
   // Tự động lưu bản nháp: 2,5 giây sau khi ngừng sửa. Mỗi snapshot chỉ
   // thử một lần — mất mạng thì không lặp vô hạn; sửa tiếp sẽ thử lại.
+  // CHỈ lưu bản đã áp dụng thành công (realtime): mã đang lỗi cú pháp
+  // (appliedStale) thì không ghi đè bản tốt trên máy chủ bằng trạng thái
+  // hỏng — sửa đúng, áp dụng được là tự lưu tiếp. Lưu tay (nút Lưu) vẫn
+  // lưu nguyên bản nháp theo chủ ý của giáo viên như cũ.
   useEffect(() => {
     if (!autosave || loading || !isDirty) return undefined;
+    if (!validApplied || appliedStale) return undefined;
     const snap = snapshotOf({ name: name.trim(), docType, mode, source: draft });
     if (autoAttemptRef.current === snap) return undefined;
     const t = setTimeout(() => {
@@ -441,7 +478,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
       saveDocument({ quiet: true });
     }, 2500);
     return () => clearTimeout(t);
-  }, [autosave, loading, isDirty, name, docType, mode, draft, saveDocument]);
+  }, [autosave, loading, isDirty, name, docType, mode, draft, saveDocument, validApplied, appliedStale]);
 
   useEffect(() => {
     try { localStorage.setItem("docstudio.autosave", autosave ? "on" : "off"); } catch { /* trình duyệt chặn — bỏ qua */ }
@@ -562,7 +599,8 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
       setDrafts((d) => ({ ...d, json: src }));
       // Preview dựng từ model chuyển TRỰC TIẾP (không qua validate) để
       // slide khung sườn "image" chưa có src vẫn hiện khung nhắc trong
-      // preview; bấm Áp dụng sau đó sẽ báo đúng trường src cần điền.
+      // preview; lần áp dụng tự động kế tiếp (khi sửa mã) sẽ báo đúng
+      // trường src cần điền.
       setApplied(buildApplied("json", "powerpoint", { model: presentationJsonToModel(result.json) }));
       setAppliedSource(src);
       setApplyErrors([]);
@@ -611,7 +649,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
       return false;
     }
     if (!stay) setTool("content");
-    showToast?.("Đã chèn vào mã nguồn — bấm Áp dụng thay đổi để xem trước.", "success");
+    showToast?.("Đã chèn vào mã nguồn — preview tự cập nhật.", "success");
     return true;
   };
 
@@ -1208,7 +1246,9 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                   {applyErrors.length ? <FileWarning className="w-4 h-4" /> : <Check className="w-4 h-4" />}
                   {applyErrors.length ? "Mã nguồn có lỗi" : "Mã nguồn hợp lệ"}
                 </span>
-                {appliedStale && !applyErrors.length && <span className="docstudio-stale">• Chưa áp dụng</span>}
+                {applyStatus === "error" && <span className="docstudio-stale">• Chưa áp dụng được — lỗi cú pháp</span>}
+                {applyStatus === "pending" && <span className="docstudio-stale">• Đang áp dụng…</span>}
+                {applyStatus === "applied" && <span className="docstudio-applied">• Đã áp dụng</span>}
                 {docStats && (
                   <span className="docstudio-stats">
                     {docStats.kind === "presentation" ? `${docStats.count} slide` : `${docStats.count} khối`}
@@ -1220,9 +1260,6 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                   title={`Chuyển đổi nội dung từ ${modeName(mode === "html" ? "json" : "html")} sang chế độ hiện tại`}>
                   <ArrowLeftRight className="w-3.5 h-3.5" />
                   <span className="hidden xl:inline">Chuyển đổi</span>
-                </button>
-                <button type="button" className="docstudio-apply" onClick={handleApply}>
-                  <Play className="w-4 h-4" /> Áp dụng thay đổi
                 </button>
               </div>
             </section>
@@ -1238,7 +1275,11 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                 <span className="docstudio-preview-title">
                   Xem trước {docType === "word" ? "— trang A4" : "— slide"}
                 </span>
-                {appliedStale && <span className="docstudio-stale">(chưa áp dụng thay đổi mới nhất)</span>}
+                {appliedStale && (
+                  <span className="docstudio-stale">
+                    {applyErrors.length ? "(mã nguồn có lỗi — đang xem bản hợp lệ gần nhất)" : "(đang áp dụng…)"}
+                  </span>
+                )}
                 <span className="flex-1" />
                 <button type="button" className="docstudio-zoom-btn"
                   onClick={closePreview} title="Đóng khung xem trước" aria-label="Đóng khung xem trước">
