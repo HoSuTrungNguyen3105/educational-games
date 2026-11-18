@@ -16,8 +16,12 @@ import AllQuestionsManagement from './AllQuestionsManagement.jsx'
  *
  * `initialView` ('byGame' | 'all') cho phép link cũ /dashboard/all-questions
  * (TeacherApp chuyển hướng kèm sessionStorage) mở thẳng góc nhìn "Tất cả".
+ *
+ * `bankDocs`/`bankSubjects` là danh sách câu hỏi ngân hàng của trang cha —
+ * truyền xuống để góc nhìn Theo game có nút "Lấy từ ngân hàng câu hỏi"
+ * (BankQuestionPickerModal) mà không phải nạp lại dữ liệu.
  */
-export default function GameQuestionsPanel({ showToast, initialView = 'byGame' }) {
+export default function GameQuestionsPanel({ showToast, initialView = 'byGame', bankDocs = [], bankSubjects = [] }) {
   const [view, setView] = useState(initialView === 'all' ? 'all' : 'byGame')
 
   const pill = (active) => `px-4 py-2 rounded-lg text-sm font-semibold transition ${active ? 'bg-white shadow text-ink border border-ink/10' : 'text-ink/60 hover:text-ink'}`
@@ -33,7 +37,7 @@ export default function GameQuestionsPanel({ showToast, initialView = 'byGame' }
         </button>
       </div>
       {view === 'byGame' ? (
-        <QuestionManagement showToast={showToast} />
+        <QuestionManagement showToast={showToast} bankDocs={bankDocs} bankSubjects={bankSubjects} />
       ) : (
         <AllQuestionsManagement showToast={showToast} />
       )}

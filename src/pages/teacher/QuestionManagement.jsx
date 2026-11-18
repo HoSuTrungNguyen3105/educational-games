@@ -5,12 +5,13 @@ import { rangeAll } from '../../lib/rangePagination.js'
 import { gameLabel } from '../../lib/gameLabel.js'
 import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState, ErrorState } from '../../components/ui'
 import QuestionImportModal from './QuestionImportModal.jsx'
+import BankQuestionPickerModal from './BankQuestionPickerModal.jsx'
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 
 const EMPTY_Q = { content: "", options: [{ id: "", content: "" }, { id: "", content: "" }, { id: "", content: "" }], correctAnswer: "", timeLimit: 15, points: 100 };
 
-export default function QuestionManagement({ showToast }) {
+export default function QuestionManagement({ showToast, bankDocs = [], bankSubjects = [] }) {
   const [games, setGames] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
   const [questions, setQuestions] = useState(null);
@@ -21,6 +22,7 @@ export default function QuestionManagement({ showToast }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, item: null });
   const [importOpen, setImportOpen] = useState(false);
+  const [bankPickerOpen, setBankPickerOpen] = useState(false);
 
   const loadGames = useCallback(() => {
     setGames(null); setError(null);
@@ -40,6 +42,7 @@ export default function QuestionManagement({ showToast }) {
     setSelectedGame(gameId || null);
     setQuestions(null);
     setModalOpen(false);
+    setBankPickerOpen(false);
     setEditingIdx(null);
   };
 
@@ -181,9 +184,15 @@ export default function QuestionManagement({ showToast }) {
           className="w-full mt-1 px-3 py-2 rounded-lg border border-ink/10 bg-white text-sm"
         >
           <option value="">-- Chọn game --</option>
-          {games?.map(g => (
-            <option key={g._id} value={g._id}>{gameLabel(g)} ({g.questionsCount || 0} câu)</option>
-          ))}
+          {games?.map(g => {
+            // questionsCount trong response /games đã là số câu THẬT (server
+            // đếm lại từ collection questions) — game 0 câu ghi thêm
+            // "— chưa có câu hỏi" để giáo viên thấy ngay game đang trống.
+            const n = g.questionsCount || 0;
+            return (
+              <option key={g._id} value={g._id}>{gameLabel(g)} ({n} câu){n === 0 ? " — chưa có câu hỏi" : ""}</option>
+            );
+          })}
         </select>
       </div>
 
@@ -195,10 +204,23 @@ export default function QuestionManagement({ showToast }) {
         <ManagementTable
           viewKey="questions-by-game"
           title={`Câu hỏi — ${selectedGameObj ? gameLabel(selectedGameObj) : ""}`}
+          count={questions ? questions.length : undefined}
           data={questions}
           error={!questions ? error : null}
           onRetry={loadQuestions}
-          emptyLabel="Chưa có câu hỏi nào."
+          emptyLabel={questions && questions.length === 0 ? (
+            <div className="space-y-3 py-2">
+              <p>
+                Game này chưa có câu hỏi nào. Học sinh mở game sẽ không có gì để chơi —
+                hãy thêm câu hỏi đầu tiên bằng một trong ba cách:
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <PrimaryButton onClick={openCreate}>+ Thêm câu hỏi</PrimaryButton>
+                <GhostButton onClick={() => setImportOpen(true)}>Import từ file</GhostButton>
+                <GhostButton onClick={() => setBankPickerOpen(true)}>Lấy từ ngân hàng câu hỏi</GhostButton>
+              </div>
+            </div>
+          ) : "Chưa có câu hỏi nào."}
           onCreate={openCreate}
           onImport={() => setImportOpen(true)}
           onRemoveAll={questions && questions.length > 0 ? confirmRemoveAll : null}
@@ -314,6 +336,19 @@ export default function QuestionManagement({ showToast }) {
           : `Xóa "${confirm.item?.q?.content?.slice(0, 60)}..."?`}
         onConfirm={confirm.item?._all ? doRemoveAll : doRemove}
         onClose={() => setConfirm({ open: false, item: null })} />
+
+      {bankPickerOpen && selectedGame && (
+        <BankQuestionPickerModal
+          docs={bankDocs}
+          subjects={bankSubjects}
+          gameId={selectedGame}
+          gameName={selectedGameObj ? gameLabel(selectedGameObj) : ""}
+          linkedBankIds={new Set((questions || []).map(q => q.bankId).filter(Boolean))}
+          showToast={showToast}
+          onClose={() => setBankPickerOpen(false)}
+          onLinked={() => { loadQuestions(); loadGames(); }}
+        />
+      )}
 
       {importOpen && selectedGame && (
         <QuestionImportModal

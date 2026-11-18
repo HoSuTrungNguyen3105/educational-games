@@ -422,7 +422,7 @@ export default function QuestionBankManagement({ showToast }) {
       {tab === 'sets' ? (
         <QuestionSetsPanel docs={docs} subjects={subjects} showToast={showToast} />
       ) : tab === 'byGame' ? (
-        <GameQuestionsPanel showToast={showToast} initialView={gameViewSeed === 'all' ? 'all' : 'byGame'} />
+        <GameQuestionsPanel showToast={showToast} initialView={gameViewSeed === 'all' ? 'all' : 'byGame'} bankDocs={docs} bankSubjects={subjects} />
       ) : (
       <>
       <div className="flex flex-wrap gap-2">
