@@ -328,8 +328,6 @@ export const EXAM_002 = {
           explanationVi:
             "Các nhà nghiên cứu cảnh báo đường ồn ào và vỉa hè đông đúc 'remove the advantage' → A đúng. D trái ngược; B và C diễn giải sai mục đích của cảnh báo.",
         },
-      ],
-    },
         {
           id: 21,
           type: "multiple_choice",
