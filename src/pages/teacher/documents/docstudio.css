@@ -742,21 +742,9 @@
   white-space: nowrap;
 }
 .docstudio-convert-btn:hover { background: var(--doc-accent-soft); border-color: var(--doc-accent-line); color: var(--doc-accent-dark); }
-.docstudio-apply {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 15px;
-  border-radius: 9px;
-  color: #fff;
-  background: var(--doc-accent);
-  font-family: "Be Vietnam Pro", sans-serif;
-  font-size: 12.5px;
-  font-weight: 700;
-  white-space: nowrap;
-  box-shadow: 0 4px 10px rgba(29, 46, 74, 0.14);
-}
-.docstudio-apply:hover { background: var(--doc-accent-dark); }
+/* Trạng thái áp dụng realtime ở chân khung soạn: "Đã áp dụng" lặng,
+   xanh lá dịu; "Đang áp dụng…" / "Chưa áp dụng được" dùng .docstudio-stale. */
+.docstudio-applied { font-family: "Be Vietnam Pro", sans-serif; font-size: 11px; font-weight: 600; color: #15803d; white-space: nowrap; }
 
 .docstudio-divider {
   width: 8px;
@@ -1219,6 +1207,7 @@
   border-top-color: #2c3338;
 }
 [data-theme="dark"] .docstudio-stats { color: #a7aaad; }
+[data-theme="dark"] .docstudio-applied { color: #4ade80; }
 [data-theme="dark"] .docstudio-img-error {
   color: #fca5a5;
   background: rgba(239, 68, 68, 0.12);
