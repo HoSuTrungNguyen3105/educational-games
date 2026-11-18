@@ -1200,6 +1200,97 @@ function normalizeAiLesson(root) {
   };
 }
 
+/** Lỗi hết quota/giới hạn lượt gọi của provider (HTTP 429) — nhận diện qua mọi dấu hiệu hai gateway dùng. */
+function isProviderRateLimit(e) {
+  return e instanceof AiBackendError
+    && (e.kind === "rateLimited" || e.code === "AI_RATE_LIMITED"
+      || e.providerStatus === 429 || e.http_code === 429);
+}
+
+/** Chỉ thị ép JSON cho lượt fallback completion thường (lượt này không có JSON mode đỡ lưng). */
+const LESSON_JSON_ONLY_SUFFIX =
+  "\n\nLƯU Ý BẮT BUỘC: Chỉ trả về ĐÚNG MỘT đối tượng JSON hợp lệ theo đúng cấu trúc đã mô tả ở trên. "
+  + "Không thêm bất kỳ chữ nào ngoài JSON: không lời giải thích, không câu chào, không khối markdown.";
+
+/**
+ * Lấy object JSON gốc của bài học từ model — trả object, hoặc null khi mọi
+ * lượt đều không parse được (caller ném thông điệp lỗi thân thiện như cũ).
+ *
+ * Đường chính: JSON mode (llmCompleteJson); nội dung trả về mà không parse
+ * được object thì thử lại đúng 1 lượt như trước đây.
+ *
+ * FALLBACK (sửa lỗi production sau PR #132): prompt v2 — schema JSON lồng
+ * nhau (sections + hook + simulation{steps, visual{…}} + quick_quiz) —
+ * khiến Groq bác bỏ ở tầng JSON mode bằng HTTP 400 (failed generation):
+ * gateway THROW AiBackendError TRƯỚC khi có nội dung nên vòng thử lại
+ * parse ở trên không bao giờ cứu được, trong khi chat thường (không JSON
+ * mode) và sinh câu hỏi (JSON đơn giản hơn) vẫn khỏe cùng lúc. Khi lượt
+ * JSON mode throw lỗi gateway, chuyển sang completion THƯỜNG với cùng
+ * prompt + chỉ thị ép JSON rồi trích JSON từ văn bản trả về bằng
+ * extractJsonPayload (bỏ fence markdown, lấy object JSON đầu tiên parse
+ * được) — đưa vào đúng pipeline validate/chuyển đổi phía sau.
+ *
+ * Ngân sách lượt gọi model — trần cứng 3 cho MỘT lần sinh bài: mỗi đường
+ * (JSON mode / fallback thường) tối đa `1 + jsonRetryAttempts` lượt như
+ * tinh thần thử lại 1 lần hiện có, và tổng cả hai đường không vượt trần.
+ * Ngoại lệ duy nhất: 429 của provider — hết quota thì ném ra NGAY ở bất
+ * kỳ đường nào, không thử lại, không fallback (thử thêm chỉ tốn lượt).
+ * Lỗi gateway của CHÍNH fallback: mọi lượt fallback đều throw (hạ tầng
+ * sập hẳn, không lượt nào trả nội dung) thì ném lại lỗi gateway cuối —
+ * đúng bản chất sự cố hơn là báo "sai định dạng".
+ */
+async function fetchLessonRoot(userPrompt) {
+  const system = lessonSystem();
+  const attemptsPerPath = LESSON_LIMITS.jsonRetryAttempts + 1;
+  const MAX_TOTAL_CALLS = 3;
+  let calls = 0;
+  const parseRoot = (raw) => {
+    const parsed = extractJsonPayload(raw);
+    return parsed != null && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  };
+  const describe = (e) => `${e?.kind || "error"}${e?.providerStatus ? `/HTTP ${e.providerStatus}` : ""}: ${e?.message || e}`;
+
+  let gatewayError = null;
+  for (let attempt = 0; attempt < attemptsPerPath && calls < MAX_TOTAL_CALLS; attempt += 1) {
+    calls += 1;
+    let raw;
+    try {
+      raw = await llmCompleteJson(system, [{ role: "user", content: userPrompt }]);
+    } catch (e) {
+      if (isProviderRateLimit(e)) throw e;
+      gatewayError = e;
+      console.warn(`[ai] generate-lesson: JSON mode lỗi gateway ở lượt ${attempt + 1} (${describe(e)}) `
+        + "— chuyển sang completion thường (fallback trích JSON từ văn bản).");
+      break;
+    }
+    const root = parseRoot(raw);
+    if (root != null) return root;
+    console.warn(`[ai] generate-lesson: JSON không hợp lệ ở lượt ${attempt + 1}, thử lại.`);
+  }
+  if (gatewayError == null) return null;
+
+  let lastFallbackError = null;
+  let fallbackSawContent = false;
+  for (let attempt = 0; attempt < attemptsPerPath && calls < MAX_TOTAL_CALLS; attempt += 1) {
+    calls += 1;
+    let raw;
+    try {
+      raw = await llmComplete(system, [{ role: "user", content: userPrompt + LESSON_JSON_ONLY_SUFFIX }]);
+    } catch (e) {
+      if (isProviderRateLimit(e)) throw e;
+      lastFallbackError = e;
+      console.warn(`[ai] generate-lesson: fallback completion thường lỗi gateway ở lượt ${attempt + 1} (${describe(e)}).`);
+      continue;
+    }
+    fallbackSawContent = true;
+    const root = parseRoot(raw);
+    if (root != null) return root;
+    console.warn(`[ai] generate-lesson: fallback trả văn bản không trích được JSON ở lượt ${attempt + 1}, thử lại.`);
+  }
+  if (!fallbackSawContent && lastFallbackError != null) throw lastFallbackError;
+  return null;
+}
+
 async function directGenerateLesson(body) {
   const input = body != null && typeof body === "object" ? body : {};
   const prompt = cleanText(typeof input.prompt === "string" ? input.prompt : "", LESSON_LIMITS.maxPromptLength);
@@ -1222,17 +1313,9 @@ async function directGenerateLesson(body) {
     lengthLabel: length.label, sections: length.sections, quizCount: length.quiz,
   }));
 
-  // JSON hỏng/không phải object → thử lại đúng 1 lượt như pipeline quiz.
-  let root = null;
-  for (let attempt = 0; attempt <= LESSON_LIMITS.jsonRetryAttempts; attempt += 1) {
-    const raw = await llmCompleteJson(lessonSystem(), [{ role: "user", content: userPrompt }]);
-    const parsed = extractJsonPayload(raw);
-    if (parsed != null && typeof parsed === "object" && !Array.isArray(parsed)) {
-      root = parsed;
-      break;
-    }
-    console.warn(`[ai] generate-lesson: JSON không hợp lệ ở lượt ${attempt + 1}, thử lại.`);
-  }
+  // Lấy JSON gốc: JSON mode trước; gateway throw (vd Groq 400 với prompt
+  // v2) → fallback completion thường + trích JSON — xem fetchLessonRoot.
+  const root = await fetchLessonRoot(userPrompt);
   if (root == null) {
     throw new AiBackendError(
       "AI trả về dữ liệu không đúng định dạng bài học. Hãy thử lại, hoặc viết yêu cầu soạn bài cụ thể hơn.",
