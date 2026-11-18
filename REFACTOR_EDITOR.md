@@ -1,96 +1,97 @@
-Hãy tiếp tục nâng cấp giao diện và chức năng tại trang `#/dashboard/documents/` dựa trên giao diện hiện tại.
+# NÂNG CẤP DOCUMENT STUDIO
 
-### 1. Hoàn thiện chức năng Preview và In (Print)
+Chỉ thực hiện tại trang `#/dashboard/documents/`. Hãy kiểm tra code hiện tại trước khi triển khai, giữ lại những chức năng đang hoạt động tốt và tập trung nâng cấp UI/UX.
 
-Hiện tại khu vực Preview A4 đã có nút In (Print) nhưng chưa có action thực tế.
+## 1. Cập nhật tên nút chuyển đổi chế độ
+
+Giữ nguyên chức năng hiện tại, chỉ đổi tên hai nút:
+
+- **JSON → Normal:** Giữ nguyên chức năng hiển thị và chỉnh sửa JSON.
+- **HTML/CSS → Beautiful:** Giữ nguyên chức năng hiển thị và chỉnh sửa HTML/CSS.
+
+Yêu cầu UI/UX:
+- Thiết kế lại hai nút theo phong cách hiện đại, chuyên nghiệp.
+- Làm nổi bật chế độ đang được chọn.
+- Có hiệu ứng chuyển đổi mượt mà giữa hai chế độ.
+- Cải thiện màu sắc, typography, trạng thái hover và active.
+- Không thay đổi logic xử lý hoặc cơ chế đồng bộ dữ liệu hiện tại.
+
+## 2. Xây dựng thư viện mẫu chọn nhanh
+
+Các thành phần trong Sidebar cần có trải nghiệm giống một thư viện mẫu trong trình soạn thảo chuyên nghiệp.
+
+Yêu cầu:
+- Mỗi mẫu hiển thị dưới dạng card nhỏ, có tên, biểu tượng và bản xem trước.
+- Có thanh tìm kiếm theo từ khóa.
+- Có bộ lọc theo nhóm.
+- Khi chọn mẫu, cho phép xem trước hoặc chèn trực tiếp vào vị trí hiện tại trong tài liệu.
+- Có thể tùy chỉnh nội dung sau khi chèn.
+- Các mẫu ưu tiên phục vụ giáo dục tiểu học, giáo án, phiếu bài tập và tài liệu học tập.
+- Hỗ trợ tương thích với cả Normal và Beautiful.
+
+## 3. Sửa lỗi thanh cuộn trong Preview A4
+
+Hiện tại khu vực Preview bên phải xuất hiện thanh cuộn bên trong khung Word/PDF.
+
+Hãy sửa lại để:
+
+- Chỉ có **một thanh cuộn dọc duy nhất ở bên ngoài khu vực Preview**.
+- Không hiển thị thanh cuộn riêng bên trong từng trang A4 hoặc khung nội dung tài liệu.
+- Khi cuộn, toàn bộ các trang A4 di chuyển liên tục cùng nhau.
+- Hỗ trợ nhiều trang A4 liên tiếp.
+- Giữ nguyên chức năng zoom, phóng to, thu nhỏ.
+- Không làm mất nội dung hoặc khiến trang bị cắt, tràn.
+
+Mục tiêu là tạo trải nghiệm đọc tài liệu giống một trình xem Word/PDF chuyên nghiệp.
+
+## 4. Tối ưu Padding và không gian giao diện
+
+Hiện tại trang Documents có khá nhiều khoảng padding và khoảng trống chưa cần thiết.
+
+Hãy:
+- Giảm padding ở các container chính.
+- Thu gọn khoảng cách giữa Sidebar, Editor và Preview.
+- Tối ưu padding trong Toolbar và các panel.
+- Giảm khoảng trống thừa ở các card và khu vực chức năng.
+- Tận dụng tối đa diện tích màn hình cho Editor và Preview.
+- Vẫn giữ khoảng cách đủ thoáng để giao diện không bị chật chội.
+
+Ưu tiên thiết kế gọn gàng, hiện đại và chuyên nghiệp.
+
+## 5. Sửa chức năng đóng/mở Preview
+
+Hiện tại khi nhấn nút X ở góc trên bên phải Preview thì không có action.
 
 Hãy triển khai:
-- Khi nhấn nút **In**, gọi trực tiếp chức năng in của trình duyệt (`window.print()`).
-- Chỉ in nội dung tài liệu trong Preview A4, không in Sidebar, Toolbar, Editor hay các thành phần giao diện khác.
-- Giữ nguyên kích thước giấy A4, căn lề, font chữ, màu sắc và bố cục khi in.
-- Hỗ trợ xem trước khi in và lưu thành PDF thông qua hộp thoại in của trình duyệt.
-- Đảm bảo nội dung nhiều trang được phân trang chính xác, không bị cắt chữ hoặc vỡ bảng.
-- Có CSS `@media print` riêng để tối ưu bản in.
 
-### 2. Tổ chức lại Sidebar
+- Khi click X, toàn bộ khu vực Preview bên phải phải được ẩn đi.
+- Editor bên trái tự động mở rộng để tận dụng không gian.
+- Có hiệu ứng đóng/mở mượt mà.
+- Bổ sung nút mở lại Preview khi cần.
+- Khi mở lại, Preview phải giữ đúng nội dung, trạng thái zoom và trạng thái hiển thị trước đó.
+- Không làm mất dữ liệu đang chỉnh sửa.
 
-Hiện tại Sidebar có nhiều mục riêng như Bảng biểu, Danh sách, Trích dẫn. Tôi muốn tổ chức lại hợp lý và gọn gàng hơn.
+## 6. Nâng cấp UI/UX tổng thể
 
-Hãy gộp 3 mục:
-- Bảng biểu
-- Danh sách
-- Trích dẫn
+- Đồng bộ phong cách thiết kế giữa Sidebar, Editor và Preview.
+- Có hiệu ứng hover, active và chuyển cảnh tinh tế.
+- Cải thiện typography, icon, màu sắc và trạng thái tương tác.
+- Tối ưu giao diện trên các kích thước màn hình khác nhau.
+- Không để thư viện mẫu chiếm quá nhiều diện tích chỉnh sửa.
+- Ưu tiên trải nghiệm thao tác nhanh, trực quan và dễ sử dụng.
 
-Thành một mục chung có tên **Thành phần** hoặc **Thư viện nội dung**.
+## 7. Yêu cầu kỹ thuật và kiểm thử
 
-Khi nhấn vào mục này, mở ra một khu vực chọn nhanh các thành phần tài liệu, được thiết kế trực quan và dễ sử dụng.
-
-### 3. Xây dựng thư viện mẫu chọn nhanh
-
-Trong khu vực mới, hãy phân loại thành các nhóm:
-
-**Bảng biểu**
-- Bảng cơ bản.
-- Bảng có tiêu đề.
-- Bảng nhiều cột.
-- Bảng đánh giá.
-- Bảng điểm.
-- Bảng thời khóa biểu.
-- Bảng tổng hợp.
-
-**Danh sách**
-- Danh sách có đánh số.
-- Danh sách dấu chấm.
-- Danh sách checkbox.
-- Danh sách công việc.
-- Danh sách câu hỏi.
-- Danh sách gạch đầu dòng.
-
-**Trích dẫn**
-- Trích dẫn cơ bản.
-- Khung ghi chú.
-- Khung lưu ý.
-- Khung kiến thức quan trọng.
-- Khung ví dụ minh họa.
-
-**Thành phần bổ sung**
-- Tiêu đề và tiêu đề phụ.
-- Đoạn văn.
-- Đường phân cách.
-- Khung thông tin.
-- Khu vực điền thông tin học sinh.
-- Dòng kẻ để học sinh viết câu trả lời.
-
-### 4. Cách hoạt động của thư viện
-
-Tôi muốn trải nghiệm giống một công cụ chọn nhanh thành phần trong trình soạn thảo:
-
-- Mỗi mẫu hiển thị dưới dạng một thẻ nhỏ có tên, biểu tượng và hình minh họa hoặc bản xem trước.
-- Có thể tìm kiếm mẫu theo từ khóa.
-- Có thể lọc theo từng nhóm.
-- Khi nhấn vào một mẫu, hiển thị bản xem trước hoặc chèn trực tiếp vào vị trí hiện tại trong tài liệu.
-- Có thể tùy chỉnh nội dung sau khi chèn.
-- Các mẫu phải phù hợp với tài liệu giáo dục tiểu học, phiếu bài tập, giáo án và tài liệu học tập.
-
-### 5. Cải tiến UI/UX
-
-- Thiết kế Sidebar gọn gàng, phân cấp rõ ràng.
-- Có trạng thái active khi chọn từng nhóm.
-- Sử dụng card, icon và preview nhỏ để người dùng nhận biết mẫu nhanh chóng.
-- Có hiệu ứng hover và chuyển đổi mượt mà.
-- Tối ưu không gian giữa Sidebar, Editor và Preview A4.
-- Không để khu vực chọn mẫu chiếm quá nhiều diện tích chỉnh sửa.
-
-### 6. Yêu cầu kỹ thuật quan trọng
-
-- Tận dụng component và logic hiện có, hạn chế viết lại toàn bộ.
-- Các mẫu khi chèn phải tương thích với cả hai chế độ Normal (JSON) và Beautiful (HTML/CSS).
-- Nội dung sau khi chèn phải cập nhật đúng vào Editor và Preview A4.
+- Tận dụng component, CSS và logic hiện có.
+- Không viết lại toàn bộ hệ thống nếu không cần thiết.
+- Không thay đổi logic JSON, HTML/CSS và cơ chế đồng bộ dữ liệu đang hoạt động.
 - Không làm mất dữ liệu tài liệu hiện tại.
-- Không ảnh hưởng chức năng Xuất DOCX, tự động lưu, Format, Tìm kiếm và chuyển đổi chế độ.
-- Không chỉnh sửa AI Studio.
-- Không tạo thêm bài mới, giữ nguyên 8 bài hiện có.
+- Không ảnh hưởng các chức năng tự động lưu, Format, Tìm kiếm, Chuyển đổi, Áp dụng thay đổi và Xuất DOCX.
+- Kiểm tra thanh cuộn chỉ còn một thanh bên ngoài.
+- Kiểm tra đóng/mở Preview.
 
-Mục tiêu cuối cùng: Biến khu vực Documents thành một trình soạn thảo tài liệu học tập có thư viện thành phần dựng sẵn, thao tác nhanh, dễ sử dụng và có khả năng in tài liệu A4 thực tế.
+**MỤC TIÊU CUỐI CÙNG**
 
-Hãy kiểm tra cấu trúc code hiện tại trước khi triển khai và đảm bảo các chức năng cũ vẫn hoạt động bình thường.
+Biến Documents thành một Document Studio chuyên nghiệp dành cho giáo dục, có thư viện thành phần phong phú, thao tác chèn mẫu nhanh, trình chỉnh sửa thuận tiện, Preview A4 mượt mà và giao diện tối ưu.
+
+Hãy chủ động rà soát, phát hiện những điểm còn thiếu và cải tiến hợp lý. Ưu tiên giữ nguyên những gì đang hoạt động tốt, không sửa lan sang các chức năng không liên quan.
