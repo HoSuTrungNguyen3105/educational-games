@@ -188,9 +188,16 @@ export async function updateProfile(userId, { name, email, password, currentPass
   if (name) updates.name = String(name).trim();
   if (email) {
     const eml = String(email).trim().toLowerCase();
+    // Validate định dạng TRƯỚC khi tra trùng: trước đây email gõ sai kiểu
+    // "abc@" vẫn lưu được, tới lúc cần dùng (khôi phục mật khẩu, thông báo)
+    // mới vỡ. Regex đơn giản cùng mức với các form phía client.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(eml)) {
+      throw new Error("Email không đúng định dạng");
+    }
     if (eml !== (user.email || "")) {
       const emailExists = await findByEmail(eml);
-      if (emailExists) throw new Error("Email đã được sử dụng");
+      // Trùng với CHÍNH MÌNH (email lưu khác hoa/thường) thì không tính trùng.
+      if (emailExists && emailExists.id !== userId) throw new Error("Email đã được sử dụng");
     }
     updates.email = eml;
   }

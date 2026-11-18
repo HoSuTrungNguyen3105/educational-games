@@ -16,7 +16,7 @@ import { useState } from "react";
 import { User, Wallet } from "lucide-react";
 import { IconLogout } from "../../../components/ui/index.js";
 import {
-  IdentitySummary, LevelBar, WalletRows,
+  WalletRows, PersonalInfoCard,
   OutfitSection, ClassSection, GamesSection, KidSettingsSection, AppSection,
 } from "./ProfileSections.jsx";
 import { DESKTOP_NAV } from "./profileNav.js";
@@ -24,7 +24,7 @@ import { DESKTOP_NAV } from "./profileNav.js";
 const CARD_STYLE = { background: "var(--card)", border: "1px solid var(--line)" };
 
 export default function ProfileDesktop({ vm }) {
-  const { lv, wallet, onBack, onLogout } = vm;
+  const { wallet, onBack, onLogout } = vm;
   const [activeId, setActiveId] = useState("sec-overview");
   const activeItem = DESKTOP_NAV.find((i) => i.id === activeId) || DESKTOP_NAV[0];
   const panelCls = (id) => (activeId === id ? undefined : "hidden");
@@ -53,7 +53,7 @@ export default function ProfileDesktop({ vm }) {
               const active = id === activeId;
               return (
                 <button key={id} onClick={() => setActiveId(id)} aria-current={active || undefined}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm font-semibold text-ink/60 transition hover:bg-ink/5 hover:text-ink"
+                  className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm font-semibold text-ink/60 transition hover:bg-ink/5 hover:text-ink"
                   style={active
                     ? { background: "var(--accent-bg)", color: "var(--accent)" }
                     : undefined}>
@@ -78,23 +78,17 @@ export default function ProfileDesktop({ vm }) {
           <h1 className="font-display text-xl text-ink mb-4">{activeItem.label}</h1>
 
           {/* Tổng quan — hai thẻ sóng đôi như ảnh mẫu: Thông tin cá nhân
-              (danh tính + cấp độ) và Ví của bé (các hàng chỉ số ví). */}
+              (danh tính + cấp độ + form sửa hồ sơ) và Ví của bé (các hàng
+              chỉ số ví). */}
           <div id="sec-overview" className={panelCls("sec-overview")}>
-            <div className="grid gap-3 lg:grid-cols-2 items-start">
-              <section className="rounded-xl p-3.5" style={CARD_STYLE}>
-                <div className="flex items-center gap-2 mb-3">
-                  <User className="w-4 h-4" style={{ color: "var(--accent)" }} />
-                  <span className="font-display text-sm text-ink">Thông tin cá nhân</span>
-                </div>
-                <IdentitySummary vm={vm} />
-                <div className="mt-3">
-                  <LevelBar lv={lv} />
-                </div>
-              </section>
+            <div className="grid gap-4 lg:grid-cols-2 items-start">
+              <PersonalInfoCard vm={vm} />
 
-              <section className="rounded-xl p-3.5" style={CARD_STYLE}>
+              <section className="rounded-2xl p-4 shadow-sm" style={CARD_STYLE}>
                 <div className="flex items-center gap-2 mb-3">
-                  <Wallet className="w-4 h-4" style={{ color: "var(--accent)" }} />
+                  <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--accent-bg)" }}>
+                    <Wallet className="w-4 h-4" style={{ color: "var(--accent)" }} />
+                  </span>
                   <span className="font-display text-sm text-ink">Ví của bé</span>
                 </div>
                 <WalletRows wallet={wallet} />

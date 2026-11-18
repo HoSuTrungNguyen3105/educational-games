@@ -2,14 +2,20 @@
 // (ProfileDesktop) và mobile (ProfileMobile): nội dung/handler lấy từ một
 // nguồn duy nhất là `vm` do ProfileScreen (container logic) truyền xuống,
 // hai bản chỉ khác khung trình bày bên ngoài.
-import { IconCalendar, IconCheck, IconChevronDown, IconDownload, IconBell, IconCheckCircle, IconTrash } from '../../../components/ui/index.js';
-import { GraduationCap, ChevronUp, Copy, Palette, Smartphone, Monitor, Apple, BellRing, BellOff, TriangleAlert, Send, RefreshCw, Info, Share2, SquarePlus, EllipsisVertical, UserCheck, Gamepad2, Settings, Pencil, Shirt, PawPrint, Crown, Star, Sprout, Target, School
+// LƯU Ý attendance: các import IconCalendar (ui), UserCheck (lucide),
+// hasUserPermission (roles) và navigate (router) đã gỡ khỏi file này vì
+// chỉ khối "Chấm công" ở ClassSection dùng — khối đó đang comment-out
+// (xem ghi chú ở ClassSection), bật lại attendance thì khôi phục cả 4.
+import { useState } from "react";
+import { IconCheck, IconChevronDown, IconDownload, IconBell, IconCheckCircle, IconTrash } from '../../../components/ui/index.js';
+import { GraduationCap, ChevronUp, Copy, Palette, Smartphone, Monitor, Apple, BellRing, BellOff, TriangleAlert, Send, RefreshCw, Info, Share2, SquarePlus, EllipsisVertical, Gamepad2, Settings, Pencil, Shirt, PawPrint, Crown, Star, Sprout, Target, School, User, Save, Loader2
 } from "lucide-react";
 import DressUpAvatar, { DressUpAvatarSmall } from "../../../components/avatar/DressUpAvatar.jsx";
 import KidSettingsCard from "../../../components/profile/KidSettingsCard.jsx";
-import { getRoleLabel, hasUserPermission } from "../../../config/roles.js";
+import { getRoleLabel } from "../../../config/roles.js";
 import { getLevelProgress } from "../../../lib/utils.js";
-import { navigate } from "../../../lib/router.js";
+import { AGE_CODES, gradeForAgeCode } from "../../../lib/ageCodes.js";
+import { gradeLabel, ageForGrade } from "../../../lib/kidSettings.js";
 import { getPushSupportStatus } from "../../../firebase/messaging.js";
 import { outfitName, describeOutfit } from "../../../lib/dressUpAvatar.js";
 
@@ -64,8 +70,8 @@ export function LevelBar({ lv }) {
     <div>
       <div className="flex items-center gap-2">
         <span className="text-xs font-bold shrink-0" style={{ color: "var(--accent)" }}>Lv{lv.level}</span>
-        <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--bg)" }}>
-          <div className="h-full rounded-full" style={{ width: lv.percent + "%", background: "var(--accent)" }} />
+        <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: "var(--bg)" }}>
+          <div className="h-full rounded-full transition-all duration-500" style={{ width: lv.percent + "%", background: "var(--accent)" }} />
         </div>
       </div>
       {/* Ngưỡng cấp của getLevelProgress tính theo XU (số xu tích lũy),
@@ -81,13 +87,165 @@ export function WalletRows({ wallet }) {
   return (
     <dl className="text-xs">
       {wallet.map((w, i) => (
-        <div key={w.label} className="flex items-center justify-between gap-2 py-1.5"
+        <div key={w.label} className="flex items-center justify-between gap-2 py-2"
           style={i ? { borderTop: "1px solid var(--line)" } : undefined}>
-          <dt className="text-ink/55 inline-flex items-center gap-1">{w.icon} {w.label}</dt>
-          <dd className="font-bold font-mono text-ink">{w.value}</dd>
+          <dt className="text-ink/55 inline-flex items-center gap-2">
+            <span className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+              style={{ background: "var(--accent-bg)", color: "var(--accent)" }}>
+              {w.icon}
+            </span>
+            {w.label}
+          </dt>
+          <dd className="font-bold font-mono text-sm text-ink">{w.value}</dd>
         </div>
       ))}
     </dl>
+  );
+}
+
+/** Bản nháp form hồ sơ từ user hiện tại (null ở server ↔ "" trong form). */
+function profileDraftFrom(user) {
+  return {
+    name: user?.name || "",
+    email: user?.email || "",
+    ageCode: user?.ageCode || "",
+    gender: user?.gender || "",
+  };
+}
+
+const PROFILE_FIELD_CLS = "w-full px-3 py-2 rounded-lg bg-ink/5 border border-ink/10 text-sm font-body text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-gold/30";
+const PROFILE_LABEL_CLS = "block text-[11px] font-bold text-ink/50 mb-1";
+
+/**
+ * Thẻ "Thông tin cá nhân" — dùng chung desktop (tab Tổng quan) và mobile:
+ * tóm tắt danh tính + thanh cấp độ + FORM sửa tên hiển thị / email / lớp /
+ * giới tính, lưu qua `vm.handleUpdateProfile` (PUT /auth/me ở container).
+ * Email để trống nghĩa là giữ nguyên email hiện tại (đúng ngữ nghĩa của
+ * server: field email rỗng thì không cập nhật) — chỉ gửi khi có nhập.
+ */
+export function PersonalInfoCard({ vm }) {
+  const { user, lv, handleUpdateProfile, apiErrorMessage } = vm;
+  const [draft, setDraft] = useState(() => profileDraftFrom(user));
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  // Đổi sang tài khoản khác (id khác) thì nạp lại bản nháp từ hồ sơ mới —
+  // reset ngay trong render (mẫu React khuyến nghị) thay vì effect. Cùng
+  // một tài khoản thì KHÔNG nạp lại: hồ sơ được làm mới ở nơi khác (vd
+  // lưu bộ đồ) không được ghi đè bản nháp đang sửa dở.
+  const [draftForId, setDraftForId] = useState(user.id);
+  if (draftForId !== user.id) {
+    setDraftForId(user.id);
+    setDraft(profileDraftFrom(user));
+    setFormError("");
+  }
+
+  const dirty =
+    draft.name !== (user.name || "") ||
+    draft.email !== (user.email || "") ||
+    draft.ageCode !== (user.ageCode || "") ||
+    draft.gender !== (user.gender || "");
+
+  const setField = (field) => (e) => {
+    setDraft((d) => ({ ...d, [field]: e.target.value }));
+    setFormError("");
+  };
+
+  async function handleSave(e) {
+    e.preventDefault();
+    const name = draft.name.trim();
+    if (!name) {
+      setFormError("Tên hiển thị không được để trống");
+      return;
+    }
+    const email = draft.email.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      setFormError("Email không đúng định dạng");
+      return;
+    }
+    setSaving(true);
+    setFormError("");
+    try {
+      const payload = {
+        name,
+        ageCode: draft.ageCode || null,
+        gender: draft.gender || null,
+      };
+      if (email) payload.email = email;
+      const updated = await handleUpdateProfile(payload);
+      setDraft(profileDraftFrom(updated));
+    } catch (err) {
+      // Form giữ nguyên nội dung đang sửa + hiện lỗi tại chỗ (toast lỗi
+      // đã bắn ở container) — không đóng form, không mất bản nháp.
+      setFormError(apiErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl p-4 shadow-sm" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--accent-bg)" }}>
+          <User className="w-4 h-4" style={{ color: "var(--accent)" }} />
+        </span>
+        <span className="font-display text-sm text-ink">Thông tin cá nhân</span>
+      </div>
+
+      <IdentitySummary vm={vm} />
+      <div className="mt-3">
+        <LevelBar lv={lv} />
+      </div>
+
+      <form onSubmit={handleSave} className="mt-4 pt-4 space-y-3" style={{ borderTop: "1px solid var(--line)" }}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className={PROFILE_LABEL_CLS} htmlFor="pf-name">Tên hiển thị</label>
+            <input id="pf-name" className={PROFILE_FIELD_CLS} value={draft.name}
+              onChange={setField("name")} placeholder="Tên của bé" autoComplete="name" />
+          </div>
+          <div>
+            <label className={PROFILE_LABEL_CLS} htmlFor="pf-email">Email</label>
+            <input id="pf-email" type="email" className={PROFILE_FIELD_CLS} value={draft.email}
+              onChange={setField("email")} placeholder="vidu@email.com" autoComplete="email" />
+          </div>
+          <div>
+            <label className={PROFILE_LABEL_CLS} htmlFor="pf-grade">Lớp</label>
+            <select id="pf-grade" className={PROFILE_FIELD_CLS} value={draft.ageCode} onChange={setField("ageCode")}>
+              <option value="">Chưa chọn</option>
+              {AGE_CODES.map((code) => {
+                const g = gradeForAgeCode(code);
+                return (
+                  <option key={code} value={code}>
+                    {gradeLabel(g)} · {ageForGrade(g)} tuổi
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <div>
+            <label className={PROFILE_LABEL_CLS} htmlFor="pf-gender">Giới tính</label>
+            <select id="pf-gender" className={PROFILE_FIELD_CLS} value={draft.gender} onChange={setField("gender")}>
+              <option value="">Chưa chọn</option>
+              <option value="boy">Bạn trai</option>
+              <option value="girl">Bạn gái</option>
+            </select>
+          </div>
+        </div>
+
+        {formError && <p className="text-xs text-red-500">{formError}</p>}
+
+        <div className="flex items-center gap-2.5">
+          <button type="submit" disabled={!dirty || saving}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition active:scale-[0.98] disabled:opacity-50"
+            style={{ background: "var(--accent)" }}>
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            {saving ? "Đang lưu..." : "Lưu thay đổi"}
+          </button>
+          {dirty && !saving && <span className="text-[11px] text-ink/40">Có thay đổi chưa lưu</span>}
+        </div>
+      </form>
+    </section>
   );
 }
 
@@ -96,7 +254,7 @@ export function OutfitSection({ vm }) {
   return (
     <>
     {/* Avatar & thú cưng */}
-    <section id="sec-outfit" className="scroll-mt-4 rounded-xl p-3.5" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+    <section id="sec-outfit" className="scroll-mt-4 rounded-2xl p-4 shadow-sm" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
       <div className="flex items-center gap-2 mb-3">
         <Palette className="w-4 h-4" style={{ color: "var(--accent)" }} />
         <span className="font-display text-sm text-ink">Avatar &amp; thú cưng</span>
@@ -145,9 +303,9 @@ export function ClassSection({ vm }) {
   const { user, className, copied, copyCode, joinCode, setJoinCode, joinError, joining, handleJoinClass } = vm;
   return (
     <>
-    {/* Lớp học + Chấm công */}
-    <section id="sec-class" className="scroll-mt-4 grid gap-3 sm:grid-cols-2 items-start">
-      <div className="rounded-xl p-3.5" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+    {/* Lớp học (khối Chấm công bên cạnh đã tạm tắt — xem ghi chú dưới) */}
+    <section id="sec-class" className="scroll-mt-4 grid gap-3 items-start">
+      <div className="rounded-2xl p-4 shadow-sm" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <div className="flex items-center gap-2 mb-3">
           <GraduationCap className="w-4 h-4 text-gold" />
           <span className="font-display text-sm text-ink">Lớp học</span>
@@ -181,7 +339,12 @@ export function ClassSection({ vm }) {
         {joinError && <p className="text-xs text-red-500 mt-1.5">{joinError}</p>}
       </div>
 
-      {/* Chấm công - chỉ hiện khi tài khoản này có quyền (permissions từ /auth/me) */}
+      {/* ── TẠM TẮT ATTENDANCE (chấm công) theo yêu cầu 2026-11-18 — hiện
+          không dùng. Bật lại bằng cách bỏ comment khối dưới + khôi phục
+          `sm:grid-cols-2` ở thẻ section bao ngoài + 4 import đã gỡ ở đầu
+          file (IconCalendar, UserCheck, hasUserPermission, navigate).
+          Trang AttendancePage/AttendanceCalendar và endpoint attendance
+          phía server vẫn giữ nguyên, không xoá.
       {hasUserPermission(user, 'attendance.view') && (
         <button
           onClick={() => navigate('/attendance')}
@@ -205,6 +368,7 @@ export function ClassSection({ vm }) {
           <IconCalendar className="w-5 h-5 text-ink/40 shrink-0" />
         </button>
       )}
+      */}
     </section>
     </>
   );
@@ -215,7 +379,7 @@ export function GamesSection({ vm }) {
   return (
     <>
     {/* Trò chơi */}
-    <section id="sec-games" className="scroll-mt-4 rounded-xl overflow-hidden" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+    <section id="sec-games" className="scroll-mt-4 rounded-2xl overflow-hidden shadow-sm" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
       <button onClick={() => setShowGames(!showGames)}
         className="w-full flex items-center justify-between p-3.5 hover:bg-ink/3 transition">
         <div className="flex items-center gap-2">
@@ -267,7 +431,7 @@ export function AppSection({ vm }) {
     {/* Ứng dụng + thông báo */}
     <section id="sec-app" className="scroll-mt-4 grid gap-3 xl:grid-cols-2 items-start">
       {/* PWA Install Card */}
-      <div className="rounded-xl p-3.5" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+      <div className="rounded-2xl p-4 shadow-sm" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--accent-bg)" }}>
             <IconDownload className="w-4 h-4" style={{ color: "var(--accent)" }} />
@@ -357,7 +521,7 @@ export function AppSection({ vm }) {
       </div>
 
       {/* Push Notification Card */}
-      <div className="rounded-xl p-3.5" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+      <div className="rounded-2xl p-4 shadow-sm" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#FDF0D5" }}>
             <IconBell className="w-4 h-4 text-gold" />

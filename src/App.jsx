@@ -235,7 +235,7 @@ function App() {
     ),
     profile: () => (
       <RouteShell toast={toast} showBack={false}>
-        <ProfileScreen userAuth={userAuth} onLogout={handleLogout} onBack={() => navigate("/")} />
+        <ProfileScreen userAuth={userAuth} onLogout={handleLogout} onBack={() => navigate("/")} showToast={showToast} />
       </RouteShell>
     ),
     "find-friends": () => (

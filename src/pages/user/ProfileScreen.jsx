@@ -1,6 +1,7 @@
 import { IconNotification } from '../../components/ui/index.js';
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { authService, classService, API_BASE, notificationService, userService, gameProgressService, walletService } from "../../services/api.js";
+import { useUserAuthStore } from "../../stores/userAuth.store.js";
 import { getLevelProgress } from "../../lib/utils.js";
 
 import { Apple, CircleX, Coins, Gamepad2, Share2, Sparkles, Star, User } from "lucide-react";
@@ -14,11 +15,46 @@ import { useKidSettings } from "../../lib/kidSettings.js";
 import { getPushSupportStatus, requestNotificationPermission, onForegroundMessage } from "../../firebase/messaging.js";
 import { playVibration } from "../../lib/reminderUtils.js";
 
-export default function ProfileScreen({ userAuth, onLogout, onBack }) {
+/** Lấy câu báo lỗi thân thiện nhất từ lỗi apiFetch (msg nằm ở .data.msg hoặc .message). */
+function apiErrorMessage(err) {
+  return (
+    err?.data?.msg ||
+    err?.response?.data?.msg ||
+    err?.msg ||
+    err?.message ||
+    "Có lỗi xảy ra, vui lòng thử lại"
+  );
+}
+
+export default function ProfileScreen({ userAuth, onLogout, onBack, showToast }) {
   const [profile, setProfile] = useState(null);
   const [walletStars, setWalletStars] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const patchUser = useUserAuthStore((s) => s.patchUser);
+
+  // Danh tính ỔN ĐỊNH của tài khoản đang xem. Các effect nạp dữ liệu bên
+  // dưới dep theo `userId` này, KHÔNG dep theo cả object `userAuth`: vòng
+  // refresh nền mỗi 20 giây xoay token mới → App tạo object userAuth mới
+  // (memo theo [user, token]) dù vẫn là cùng một người. Dep theo object là
+  // gốc vụ "cứ gọi refresh/me/wallet/games là trang load lại": effect nạp
+  // lại dữ liệu liên tục và trang nháy như tải lại từ đầu.
+  const userId = userAuth?.user?.id ?? null;
+
+  // Đổi tài khoản → xoá hồ sơ + lỗi của tài khoản cũ NGAY trong render
+  // (mẫu React khuyến nghị cho "reset state khi prop đổi", thay vì
+  // setState trong effect) để không chớp qua dữ liệu của người trước.
+  const [prevUserId, setPrevUserId] = useState(userId);
+  if (prevUserId !== userId) {
+    setPrevUserId(userId);
+    setProfile(null);
+    setError(null);
+  }
+
+  // Loading toàn trang CHỈ suy ra, không có state riêng: chưa có hồ sơ và
+  // chưa có lỗi = đang nạp lần đầu. Đã có hồ sơ rồi thì mọi lần nạp lại
+  // đều chạy nền lặng — nội dung đang xem giữ nguyên, số liệu cập nhật
+  // tại chỗ, không bao giờ che trang bằng màn hình "Đang tải..." nữa.
+  const showLoading = !!userId && !profile && !error;
 
   // Trên desktop danh sách trò chơi mở sẵn để cột phải không trống; mobile giữ kiểu thu gọn.
   const [showGames, setShowGames] = useState(() => {
@@ -81,43 +117,74 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
     setProfile((prev) => (prev ? { ...prev, [kind]: updated?.[kind] ?? value } : prev));
   }, []);
 
+  /**
+   * Lưu form "Thông tin cá nhân" (tên / email / lớp / giới tính) qua
+   * PUT /auth/me. Thành công: hồ sơ đang xem + auth store (header, các
+   * trang khác) + cài đặt của bé đều nhận giá trị mới NGAY, không tải
+   * lại trang. Lỗi (email trùng, sai định dạng, mã lớp lạ — server
+   * validate) thì toast + ném lại lỗi để form hiện tại chỗ và giữ
+   * nguyên nội dung đang sửa.
+   */
+  const handleUpdateProfile = useCallback(async (values) => {
+    try {
+      const updated = await userService.updateProfile(values);
+      setProfile(updated);
+      patchUser({
+        name: updated.name,
+        email: updated.email,
+        ageCode: updated.ageCode,
+        gender: updated.gender,
+      });
+      syncKidFromAccount(updated);
+      showToast?.("Đã cập nhật thông tin cá nhân", "success");
+      return updated;
+    } catch (err) {
+      showToast?.(apiErrorMessage(err), "error");
+      throw err;
+    }
+  }, [patchUser, showToast]);
+
   useEffect(() => {
-    if (!userAuth?.user) return;
-    setLoading(true);
+    if (!userId) return;
+    let alive = true;
     authService.me()
       .then((userData) => {
+        if (!alive) return;
         setProfile(userData);
         // Hồ sơ trên server quyết định lớp + giới tính của bé (ageCode là mã
         // opaque, tuổi thật chỉ client suy ra) → điền vào cài đặt máy này.
         syncKidFromAccount(userData);
         setError(null);
       })
-      .catch((e) => setError(e.message || "Lỗi tải profile"))
-      .finally(() => setLoading(false));
-  }, [userAuth]);
+      // Lỗi nạp: chỉ thành màn hình lỗi khi CHƯA có hồ sơ nào để hiện
+      // (xem điều kiện render) — nạp lại nền mà lỗi thì giữ nguyên nội
+      // dung đang xem.
+      .catch((e) => { if (alive) setError(e.message || "Lỗi tải profile"); });
+    return () => { alive = false; };
+  }, [userId]);
 
   // Số sao PHẢI lấy từ ví (/auth/me/wallet) — cùng một nguồn sự thật với
   // header trang chủ và Cửa hàng sao. Response của /auth/me không trả field
   // "stars" nên trước đây trang này đọc user.stars → luôn hiện 0 sao dù ví
   // có sao thật. Chỉ fallback về user.stars khi ví tải lỗi.
   useEffect(() => {
-    if (!userAuth?.user) return;
+    if (!userId) return;
     let alive = true;
     walletService.get()
       .then((w) => { if (alive) setWalletStars(typeof w?.stars === "number" ? w.stars : null); })
       .catch(() => { if (alive) setWalletStars(null); });
     return () => { alive = false; };
-  }, [userAuth]);
+  }, [userId]);
 
   // Danh sách game cho mục "Trò chơi" — tách khỏi /auth/me để hồ sơ nhẹ.
   useEffect(() => {
-    if (!userAuth?.user) return;
+    if (!userId) return;
     let alive = true;
     gameProgressService.listGames()
       .then((list) => { if (alive) setGames(Array.isArray(list) ? list : []); })
       .catch(() => { if (alive) setGames([]); });
     return () => { alive = false; };
-  }, [userAuth]);
+  }, [userId]);
 
   // ── PWA detection giống hiweb_PROFILE ──
   useEffect(() => {
@@ -169,8 +236,10 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   }, [pushMessage]);
 
   // Lắng nghe foreground message — giống hiweb ProfileView + HomeScreen (Swal + Notification)
+  // Dep theo userId (không theo token): token xoay mỗi 20 giây mà đăng ký
+  // lại listener thì churn vô ích, listener chỉ cần theo tài khoản.
   useEffect(() => {
-    if (!userAuth?.token) return;
+    if (!userId) return;
     const unsubscribe = onForegroundMessage((payload) => {
       const data = payload.data || {};
       const title = data.title || payload.notification?.title || "Thông báo";
@@ -195,7 +264,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
       }
     });
     return unsubscribe;
-  }, [userAuth?.token]);
+  }, [userId]);
 
   const lv = useMemo(() => getLevelProgress(profile?.coins || 0), [profile?.coins]);
 
@@ -220,12 +289,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
       setProfile(updated);
       setJoinCode("");
     } catch (err) {
-      const apiMsg =
-        err?.data?.msg ||
-        err?.response?.data?.msg ||
-        err?.msg ||
-        err?.message;
-      setJoinError(apiMsg || "Có lỗi xảy ra, vui lòng thử lại");
+      setJoinError(apiErrorMessage(err));
     }
     setJoining(false);
   }
@@ -356,7 +420,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
     );
   }
 
-  if (loading) {
+  if (showLoading) {
     return (
       <div className="flex-1 flex items-center justify-center px-3">
         <p className="text-sm text-ink/40 animate-pulse">Đang tải...</p>
@@ -364,7 +428,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
     );
   }
 
-  if (error) {
+  if (!profile && error) {
     return (
       <div className="flex-1 flex items-center justify-center px-3">
         <div className="text-center">
@@ -391,6 +455,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack }) {
   // khác khung — không lặp logic.
   const vm = {
     user, stats, className, wallet, lv, outfit, userAuth,
+    handleUpdateProfile, apiErrorMessage,
     games, showGames, setShowGames,
     joinCode, setJoinCode, joinError, joining, handleJoinClass, copied, copyCode,
     setCustomizer, jumpTo,

@@ -8,7 +8,7 @@ import { ChevronRight } from "lucide-react";
 import { IconBack, IconLogout } from "../../../components/ui/index.js";
 import { getRoleLabel } from "../../../config/roles.js";
 import {
-  AvatarWithBadge, LevelBar,
+  AvatarWithBadge, LevelBar, PersonalInfoCard,
   OutfitSection, ClassSection, GamesSection, KidSettingsSection, AppSection,
 } from "./ProfileSections.jsx";
 import { NAV } from "./profileNav.js";
@@ -56,7 +56,7 @@ export default function ProfileMobile({ vm }) {
       </section>
 
       {/* ── Thẻ ví nổi bật ── */}
-      <section className="rounded-xl p-3.5 shadow-sm" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
+      <section className="rounded-2xl p-4 shadow-sm" style={{ background: "var(--card)", border: "1px solid var(--line)" }}>
         <div className="grid grid-cols-4 gap-2 text-center">
           {wallet.map((w) => (
             <div key={w.label} className="min-w-0">
@@ -68,8 +68,11 @@ export default function ProfileMobile({ vm }) {
         </div>
       </section>
 
+      {/* ── Thông tin cá nhân + form sửa hồ sơ (dùng chung với desktop) ── */}
+      <PersonalInfoCard vm={vm} />
+
       {/* ── Nhóm chức năng: danh sách hàng chạm tới từng khu vực ── */}
-      <nav className="rounded-xl overflow-hidden shadow-sm" style={{ background: "var(--card)", border: "1px solid var(--line)" }} aria-label="Mục trong hồ sơ">
+      <nav className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "var(--card)", border: "1px solid var(--line)" }} aria-label="Mục trong hồ sơ">
         {NAV.map(({ id, label, Icon }, i) => (
           <button key={id} onClick={() => jumpTo(id)}
             className="flex w-full items-center gap-3 px-3.5 py-3 text-left transition active:bg-ink/5"
