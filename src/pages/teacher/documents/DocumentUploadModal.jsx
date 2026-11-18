@@ -177,7 +177,7 @@ export default function DocumentUploadModal({
                 <div>
                   <strong>Phân tích thành công</strong>
                   <span>
-                    {TYPE_LABEL[result.docType]} · {result.mode === "json" ? "JSON" : "HTML/CSS"} ·{" "}
+                    {TYPE_LABEL[result.docType]} · {result.mode === "json" ? "Normal" : "Beautiful"} ·{" "}
                     {result.itemCount} {result.docType === "powerpoint" ? "slide" : "khối nội dung"}
                   </span>
                 </div>

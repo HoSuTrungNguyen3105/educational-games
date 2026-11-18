@@ -97,6 +97,11 @@ const RAIL_ITEMS = [
 
 const MAX_PREVIEW_ZOOM = 2;
 
+// Tên hiển thị của hai chế độ soạn (REFACTOR_EDITOR §1): giá trị nội bộ
+// vẫn là "json" / "html" như cũ, chỉ nhãn cho giáo viên đổi — Normal =
+// JSON có cấu trúc, Beautiful = HTML/CSS tự do.
+const modeName = (m) => (m === "json" ? "Normal" : "Beautiful");
+
 const escAttr = (value) => String(value ?? "")
   .replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const escHtml = (value) => String(value ?? "")
@@ -139,6 +144,10 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   const [ratio, setRatio] = useState("16:9");
   const [slideIndex, setSlideIndex] = useState(0);
   const [showPreviewMobile, setShowPreviewMobile] = useState(false);
+  // Đóng/mở pane Xem trước trên desktop (§5): chỉ ẩn bằng CSS (pane vẫn
+  // mounted) nên nội dung, mức zoom và vị trí cuộn được giữ nguyên khi
+  // mở lại; trên mobile việc hiện/ẩn vẫn do showPreviewMobile quyết định.
+  const [previewOpen, setPreviewOpen] = useState(true);
   const [mobileSheet, setMobileSheet] = useState(null); // null | "tools" — bảng công cụ dưới mobile
   const [reveal, setReveal] = useState(null); // đích cuộn/bôi xanh trong preview
   const revealToken = useRef(0);
@@ -294,9 +303,9 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
       }
       nextDrafts = { ...drafts, [target]: conv.source };
       setDrafts(nextDrafts);
-      setNotice(`Đã tự chuyển đổi nội dung từ ${mode === "html" ? "HTML/CSS" : "JSON"} sang ${target === "html" ? "HTML/CSS" : "JSON"}. Bản nháp ở chế độ trước vẫn được giữ nguyên.`);
+      setNotice(`Đã tự chuyển đổi nội dung từ ${modeName(mode)} sang ${modeName(target)}. Bản nháp ở chế độ trước vẫn được giữ nguyên.`);
     } else {
-      setNotice(`Mỗi chế độ giữ bản nháp riêng — nội dung ${target === "html" ? "HTML/CSS" : "JSON"} trước đây vẫn còn. Muốn đồng bộ từ chế độ kia, dùng nút "Chuyển đổi" ở thanh công cụ của khung soạn.`);
+      setNotice(`Mỗi chế độ giữ bản nháp riêng — nội dung ${modeName(target)} trước đây vẫn còn. Muốn đồng bộ từ chế độ kia, dùng nút "Chuyển đổi" ở thanh công cụ của khung soạn.`);
     }
     setMode(target);
     doApply(nextDrafts[target], target, docType);
@@ -313,12 +322,12 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
       }
       setDrafts((d) => ({ ...d, [mode]: conv.source }));
       doApply(conv.source, mode, docType);
-      setNotice(`Đã chuyển đổi nội dung từ ${other === "html" ? "HTML/CSS" : "JSON"} sang chế độ hiện tại.`);
+      setNotice(`Đã chuyển đổi nội dung từ ${modeName(other)} sang chế độ hiện tại.`);
     };
     if (draft.trim()) {
       askConfirm({
         title: "Chuyển đổi nội dung",
-        message: `Chuyển đổi từ ${other === "html" ? "HTML/CSS" : "JSON"} sẽ GHI ĐÈ bản nháp ${mode === "html" ? "HTML/CSS" : "JSON"} hiện tại. Tiếp tục?`,
+        message: `Chuyển đổi từ ${modeName(other)} sẽ GHI ĐÈ bản nháp ${modeName(mode)} hiện tại. Tiếp tục?`,
         confirmLabel: "Chuyển đổi",
         danger: false,
         onConfirm: run,
@@ -779,6 +788,20 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     else el.requestFullscreen?.().catch(() => {});
   };
 
+  // Đóng/mở pane Xem trước (§5): nút X ở đầu pane — trên mobile X quay
+  // về khung soạn như cũ; trên desktop X thu gọn hẳn pane (editor nới
+  // rộng theo), mở lại bằng nút "Xem trước" ở đầu khung soạn. Pane chỉ
+  // ẩn bằng CSS (class is-closed), không unmount → nội dung/zoom/cuộn
+  // giữ nguyên, dữ liệu đang soạn không bị động vào.
+  const closePreview = () => {
+    if (showPreviewMobile) setShowPreviewMobile(false);
+    else setPreviewOpen(false);
+  };
+  const openPreview = () => {
+    setPreviewOpen(true);
+    if (typeof window !== "undefined" && window.innerWidth < 1024) setShowPreviewMobile(true);
+  };
+
   // In / lưu PDF: chỉ áp dụng khi preview là iframe sandbox (Word mọi
   // chế độ + PowerPoint chế độ HTML) — trang cha gọi print() lên chính
   // tài liệu trong iframe, trình duyệt mở hộp thoại in và giáo viên
@@ -852,7 +875,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                 </span>
                 <span className="min-w-0 text-left">
                   <b>{tpl.name}</b>
-                  <small>{tpl.categoryLabel} · {tpl.defaultMode === "json" ? "JSON" : "HTML"} · {tpl.gradeRange}</small>
+                  <small>{tpl.categoryLabel} · {modeName(tpl.defaultMode)} · {tpl.gradeRange}</small>
                 </span>
               </button>
             ))}
@@ -879,15 +902,15 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
             onChange={(e) => setName(e.target.value)} placeholder="Tên tài liệu…" />
 
           <span className="docstudio-label">Loại tài liệu</span>
-          <div className="docstudio-seg">
+          <div className="docstudio-seg" style={{ "--seg-pos": docType === "word" ? 0 : 1 }}>
             <button type="button" className={docType === "word" ? "is-active" : ""} onClick={() => changeDocType("word")}>Word</button>
             <button type="button" className={docType === "powerpoint" ? "is-active" : ""} onClick={() => changeDocType("powerpoint")}>PowerPoint</button>
           </div>
 
           <span className="docstudio-label">Chế độ soạn</span>
-          <div className="docstudio-seg">
-            <button type="button" className={mode === "html" ? "is-active" : ""} onClick={() => switchMode("html")}>HTML/CSS</button>
-            <button type="button" className={mode === "json" ? "is-active" : ""} onClick={() => switchMode("json")}>JSON</button>
+          <div className="docstudio-seg" style={{ "--seg-pos": mode === "html" ? 0 : 1 }}>
+            <button type="button" className={mode === "html" ? "is-active" : ""} onClick={() => switchMode("html")}>Beautiful</button>
+            <button type="button" className={mode === "json" ? "is-active" : ""} onClick={() => switchMode("json")}>Normal</button>
           </div>
 
           {docType === "powerpoint" && (
@@ -914,7 +937,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
             <Copy className="w-4 h-4" /> {duplicating ? "Đang nhân bản…" : "Nhân bản tài liệu"}
           </button>
           <button type="button" className="docstudio-btn-ghost" onClick={convertIntoCurrent}>
-            <ArrowLeftRight className="w-4 h-4" /> Chuyển đổi từ {mode === "html" ? "JSON" : "HTML/CSS"}
+            <ArrowLeftRight className="w-4 h-4" /> Chuyển đổi từ {modeName(mode === "html" ? "json" : "html")}
           </button>
           <button type="button" className="docstudio-btn-ghost" onClick={leaveEditor}>
             <ArrowLeft className="w-4 h-4" /> Về danh sách tài liệu
@@ -1144,13 +1167,14 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
 
           {tool !== "content" && renderToolPanel()}
 
-          <div ref={splitRef} className="docstudio-split">
+          <div ref={splitRef} className={`docstudio-split ${previewOpen ? "" : "is-preview-closed"}`}>
             <section
               className={`docstudio-editor docstudio-split-editor ${showPreviewMobile ? "hidden lg:flex" : "flex"}`}
               style={{ "--split-pct": `${split}%` }}>
               <div className="docstudio-editor-head">
-                <div className="docstudio-tabs" role="tablist" aria-label="Chế độ soạn">
-                  {[["json", "{ } JSON"], ["html", "<> HTML/CSS"]].map(([m, label]) => (
+                <div className="docstudio-tabs" role="tablist" aria-label="Chế độ soạn"
+                  style={{ "--seg-pos": mode === "json" ? 0 : 1 }}>
+                  {[["json", "{ } Normal"], ["html", "<> Beautiful"]].map(([m, label]) => (
                     <button key={m} type="button" role="tab" aria-selected={mode === m}
                       className={`docstudio-tab ${mode === m ? "is-active" : ""}`}
                       onClick={() => switchMode(m)}>
@@ -1159,6 +1183,12 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                   ))}
                 </div>
                 <span className="flex-1" />
+                {!previewOpen && (
+                  <button type="button" className="docstudio-tool-btn" onClick={openPreview}
+                    title="Mở lại khung xem trước">
+                    <Eye className="w-3.5 h-3.5" /> Xem trước
+                  </button>
+                )}
                 <button type="button" className="docstudio-tool-btn" onClick={() => editorRef.current?.openSearch()} title="Tìm & thay thế (Ctrl+F / Ctrl+H)">
                   <Search className="w-3.5 h-3.5" /> Tìm
                 </button>
@@ -1187,7 +1217,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                 )}
                 <span className="flex-1" />
                 <button type="button" className="docstudio-convert-btn" onClick={convertIntoCurrent}
-                  title={`Chuyển đổi nội dung từ ${mode === "html" ? "JSON" : "HTML/CSS"} sang chế độ hiện tại`}>
+                  title={`Chuyển đổi nội dung từ ${modeName(mode === "html" ? "json" : "html")} sang chế độ hiện tại`}>
                   <ArrowLeftRight className="w-3.5 h-3.5" />
                   <span className="hidden xl:inline">Chuyển đổi</span>
                 </button>
@@ -1197,19 +1227,21 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
               </div>
             </section>
 
-            <div role="separator" aria-orientation="vertical" onPointerDown={startDrag}
-              className="hidden lg:block docstudio-divider" />
+            {previewOpen && (
+              <div role="separator" aria-orientation="vertical" onPointerDown={startDrag}
+                className="hidden lg:block docstudio-divider" />
+            )}
 
-            <section ref={previewRef}
-              className={`docstudio-preview ${showPreviewMobile ? "flex" : "hidden lg:flex"}`}>
+            <section ref={previewRef} aria-hidden={!previewOpen}
+              className={`docstudio-preview ${showPreviewMobile ? "flex" : "hidden lg:flex"} ${previewOpen ? "" : "is-closed"}`}>
               <div className="docstudio-preview-head">
                 <span className="docstudio-preview-title">
                   Xem trước {docType === "word" ? "— trang A4" : "— slide"}
                 </span>
                 {appliedStale && <span className="docstudio-stale">(chưa áp dụng thay đổi mới nhất)</span>}
                 <span className="flex-1" />
-                <button type="button" className="docstudio-zoom-btn lg:hidden"
-                  onClick={() => setShowPreviewMobile(false)} title="Về khung soạn thảo">
+                <button type="button" className="docstudio-zoom-btn"
+                  onClick={closePreview} title="Đóng khung xem trước" aria-label="Đóng khung xem trước">
                   <X className="w-4 h-4" />
                 </button>
               </div>

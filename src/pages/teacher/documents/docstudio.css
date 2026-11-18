@@ -32,7 +32,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 14px;
+  padding: 8px 12px;
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(29, 46, 74, 0.08);
@@ -264,8 +264,8 @@
   flex: 1;
   min-height: 0;
   display: flex;
-  gap: 10px;
-  padding: 12px 14px 14px;
+  gap: 8px;
+  padding: 10px 12px 12px;
 }
 
 .docstudio-rail {
@@ -273,7 +273,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px 6px;
+  padding: 7px 5px;
   overflow-y: auto;
   background: #fff;
   border: 1px solid rgba(29, 46, 74, 0.08);
@@ -303,7 +303,7 @@
 
 .docstudio-flyout {
   flex: 0 0 252px;
-  padding: 12px;
+  padding: 10px;
   overflow-y: auto;
   background: #fff;
   border: 1px solid rgba(29, 46, 74, 0.08);
@@ -393,23 +393,46 @@
 }
 .docstudio-btn-ghost:hover { background: #f8fafc; }
 
+/* Segmented control hiện đại (dùng chung cho .docstudio-seg ở Cài đặt
+   và .docstudio-tabs ở đầu khung soạn): nền pill TRƯỢT theo biến
+   --seg-pos (0 = nút đầu, 1 = nút sau) thay vì mỗi nút tự bật nền —
+   chuyển chế độ cho cảm giác trượt mượt, trạng thái active nổi rõ. */
 .docstudio-seg {
+  position: relative;
   display: flex;
-  gap: 3px;
+  gap: 0;
   padding: 3px;
-  border-radius: 9px;
-  background: #eef2f7;
+  border-radius: 10px;
+  background: #e8edf4;
+  box-shadow: inset 0 1px 2px rgba(29, 46, 74, 0.06);
+}
+.docstudio-seg::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(29, 46, 74, 0.14), 0 1px 2px rgba(29, 46, 74, 0.08);
+  transform: translateX(calc(var(--seg-pos, 0) * 100%));
+  transition: transform 0.28s cubic-bezier(0.45, 0, 0.2, 1);
 }
 .docstudio-seg button {
+  position: relative;
+  z-index: 1;
   flex: 1;
   padding: 6px 8px;
-  border-radius: 7px;
+  border-radius: 8px;
   font-family: "Be Vietnam Pro", sans-serif;
   font-size: 11.5px;
   font-weight: 700;
   color: #64748b;
+  transition: color 0.2s ease;
 }
-.docstudio-seg button.is-active { color: var(--doc-accent-dark); background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
+.docstudio-seg button:hover { color: var(--doc-accent-dark); }
+.docstudio-seg button.is-active { color: var(--doc-accent-dark); }
 
 .docstudio-template-list { display: flex; flex-direction: column; gap: 6px; }
 .docstudio-template-search {
@@ -619,21 +642,49 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 9px;
+  padding: 6px 8px;
   background: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
 }
-.docstudio-tabs { display: flex; gap: 3px; padding: 3px; border-radius: 9px; background: #eef2f7; }
+.docstudio-tabs {
+  position: relative;
+  display: flex;
+  gap: 0;
+  min-width: 228px;
+  padding: 3px;
+  border-radius: 10px;
+  background: #e8edf4;
+  box-shadow: inset 0 1px 2px rgba(29, 46, 74, 0.06);
+}
+.docstudio-tabs::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(29, 46, 74, 0.14), 0 1px 2px rgba(29, 46, 74, 0.08);
+  transform: translateX(calc(var(--seg-pos, 0) * 100%));
+  transition: transform 0.28s cubic-bezier(0.45, 0, 0.2, 1);
+}
 .docstudio-tab {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
   padding: 6px 11px;
-  border-radius: 7px;
+  border-radius: 8px;
   font-family: "Be Vietnam Pro", sans-serif;
   font-size: 12px;
   font-weight: 700;
   color: #64748b;
   white-space: nowrap;
+  text-align: center;
+  transition: color 0.2s ease;
 }
-.docstudio-tab.is-active { color: var(--doc-accent-dark); background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
+.docstudio-tab:hover { color: var(--doc-accent-dark); }
+.docstudio-tab.is-active { color: var(--doc-accent-dark); }
 .docstudio-tool-btn {
   display: inline-flex;
   align-items: center;
@@ -648,8 +699,9 @@
   color: #475569;
 }
 .docstudio-tool-btn:hover { background: var(--doc-accent-soft); border-color: var(--doc-accent-line); color: var(--doc-accent-dark); }
+.docstudio-tool-btn { transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
 
-.docstudio-editor-code { flex: 1; min-height: 0; padding: 8px; background: #fbfcff; }
+.docstudio-editor-code { flex: 1; min-height: 0; padding: 6px; background: #fbfcff; }
 .docstudio-editor-code .docstudio-codeeditor { border-radius: 9px; }
 
 .docstudio-editor-foot {
@@ -657,7 +709,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 9px;
+  padding: 6px 8px;
   border-top: 1px solid #e2e8f0;
   background: #fff;
 }
@@ -733,7 +785,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 11px;
+  padding: 7px 10px;
   background: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -743,14 +795,58 @@
   font-weight: 700;
   color: #475569;
 }
-.docstudio-preview-body { flex: 1; min-height: 0; }
+/* Vùng cuộn DUY NHẤT của pane xem trước (§3): thanh cuộn nằm ở mép
+   ngoài của pane, nội dung bên trong (trang A4 qua WordPreview, slide
+   qua PowerPointPreview) không còn container cuộn riêng; iframe cũng
+   không tự cuộn (SandboxFrame scrolling="no" + tự giãn đủ chiều cao)
+   → các trang A4 nối tiếp nhau cuộn liền mạch như trình xem Word/PDF. */
+.docstudio-preview-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(29, 46, 74, 0.35) transparent;
+}
+.docstudio-preview-body::-webkit-scrollbar { width: 10px; height: 10px; }
+.docstudio-preview-body::-webkit-scrollbar-track { background: transparent; }
+.docstudio-preview-body::-webkit-scrollbar-thumb {
+  background: rgba(29, 46, 74, 0.28);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 8px;
+}
+.docstudio-preview-body::-webkit-scrollbar-thumb:hover { background: rgba(29, 46, 74, 0.45); background-clip: padding-box; }
+
+/* Đóng/mở pane Xem trước trên desktop (§5): pane chỉ thu flex-grow về 0
+   + mờ dần (vẫn mounted → nội dung, zoom, vị trí cuộn giữ nguyên), đồng
+   thời editor nới flex-grow lấp chỗ. Trên mobile việc hiện/ẩn vẫn do
+   class Tailwind (hidden lg:flex / flex) quyết định như cũ. */
+@media (min-width: 1024px) {
+  .docstudio-preview {
+    transition: flex-grow 0.34s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.24s ease,
+      border-color 0.24s ease, box-shadow 0.24s ease, visibility 0s;
+  }
+  .docstudio-split-editor { transition: flex-grow 0.34s cubic-bezier(0.4, 0, 0.2, 1); }
+  .docstudio-split.is-preview-closed .docstudio-split-editor { flex-grow: 1; }
+  .docstudio-split.is-preview-closed .docstudio-preview {
+    flex-grow: 0;
+    opacity: 0;
+    border-color: transparent;
+    box-shadow: none;
+    pointer-events: none;
+    visibility: hidden;
+    transition: flex-grow 0.34s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.24s ease,
+      border-color 0.24s ease, box-shadow 0.24s ease, visibility 0s 0.34s;
+  }
+}
 .docstudio-preview-foot {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 5px 9px;
+  padding: 4px 8px;
   background: #fff;
   border-top: 1px solid #e2e8f0;
 }
@@ -763,6 +859,28 @@
   color: #475569;
 }
 .docstudio-zoom-btn:hover { background: #f1f5f9; color: var(--doc-accent-dark); }
+.docstudio-zoom-btn { transition: background 0.15s ease, color 0.15s ease; }
+
+/* Trạng thái focus rõ ràng cho thao tác bàn phím (§6) */
+.docstudio-rail-btn:focus-visible,
+.docstudio-tab:focus-visible,
+.docstudio-seg button:focus-visible,
+.docstudio-tool-btn:focus-visible,
+.docstudio-convert-btn:focus-visible,
+.docstudio-zoom-btn:focus-visible,
+.docstudio-comp-chip:focus-visible,
+.docstudio-comp-card:focus-visible {
+  outline: 2px solid var(--doc-accent);
+  outline-offset: 1px;
+}
+
+/* Tôn trọng người dùng tắt hiệu ứng chuyển động */
+@media (prefers-reduced-motion: reduce) {
+  .docstudio-seg::before,
+  .docstudio-tabs::before,
+  .docstudio-preview,
+  .docstudio-split-editor { transition: none; }
+}
 .docstudio-zoom-val {
   min-width: 40px;
   text-align: center;
@@ -807,6 +925,7 @@
   .docstudio-ai-btn, .docstudio-ghost-btn, .docstudio-save-btn { padding: 7px 9px; }
   .docstudio-banner-actions { gap: 5px; }
   .docstudio-banner-btn, .docstudio-banner-export { padding: 7px 9px; font-size: 11.5px; }
+  .docstudio-tabs { min-width: 0; }
   .docstudio-tab { padding: 5px 8px; font-size: 11px; }
   .docstudio-valid { display: none; }
 }
@@ -1059,7 +1178,12 @@
 [data-theme="dark"] .docstudio-seg button,
 [data-theme="dark"] .docstudio-tab { color: #a7aaad; }
 [data-theme="dark"] .docstudio-seg button.is-active,
-[data-theme="dark"] .docstudio-tab.is-active { color: #e9eef2; background: #262d33; }
+[data-theme="dark"] .docstudio-tab.is-active { color: #e9eef2; }
+/* Pill trượt của segmented control ở chế độ tối */
+[data-theme="dark"] .docstudio-seg::before,
+[data-theme="dark"] .docstudio-tabs::before { background: #262d33; }
+[data-theme="dark"] .docstudio-preview-body { scrollbar-color: rgba(233, 238, 242, 0.35) transparent; }
+[data-theme="dark"] .docstudio-preview-body::-webkit-scrollbar-thumb { background: rgba(233, 238, 242, 0.28); background-clip: padding-box; }
 
 [data-theme="dark"] .docstudio-template-search {
   background: #14181d;
