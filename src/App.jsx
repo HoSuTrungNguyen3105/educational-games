@@ -99,6 +99,8 @@ const UserRegisterScreen = lazy(() => import("./pages/user/UserRegisterScreen.js
 const CategoryPage = lazy(() => import("./pages/CategoryPage.jsx"));
 const LessonListPage = lazy(() => import("./pages/user/LessonListPage.jsx"));
 const LessonPlayPage = lazy(() => import("./pages/user/LessonPlayPage.jsx"));
+const QuestionSetListPage = lazy(() => import("./pages/user/QuestionSetListPage.jsx"));
+const QuestionSetPracticePage = lazy(() => import("./pages/user/QuestionSetPracticePage.jsx"));
 const MathAdventurePage = lazy(() => import("./pages/MathAdventurePage.jsx"));
 const SchoolMissionPage = lazy(() => import("./pages/SchoolMissionPage.jsx"));
 const OfflineGamePage = lazy(() => import("./pages/OfflineGamePage.jsx"));
@@ -329,6 +331,16 @@ function App() {
     ),
     "lesson-play": () => (
       <LessonPlayPage lessonId={route.params?.lessonId} userAuth={userAuth} showToast={showToast} />
+    ),
+    // Bộ đề luyện tập: danh sách thẻ combo trong RouteShell như Bài học;
+    // trang luyện tập tự có header riêng (giống AssignmentTake) nên không bọc.
+    "question-sets": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <QuestionSetListPage userAuth={userAuth} onBack={() => navigate("/")} />
+      </RouteShell>
+    ),
+    "question-set-practice": () => (
+      <QuestionSetPracticePage setId={route.params?.setId} userAuth={userAuth} />
     ),
     "math-adventure": () => <MathAdventurePage />,
     "school-mission": () => <SchoolMissionPage />,

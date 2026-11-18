@@ -76,6 +76,9 @@ const RULES = [
   { m: "POST", re: /^\/questions\/explain-context$/, perms: [PLAY, PROFILE] },
   { re: /^\/questions/, m: "GET", perms: [PLAY, "questions.view"] },
   { re: /^\/questions/, feature: "questions" },
+  // Học sinh tự luyện BỘ ĐỀ: server chấm 1 câu (như explain-context) — phải
+  // đứng trước rule question_bank chung, nếu không POST bị đòi .edit.
+  { m: "POST", re: /^\/question-banks\/sets\/[^/]+\/check$/, perms: [PLAY, PROFILE] },
   { re: /^\/question-banks/, m: "GET", perms: [PLAY, "question_bank.view"] },
   { re: /^\/question-banks/, feature: "question_bank" },
   { re: /^\/subjects/, m: "GET", perms: [PLAY, "subjects.view"] },

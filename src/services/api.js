@@ -497,6 +497,20 @@ export const questionBankService = {
   async update(id, data) { return apiFetch(`/question-banks/${encodeURIComponent(id)}`, { method: "PUT", body: data }); },
   async remove(id) { return apiFetch(`/question-banks/${encodeURIComponent(id)}`, { method: "DELETE" }); },
   async removeAll() { return apiFetch("/question-banks", { method: "DELETE" }); },
+  // ── Bộ đề (combo đóng gói theo bài) — /question-banks/sets ──────────────
+  // List trả kèm questionCount (chỉ đếm câu còn tồn tại trong bank). Chi tiết
+  // cho học sinh đã bị server strip correctAnswer; đáp án chỉ lộ qua checkSetAnswer.
+  async listSets(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch(`/question-banks/sets${qs ? `?${qs}` : ""}`) || [];
+  },
+  async getSet(id) { return apiFetch(`/question-banks/sets/${encodeURIComponent(id)}`); },
+  async createSet(data) { return apiFetch("/question-banks/sets", { method: "POST", body: data }); },
+  async updateSet(id, data) { return apiFetch(`/question-banks/sets/${encodeURIComponent(id)}`, { method: "PUT", body: data }); },
+  async removeSet(id) { return apiFetch(`/question-banks/sets/${encodeURIComponent(id)}`, { method: "DELETE" }); },
+  async checkSetAnswer(setId, questionId, answer) {
+    return apiFetch(`/question-banks/sets/${encodeURIComponent(setId)}/check`, { method: "POST", body: { questionId, answer } });
+  },
   async linkToGame(bankId, gameId) { return apiFetch(`/question-banks/${encodeURIComponent(bankId)}/link/${encodeURIComponent(gameId)}`, { method: "POST" }); },
   async bulkLink(bankIds, gameId) { return apiFetch("/question-banks/bulk-link", { method: "POST", body: { bankIds, gameId } }); },
   async sync(id) { return apiFetch(`/question-banks/${encodeURIComponent(id)}/sync`, { method: "POST" }); },

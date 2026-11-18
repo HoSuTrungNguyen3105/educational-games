@@ -3,6 +3,8 @@ import { AlertTriangle, Check, FileDown, FolderOpen, Link2, MessageSquare, Refre
 import { gameService, questionBankService } from '../../services/api.js'
 import { BulkDeleteBar, ConfirmModal, GhostButton, Loader, ManagementHeader, Modal, PrimaryButton } from '../../components/ui'
 import { bulkInChunks, useBulkSelection } from '../../lib/hooks.js'
+import { GRADES, SK, SK_KEYS, bankQuestionMatches, subjKey, subjLabel } from '../../lib/questionBankMeta.js'
+import QuestionSetsPanel from './QuestionSetsPanel.jsx'
 
 /*
  * Ngân hàng câu hỏi — bản React của mục "bank" trong src/games/_tools/admin.html.
@@ -18,9 +20,6 @@ import { bulkInChunks, useBulkSelection } from '../../lib/hooks.js'
  */
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`
-const SK = { viet: 'Tiếng Việt', eng: 'Tiếng Anh', sci: 'Khoa học', geo: 'Địa lí – Lịch sử', custom: 'Thầy cô ra đề' }
-const SK_KEYS = Object.keys(SK)
-const GRADES = [1, 2, 3, 4, 5]
 const LANGS = { 'vi-VN': 'Tiếng Việt', 'en-US': 'Tiếng Anh' }
 const LET = 'ABCD'
 
@@ -30,16 +29,6 @@ const CSVH = ['mon', 'lop', 'cau_hoi', 'dap_an_dung', 'sai_1', 'sai_2', 'sai_3',
 const label = 'text-[11px] font-mono text-[#8A7C63] leading-tight block mb-1'
 const box = 'w-full rounded-lg border border-ink/15 px-2.5 py-1.5 bg-paper text-sm font-body focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/60 transition'
 const toolBtn = 'px-3 py-1.5 rounded-lg border text-sm font-body transition'
-
-/** Subject trong DB có thể là id ("viet") hoặc nhãn ("Tiếng Việt") — quy về id. */
-function subjKey(d) {
-  const s = String(d?.subject || '').trim()
-  if (!s) return 'custom'
-  if (SK_KEYS.includes(s)) return s
-  const hit = SK_KEYS.find((k) => SK[k] === s)
-  return hit || s
-}
-const subjLabel = (k) => SK[k] || k
 
 /** Luật của tool cũ (qIssues) áp lên document trong DB. */
 function qIssues(q) {
@@ -182,6 +171,9 @@ function download(name, text, type = 'application/json') {
 }
 
 export default function QuestionBankManagement({ showToast }) {
+  // Tab "sets" = mục Bộ đề (combo đóng gói theo bài) — panel riêng dùng
+  // chung danh sách câu hỏi + helper lọc của trang này.
+  const [tab, setTab] = useState('questions')
   const [docs, setDocs] = useState(null)
   const [games, setGames] = useState([])
   const [stats, setStats] = useState(null)
@@ -237,14 +229,10 @@ export default function QuestionBankManagement({ showToast }) {
     return list
   }, [rows])
 
-  const filtered = useMemo(() => {
-    const ql = search.trim().toLowerCase()
-    return rows.filter((r) =>
-      (fSubj === 'all' || r.s === fSubj)
-      && (!fGrade || (r.d.grade || 1) === fGrade)
-      && (!fBad || r.bad.length)
-      && (!ql || `${r.d.content} ${(r.d.options || []).map((o) => o.content).join(' ')}`.toLowerCase().includes(ql)))
-  }, [rows, fSubj, fGrade, fBad, search])
+  const filtered = useMemo(() => rows.filter((r) =>
+    bankQuestionMatches(r.d, r.s, { subj: fSubj, grade: fGrade, search })
+    && (!fBad || r.bad.length)
+  ), [rows, fSubj, fGrade, fBad, search])
 
   const dupN = useMemo(() => {
     const m = new Map()
@@ -410,6 +398,20 @@ export default function QuestionBankManagement({ showToast }) {
         subtitle="Chỉnh ở đây rồi liên kết vào game — sửa một câu, mọi bản sao đã liên kết tự cập nhật theo."
       />
 
+      {/* Tab: Câu hỏi | Bộ đề (combo) */}
+      <div className="flex gap-1.5" role="tablist" aria-label="Ngân hàng câu hỏi">
+        {[{ k: 'questions', t: 'Câu hỏi' }, { k: 'sets', t: 'Bộ đề' }].map(({ k, t }) => (
+          <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+            className={`px-4 py-1.5 rounded-full border text-sm font-body transition ${tab === k ? 'bg-ink text-paper border-ink font-semibold' : 'bg-paper text-ink/70 border-ink/15 hover:border-ink/35'}`}>
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'sets' ? (
+        <QuestionSetsPanel docs={docs} subjects={subjects} showToast={showToast} />
+      ) : (
+      <>
       <div className="flex flex-wrap gap-2">
         <button onClick={openCreate} className={`${toolBtn} bg-ink text-paper border-ink font-semibold`}>+ Thêm câu</button>
         <button onClick={() => { setImpParsed(null); setImpOpen(true) }} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><Upload className="w-3.5 h-3.5" /> Nhập CSV/JSON</button>
@@ -723,6 +725,8 @@ export default function QuestionBankManagement({ showToast }) {
           setConfirmWipe(false)
         }}
         onClose={() => setConfirmWipe(false)} />
+      </>
+      )}
     </div>
   )
 }

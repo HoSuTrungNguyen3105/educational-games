@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as bankService from "../services/questionBankService.js";
+import * as setService from "../services/questionSetService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendError, buildPagination } from "../utils/response.js";
 import { respondWithRange } from "../utils/rangeList.js";
@@ -17,6 +18,74 @@ router.get("/", async (req, res, next) => {
     if (respondWithRange(req, res, questions)) return;
     const pagination = buildPagination({ total: questions.length });
     sendSuccess(res, questions, "success", pagination);
+  } catch (e) { next(e); }
+});
+
+// ── Bộ đề (combo đóng gói theo bài) ─────────────────────────────────────
+// Các route /sets PHẢI khai báo trước /:id để "sets" không bị hiểu là id
+// câu hỏi. Học sinh đã đăng nhập xem + luyện tập được; tạo/sửa/xóa chỉ
+// teacher/admin (route chặn role, middleware permission chặn thêm quyền
+// question_bank.edit như mọi thao tác ghi của ngân hàng).
+const isStaff = (req) => req.user && (req.user.role === "teacher" || req.user.role === "admin");
+
+router.get("/sets", authenticate, async (req, res, next) => {
+  try {
+    const { subject, grade } = req.query;
+    const sets = await setService.listSets({ subject, grade });
+    const pagination = buildPagination({ total: sets.length });
+    sendSuccess(res, sets, "success", pagination);
+  } catch (e) { next(e); }
+});
+
+router.get("/sets/:setId", authenticate, async (req, res, next) => {
+  try {
+    const detail = await setService.getSetWithQuestions(req.params.setId);
+    if (!detail) return sendError(res, "Không tìm thấy bộ đề", 404);
+    // Học sinh: câu hỏi bị strip correctAnswer theo chuẩn DTO của hệ;
+    // teacher/admin xem bản đầy đủ để đối chiếu khi soạn bộ.
+    if (!isStaff(req)) {
+      detail.questions = detail.questions.map((q) => setService.stripBankQuestion(q));
+    }
+    sendSuccess(res, detail);
+  } catch (e) { next(e); }
+});
+
+// Chấm một câu khi học sinh tự luyện cả bộ: server chấm bằng isAnswerCorrect
+// dùng chung, đáp án đúng chỉ lộ SAU khi đã trả lời (mẫu /questions/explain-context).
+// Không ghi điểm/xu/kết quả — tự luyện thuần túy.
+router.post("/sets/:setId/check", authenticate, async (req, res, next) => {
+  try {
+    const { questionId, answer } = req.body || {};
+    if (!questionId) return sendError(res, "questionId là bắt buộc", 400);
+    if (answer != null && typeof answer !== "string" && typeof answer !== "number") {
+      return sendError(res, "answer phải là chuỗi hoặc số", 400);
+    }
+    const result = await setService.checkAnswer(req.params.setId, questionId, answer ?? null);
+    if (!result) return sendError(res, "Không tìm thấy bộ đề hoặc câu hỏi không thuộc bộ", 404);
+    sendSuccess(res, result);
+  } catch (e) { next(e); }
+});
+
+router.post("/sets", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const created = await setService.createSet(req.user.sub, req.body || {});
+    sendSuccess(res, created, "Đã tạo bộ đề");
+  } catch (e) { next(e); }
+});
+
+router.put("/sets/:setId", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const updated = await setService.updateSet(req.params.setId, req.body || {});
+    if (!updated) return sendError(res, "Không tìm thấy bộ đề", 404);
+    sendSuccess(res, updated, "Đã cập nhật bộ đề");
+  } catch (e) { next(e); }
+});
+
+router.delete("/sets/:setId", authenticate, requireRoles("teacher", "admin"), async (req, res, next) => {
+  try {
+    const ok = await setService.removeSet(req.params.setId);
+    if (!ok) return sendError(res, "Không tìm thấy bộ đề", 404);
+    sendSuccess(res, { ok: true }, "Đã xóa bộ đề (câu hỏi trong ngân hàng vẫn còn nguyên)");
   } catch (e) { next(e); }
 });
 

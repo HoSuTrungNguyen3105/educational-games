@@ -141,6 +141,27 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // Bộ đề (combo) đóng gói từ question_banks: một bộ gồm nhiều câu của
+    // bank, hiển thị cho học sinh như MỘT thẻ luyện tập. questionIds chỉ
+    // tham chiếu id trong question_banks — câu bị xóa khỏi bank thì khi
+    // đọc/đếm sẽ bị bỏ qua (xem questionSetService).
+    question_sets: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "name", "questionIds", "createdAt", "updatedAt"],
+        properties: {
+          id: { bsonType: "string" },
+          name: { bsonType: "string" },
+          subject: { bsonType: "string" },
+          grade: { bsonType: ["int", "double", "null"] },
+          description: { bsonType: "string" },
+          questionIds: { bsonType: "array", items: { bsonType: "string" } },
+          ownerId: { bsonType: "string" },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
     players: {
       $jsonSchema: {
         bsonType: "object",
@@ -766,6 +787,10 @@ async function _runHeavyInit(database) {
     ["question_banks", { id: 1 }, { unique: true }],
     ["question_banks", { subject: 1 }],
     ["question_banks", { category: 1 }],
+    ["question_sets", { id: 1 }, { unique: true }],
+    ["question_sets", { subject: 1 }],
+    ["question_sets", { grade: 1 }],
+    ["question_sets", { ownerId: 1 }],
     ["players", { name: 1 }],
     ["results", { id: 1 }, { unique: true }],
     ["results", { gameId: 1 }],
