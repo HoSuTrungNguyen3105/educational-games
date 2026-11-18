@@ -5,7 +5,9 @@
 // KHÔNG chạy script, KHÔNG render vào trang hiện tại. Không eval/Function.
 //
 // Phạm vi hỗ trợ: heading/paragraph/list/table/image + định dạng inline
-// đậm/nghiêng/gạch chân + màu/căn lề từ inline style và từ các rule CSS
+// đậm/nghiêng/gạch chân/gạch ngang + màu chữ/màu tô sáng (span có style,
+// thẻ <mark>, <font color>) + font chữ cấp khối (font-family) + màu/căn
+// lề từ inline style và từ các rule CSS
 // đơn giản (selector dạng tag, .class, tag.class, ".class tag"). CSS phức
 // tạp (position/float/flex/grid/animation/transform...) không chuyển
 // được sang Word/PowerPoint → ghi vào danh sách cảnh báo để giáo viên
@@ -117,43 +119,73 @@ function stylePropsOf(el, rules) {
   if (st.color) props.color = st.color;
   const align = pickAlign(st["text-align"]);
   if (align) props.align = align;
+  if (st["font-family"]) {
+    const fam = st["font-family"].split(",")[0].trim().replace(/^["']+|["']+$/g, "");
+    if (fam) props.font = fam;
+  }
   return { props, st };
 }
 
-// ── Trích xuất runs inline (đậm/nghiêng/gạch chân) ─────────────────────
+// ── Trích xuất runs inline (đậm/nghiêng/gạch chân/gạch ngang/màu/tô) ──
+/** Giá trị background đơn giản (một màu duy nhất) trong shorthand `background`. */
+function simpleColorOf(v) {
+  const s = String(v || "").trim();
+  if (/^#[0-9a-f]{3,8}$/i.test(s) || /^rgba?\([\d\s.,%]+\)$/i.test(s) || /^[a-z]+$/i.test(s)) return s;
+  return undefined;
+}
+
+/** Định dạng inline đọc từ thuộc tính style của MỘT phần tử con. */
+function inlineFlagsOf(el) {
+  const out = {};
+  const decls = parseDeclarations(el.getAttribute?.("style") || "");
+  if (decls.color) out.color = decls.color;
+  const bg = decls["background-color"] || simpleColorOf(decls.background);
+  if (bg) out.highlight = bg;
+  if (isBoldWeight(decls["font-weight"])) out.bold = true;
+  if (/italic|oblique/.test(decls["font-style"] || "")) out.italic = true;
+  const deco = `${decls["text-decoration"] || ""} ${decls["text-decoration-line"] || ""}`;
+  if (/underline/.test(deco)) out.underline = true;
+  if (/line-through/.test(deco)) out.strike = true;
+  return out;
+}
+
+const RUN_FLAG_KEYS = ["bold", "italic", "underline", "strike", "color", "highlight"];
+const sameRunFlags = (a, b) => RUN_FLAG_KEYS.every((k) => (a[k] || null) === (b[k] || null));
+
 function extractRuns(node, flags = {}) {
   const runs = [];
   const push = (text, f) => {
     if (!text) return;
+    const run = {
+      text, bold: !!f.bold, italic: !!f.italic, underline: !!f.underline,
+      ...(f.strike ? { strike: true } : {}),
+      ...(f.color ? { color: f.color } : {}),
+      ...(f.highlight ? { highlight: f.highlight } : {}),
+    };
     const last = runs[runs.length - 1];
-    if (last && last.bold === f.bold && last.italic === f.italic && last.underline === f.underline) {
-      last.text += text;
-    } else {
-      runs.push({ text, bold: !!f.bold, italic: !!f.italic, underline: !!f.underline });
+    if (last && sameRunFlags(last, run)) last.text += text;
+    else runs.push(run);
+  };
+  const walk = (parent, f) => {
+    for (const child of parent.childNodes) {
+      if (child.nodeType === 3) {
+        push(child.textContent.replace(/\s+/g, " "), f);
+      } else if (child.nodeType === 1) {
+        const tag = child.tagName;
+        if (tag === "BR") { push(" ", f); continue; }
+        const next = { ...f };
+        if (tag === "B" || tag === "STRONG") next.bold = true;
+        if (tag === "I" || tag === "EM") next.italic = true;
+        if (tag === "U") next.underline = true;
+        if (tag === "S" || tag === "STRIKE" || tag === "DEL") next.strike = true;
+        if (tag === "MARK") next.highlight = next.highlight || "#ffff00";
+        if (tag === "FONT" && child.getAttribute?.("color")) next.color = child.getAttribute("color");
+        Object.assign(next, inlineFlagsOf(child));
+        walk(child, next);
+      }
     }
   };
-  for (const child of node.childNodes) {
-    if (child.nodeType === 3) {
-      push(child.textContent.replace(/\s+/g, " "), flags);
-    } else if (child.nodeType === 1) {
-      const tag = child.tagName;
-      if (tag === "BR") { push(" ", flags); continue; }
-      const next = { ...flags };
-      if (tag === "B" || tag === "STRONG") next.bold = true;
-      if (tag === "I" || tag === "EM") next.italic = true;
-      if (tag === "U") next.underline = true;
-      runs.push(...extractRuns(child, next));
-      // Gộp lại sau khi đệ quy (extractRuns lồng nhau tạo mảng riêng).
-      const merged = [];
-      for (const r of runs) {
-        const last = merged[merged.length - 1];
-        if (last && last.bold === r.bold && last.italic === r.italic && last.underline === r.underline) last.text += r.text;
-        else merged.push({ ...r });
-      }
-      runs.length = 0;
-      runs.push(...merged);
-    }
-  }
+  walk(node, flags);
   return runs;
 }
 
@@ -168,7 +200,7 @@ function textBlockOf(el, rules, base = {}) {
   const text = runs.map((r) => r.text).join("");
   const { props, st } = stylePropsOf(el, rules);
   const block = { ...base, text, ...props };
-  const hasFormat = runs.some((r) => r.bold || r.italic || r.underline) || isBoldWeight(st["font-weight"]) || /italic|oblique/.test(st["font-style"] || "");
+  const hasFormat = runs.some((r) => r.bold || r.italic || r.underline || r.strike || r.color || r.highlight) || isBoldWeight(st["font-weight"]) || /italic|oblique/.test(st["font-style"] || "");
   if (hasFormat) {
     if (isBoldWeight(st["font-weight"])) runs = runs.map((r) => ({ ...r, bold: true }));
     if (/italic|oblique/.test(st["font-style"] || "")) runs = runs.map((r) => ({ ...r, italic: true }));

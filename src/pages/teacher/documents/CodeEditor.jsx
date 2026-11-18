@@ -59,6 +59,28 @@ const CodeEditor = forwardRef(function CodeEditor({ value, onChange, language, o
     focus() {
       viewRef.current?.focus();
     },
+    // Vùng chọn hiện tại trong khung soạn { from, to } (from === to khi
+    // chỉ đặt con trỏ) — thanh định dạng chữ ở chế độ Beautiful cần biết
+    // đoạn đang bôi đen để bọc thẻ quanh đúng đoạn đó.
+    getSelection() {
+      const view = viewRef.current;
+      if (!view) return null;
+      const { from, to } = view.state.selection.main;
+      return { from, to };
+    },
+    // Thay đoạn [from, to) bằng text mới (giữ lịch sử undo của
+    // CodeMirror) và đặt con trỏ ngay sau đoạn vừa chèn.
+    replaceRange(from, to, text) {
+      const view = viewRef.current;
+      if (!view) return false;
+      const insertText = String(text ?? "");
+      view.dispatch({
+        changes: { from, to, insert: insertText },
+        selection: { anchor: from + insertText.length },
+      });
+      view.focus();
+      return true;
+    },
     // Mở panel tìm & thay thế (tương đương bấm Ctrl+F trong khung soạn).
     openSearch() {
       const view = viewRef.current;

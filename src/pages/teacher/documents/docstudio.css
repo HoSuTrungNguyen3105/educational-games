@@ -881,6 +881,261 @@
 /* CodeMirror lấp đầy chiều cao khung soạn */
 .docstudio-codeeditor .cm-editor { height: 100%; }
 
+/* ── Thanh định dạng chữ (desktop) + panel/bottom bar (mobile) ───────
+   Một bộ điều khiển (FormatToolbar.jsx) ba hình thức: thanh ngang trên
+   khung soạn ở desktop, thanh dính đáy + panel trượt lên ở mobile. */
+.docstudio-formatbar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 8px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+.ds-fmt-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.13s ease, color 0.13s ease, border-color 0.13s ease;
+}
+.ds-fmt-btn:hover:not(:disabled) { background: var(--doc-accent-soft); color: var(--doc-accent-dark); }
+.ds-fmt-btn.is-active {
+  background: var(--doc-accent-soft);
+  border-color: var(--doc-accent-line);
+  color: var(--doc-accent-dark);
+}
+.ds-fmt-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+.ds-fmt-btn-wide { width: auto; padding: 0 10px; gap: 5px; display: inline-flex; font-family: "Be Vietnam Pro", sans-serif; font-size: 12px; font-weight: 700; }
+.ds-fmt-sep { width: 1px; height: 20px; margin: 0 4px; background: #e2e8f0; flex: none; }
+.ds-fmt-font {
+  width: 158px;
+  max-width: 44vw;
+  height: 30px;
+  padding: 3px 6px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #1d2e4a;
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+}
+.ds-fmt-font:focus { border-color: var(--doc-accent); }
+.ds-fmt-font:disabled { opacity: 0.45; }
+.ds-fmt-a {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: Georgia, serif;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1;
+  color: inherit;
+}
+.ds-fmt-a i { display: block; width: 16px; height: 4px; margin-top: 2px; border-radius: 2px; background: #111827; }
+.ds-fmt-a-lg { font-size: 19px; }
+.ds-fmt-a-lg i { width: 20px; height: 5px; }
+.ds-fmt-bar-hint {
+  margin-left: 6px;
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+.ds-fmt-pop-wrap { position: relative; }
+.ds-fmt-pop-wrap.is-open { z-index: 32; }
+.ds-fmt-pop-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+.ds-fmt-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 31;
+  width: 228px;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(29, 46, 74, 0.18);
+}
+.ds-fmt-swatches { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ds-fmt-swatch {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 7px;
+  border: 1px solid rgba(29, 46, 74, 0.22);
+  cursor: pointer;
+  padding: 0;
+}
+.ds-fmt-swatch:hover { transform: translateY(-1px); }
+.ds-fmt-swatch.is-active { outline: 2px solid var(--doc-accent); outline-offset: 1.5px; }
+.ds-fmt-swatch-none {
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: #94a3b8;
+}
+.ds-fmt-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 2px;
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+}
+.ds-fmt-custom input[type="color"] {
+  width: 30px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+.ds-fmt-panel .ds-fmt-group {
+  padding: 11px 0;
+  border-bottom: 1px dashed #e2e8f0;
+}
+.ds-fmt-panel .ds-fmt-group:first-child { padding-top: 2px; }
+.ds-fmt-panel .ds-fmt-group:last-child { border-bottom: 0; }
+.ds-fmt-group-label {
+  display: block;
+  margin-bottom: 7px;
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.ds-fmt-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.ds-fmt-panel .ds-fmt-btn { width: 42px; height: 42px; border-color: #e2e8f0; background: #fff; }
+.ds-fmt-panel .ds-fmt-btn.is-active { background: var(--doc-accent-soft); border-color: var(--doc-accent-line); }
+.ds-fmt-panel .ds-fmt-btn-wide { width: auto; padding: 0 12px; }
+.ds-fmt-panel .ds-fmt-swatch { width: 30px; height: 30px; border-radius: 9px; }
+.ds-fmt-panel .ds-fmt-font { width: 100%; max-width: none; height: 38px; font-size: 13px; }
+.ds-fmt-hint {
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+/* Thanh định dạng dính đáy — chỉ mobile (desktop dùng thanh ngang). */
+.docstudio-formatbar-mobile { display: none; }
+
+@media (max-width: 1023px) {
+  /* Desktop bar ẩn ở mobile — mobile dùng thanh đáy + panel. */
+  .docstudio-formatbar { display: none; }
+
+  .docstudio-formatbar-mobile {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: none;
+    padding: 6px 8px;
+    border-top: 1px solid rgba(29, 46, 74, 0.1);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 -5px 16px rgba(29, 46, 74, 0.07);
+    z-index: 30;
+    overflow-x: auto;
+  }
+  .ds-fmt-mbtn {
+    flex: 1 0 40px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #334155;
+    cursor: pointer;
+  }
+  .ds-fmt-mbtn:active { background: var(--doc-accent-soft); }
+  .ds-fmt-mbtn.is-active { background: var(--doc-accent-soft); color: var(--doc-accent-dark); }
+  .ds-fmt-mbtn:disabled { opacity: 0.35; }
+}
+
+/* ── Xem trước Word tương tác (DOM, mobile + Normal) ─────────────────
+   .ds-page là bản tương đương .doc-page của iframe nhưng scope riêng
+   trong DOM của app và bề rộng chảy theo khung cho điện thoại. */
+.ds-interactive-wrap {
+  min-height: 100%;
+  width: 100%;
+  background: #cfc9bb;
+  padding: 10px;
+}
+.ds-interactive-hint {
+  margin-bottom: 8px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #475569;
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.ds-page {
+  background: #ffffff;
+  width: 100%;
+  padding: 22px 16px;
+  color: #1f2937;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.65;
+  overflow-wrap: break-word;
+}
+.ds-page img { max-width: 100%; }
+.ds-page table { border-collapse: collapse; width: 100%; margin: 10px 0 14px; }
+.ds-page th, .ds-page td { border: 1px solid #b9b9b9; padding: 6px 8px; text-align: left; vertical-align: top; }
+.ds-page th { background: #f3f4f6; font-weight: 700; }
+.ds-page h1 { font-size: 22px; line-height: 1.3; margin: 0 0 8px; }
+.ds-page h2 { font-size: 15px; line-height: 1.4; margin: 18px 0 8px; }
+.ds-page h3 { font-size: 14px; margin: 12px 0 5px; }
+.ds-page p { margin: 0 0 8px; }
+.ds-page ul, .ds-page ol { margin: 8px 0 12px; padding-left: 22px; }
+.ds-page li { margin: 3px 0; }
+.ds-page mark { color: inherit; padding: 0 1px; border-radius: 2px; }
+.ds-block-pick {
+  border-radius: 6px;
+  padding: 3px 5px;
+  margin: 0 -5px;
+  cursor: pointer;
+  transition: background 0.13s ease, box-shadow 0.13s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.ds-block-pick:hover { background: rgba(37, 99, 235, 0.06); }
+.ds-block-pick.is-selected {
+  background: var(--doc-accent-soft);
+  box-shadow: 0 0 0 2px var(--doc-accent);
+}
+.ds-block-pick:focus-visible { outline: 2px solid var(--doc-accent); outline-offset: 1px; }
+.ds-interactive-empty { color: #64748b; font-family: "Be Vietnam Pro", sans-serif; font-size: 12.5px; }
+
 /* ── Màn hình nhỏ: rail nằm ngang, workspace xếp dọc ────────────────── */
 @media (min-width: 640px) {
   .docstudio-save-state { display: inline-block; }
@@ -1244,6 +1499,26 @@
   color: #e9eef2;
 }
 
+[data-theme="dark"] .docstudio-formatbar { background: #1d2327; border-bottom-color: #2c3338; }
+[data-theme="dark"] .ds-fmt-btn { color: #a7aaad; }
+[data-theme="dark"] .ds-fmt-btn:hover:not(:disabled) { background: #262d33; color: #e9eef2; }
+[data-theme="dark"] .ds-fmt-sep { background: #3c434a; }
+[data-theme="dark"] .ds-fmt-font {
+  background: #14181d;
+  border-color: #3c434a;
+  color: #e9eef2;
+}
+[data-theme="dark"] .ds-fmt-pop {
+  background: #1d2327;
+  border-color: #3c434a;
+}
+[data-theme="dark"] .ds-fmt-panel .ds-fmt-group { border-bottom-color: #2c3338; }
+[data-theme="dark"] .ds-fmt-panel .ds-fmt-btn { background: #262d33; border-color: #3c434a; }
+[data-theme="dark"] .ds-fmt-hint { color: #a7aaad; }
+/* "Bàn" quanh trang giấy tương tác tối theo khung; trang giấy giữ trắng. */
+[data-theme="dark"] .ds-interactive-wrap { background: #14181d; }
+[data-theme="dark"] .ds-interactive-hint { background: rgba(38, 45, 51, 0.9); color: #a7aaad; }
+
 @media (max-width: 1023px) {
   [data-theme="dark"] .docstudio-mobile-nav {
     border-top-color: #2c3338;
@@ -1260,4 +1535,10 @@
     color: #e9eef2;
   }
   [data-theme="dark"] .docstudio-mobile-sheet-tools { border-bottom-color: #2c3338; }
+  [data-theme="dark"] .docstudio-formatbar-mobile {
+    border-top-color: #2c3338;
+    background: rgba(29, 35, 39, 0.98);
+  }
+  [data-theme="dark"] .ds-fmt-mbtn { color: #a7aaad; }
+  [data-theme="dark"] .ds-fmt-mbtn.is-active { color: #e9eef2; }
 }

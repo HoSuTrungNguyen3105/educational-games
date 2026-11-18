@@ -4,8 +4,10 @@
 // Nguồn xuất là MÔ HÌNH TRUNG GIAN (model.js) nên cả hai chế độ HTML và
 // JSON đều xuất qua cùng một đường. Mức độ giữ định dạng (trung thực):
 //   • Giữ: heading đúng cấp, đoạn văn, danh sách có/không thứ tự, bảng,
-//     hình ảnh, đậm/nghiêng/gạch chân trong runs, màu chữ (inline/CSS đơn
-//     giản đã parse vào block.color), căn lề, font Arial mặc định, khổ A4.
+//     hình ảnh, đậm/nghiêng/gạch chân/gạch ngang trong runs, màu chữ
+//     (cấp run, fallback màu cấp khối), màu tô sáng (ánh xạ sang màu
+//     highlight chuẩn của Word khi gần khớp, không thì dùng shading
+//     giữ đúng mã màu), font chữ cấp khối, căn lề, khổ A4.
 //   • Không giữ (có cảnh báo từ htmlParser khi ở chế độ HTML): CSS bố cục
 //     (position/float/flex/grid/animation...) — Word không có khái niệm
 //     tương đương trực tiếp.
@@ -37,18 +39,58 @@ export function cssColorToHex(color) {
 
 const alignOf = (D, a) => ({ left: D.AlignmentType.LEFT, center: D.AlignmentType.CENTER, right: D.AlignmentType.RIGHT, justify: D.AlignmentType.JUSTIFY }[a]);
 
-function runsOf(D, block, font = "Arial") {
+// Bảng màu highlight CHUẨN của Word (w:highlight chỉ nhận các màu này,
+// đều là màu bão hoà). Màu tô của giáo viên TRÙNG gần như tuyệt đối một
+// màu chuẩn (khoảng cách RGB ≤ 40 — vd vàng #FFFF00 mặc định của thanh
+// công cụ) thì dùng highlight thật; các màu pastel/lệch chuẩn dùng
+// shading fill để giữ ĐÚNG mã màu đã chọn thay vì ép sang màu khác
+// (ngưỡng lỏng sẽ biến màu bạc hà thành "trắng" vô hình).
+const HIGHLIGHT_ENUM = [
+  ["yellow", "FFFF00"], ["green", "00FF00"], ["cyan", "00FFFF"],
+  ["magenta", "FF00FF"], ["blue", "0000FF"], ["red", "FF0000"],
+  ["darkBlue", "000080"], ["darkCyan", "008080"], ["darkGray", "808080"],
+  ["darkGreen", "008000"], ["darkMagenta", "800080"], ["darkRed", "800000"],
+  ["darkYellow", "808000"], ["lightGray", "C0C0C0"], ["black", "000000"],
+  ["white", "FFFFFF"],
+];
+const HIGHLIGHT_MAX_DIST = 40;
+
+function nearestHighlightName(hex) {
+  const rgb = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  let best = null;
+  let bestDist = Infinity;
+  for (const [name, h] of HIGHLIGHT_ENUM) {
+    const o = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const d = Math.hypot(rgb[0] - o[0], rgb[1] - o[1], rgb[2] - o[2]);
+    if (d < bestDist) { bestDist = d; best = name; }
+  }
+  return bestDist <= HIGHLIGHT_MAX_DIST ? best : null;
+}
+
+/** Thuộc tính tô sáng cho TextRun: { highlight } hoặc { shading }. */
+function highlightPropsOf(D, color) {
+  const hex = cssColorToHex(color);
+  if (!hex) return {};
+  const name = nearestHighlightName(hex);
+  if (name) return { highlight: name };
+  return { shading: { type: D.ShadingType.CLEAR, color: "auto", fill: hex } };
+}
+
+function runsOf(D, block, fallbackFont = "Arial") {
   const runs = Array.isArray(block.runs) && block.runs.length
     ? block.runs
     : [{ text: block.text || "", bold: false, italic: false, underline: false }];
-  const color = cssColorToHex(block.color);
+  const blockColor = cssColorToHex(block.color);
+  const font = block.font || fallbackFont;
   return runs.map((r) => new D.TextRun({
     text: r.text,
     font,
     bold: !!r.bold,
     italics: !!r.italic,
     ...(r.underline ? { underline: { type: D.UnderlineType.SINGLE } } : {}),
-    ...(color ? { color } : {}),
+    ...(r.strike ? { strike: true } : {}),
+    ...((cssColorToHex(r.color) || blockColor) ? { color: cssColorToHex(r.color) || blockColor } : {}),
+    ...highlightPropsOf(D, r.highlight),
   }));
 }
 
@@ -116,6 +158,7 @@ async function blocksToDocxChildren(D, model, warnings) {
         for (const item of block.items || []) {
           children.push(new D.Paragraph({
             children: [new D.TextRun({ text: item, font: t.font })],
+            alignment: alignOf(D, block.align),
             ...(block.ordered
               ? { numbering: { reference: NUMBERING_REF, level: 0 } }
               : { bullet: { level: 0 } }),

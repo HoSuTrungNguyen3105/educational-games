@@ -15,9 +15,14 @@ function runsHtml(block) {
   if (Array.isArray(block.runs) && block.runs.length) {
     return block.runs.map((r) => {
       let t = escapeHtml(r.text);
+      if (r.strike) t = `<s>${t}</s>`;
       if (r.underline) t = `<u>${t}</u>`;
       if (r.italic) t = `<em>${t}</em>`;
       if (r.bold) t = `<strong>${t}</strong>`;
+      const styles = [];
+      if (r.color) styles.push(`color: ${r.color}`);
+      if (r.highlight) styles.push(`background-color: ${r.highlight}`);
+      if (styles.length) t = `<span style="${escapeHtml(styles.join("; "))}">${t}</span>`;
       return t;
     }).join("");
   }
@@ -28,6 +33,7 @@ function blockStyleAttr(block) {
   const parts = [];
   if (block.color) parts.push(`color: ${block.color}`);
   if (block.align) parts.push(`text-align: ${block.align}`);
+  if (block.font) parts.push(`font-family: '${String(block.font).replace(/'/g, "")}'`);
   return parts.length ? ` style="${escapeHtml(parts.join("; "))}"` : "";
 }
 
@@ -42,7 +48,8 @@ export function wordBlockToHtml(block) {
     case "list": {
       const tag = block.ordered ? "ol" : "ul";
       const items = (block.items || []).map((it) => `<li>${escapeHtml(it)}</li>`).join("\n");
-      return `<${tag}>\n${items}\n</${tag}>`;
+      const style = block.align ? ` style="text-align: ${escapeHtml(block.align)}"` : "";
+      return `<${tag}${style}>\n${items}\n</${tag}>`;
     }
     case "table": {
       const rows = (block.rows || []).map((row, ri) => {
@@ -125,6 +132,7 @@ export const WORD_PREVIEW_CSS = `
   .doc-page p { margin: 0 0 8px; }
   .doc-page ul, .doc-page ol { margin: 8px 0 12px; padding-left: 22px; }
   .doc-page li { margin: 3px 0; }
+  .doc-page mark { color: inherit; padding: 0 1px; border-radius: 2px; }
   .doc-page hr.page-break { border: 0; border-top: 1px solid #b9b9b9; margin: 24px 0; }
   /* In / lưu PDF qua hộp thoại in của trình duyệt (trang cha gọi
      contentWindow.print() lên iframe này): bỏ nền xám + bóng đổ để bản
