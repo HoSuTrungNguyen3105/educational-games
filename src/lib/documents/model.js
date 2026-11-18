@@ -6,14 +6,16 @@
 //
 // Word model:
 //   { kind: "word", title, subject, grade, blocks: [
-//       { type: "heading", level: 1-3, text, runs?, color?, align? },
-//       { type: "paragraph", text, runs?, color?, align? },
-//       { type: "list", ordered, items: [string] },
+//       { type: "heading", level: 1-3, text, runs?, color?, align?, font? },
+//       { type: "paragraph", text, runs?, color?, align?, font? },
+//       { type: "list", ordered, items: [string], align? },
 //       { type: "table", rows: [[string]] },
 //       { type: "image", src, alt } ] }
-//   `runs` = [{ text, bold, italic, underline }] CHỈ sinh ra khi parse từ
-//   HTML có định dạng inline lẫn lộn — schema JSON của giáo viên dùng
-//   `text` thuần; khi xuất JSON, runs được gộp về text.
+//   `runs` = [{ text, bold?, italic?, underline?, strike?, color?,
+//   highlight? }] — định dạng inline theo từng đoạn chữ. Sinh ra khi
+//   parse từ HTML có định dạng inline lẫn lộn VÀ khi giáo viên áp định
+//   dạng bằng thanh công cụ ở chế độ Normal; JSON của giáo viên GIỮ
+//   được runs qua cả hai chiều chuyển đổi (text luôn = gộp runs).
 //
 // Presentation model:
 //   { kind: "presentation", title, subject, grade, slides: [
@@ -47,11 +49,50 @@ function themeOf(v) {
   return Object.keys(out).length ? out : undefined;
 }
 
+/** Tên font an toàn: bỏ ký tự phá style/HTML, giới hạn độ dài. */
+function fontOf(v) {
+  if (typeof v !== "string") return undefined;
+  const f = v.replace(/["'<>;{}]/g, "").trim().slice(0, 60);
+  return f || undefined;
+}
+
+/** Runs inline từ JSON: chỉ giữ field hợp lệ; text được gộp lại ở styledBlock. */
+function runsOf(v) {
+  if (!Array.isArray(v)) return undefined;
+  const out = [];
+  for (const r of v) {
+    if (!r || typeof r !== "object" || Array.isArray(r)) continue;
+    const run = { text: str(r.text) };
+    if (r.bold) run.bold = true;
+    if (r.italic) run.italic = true;
+    if (r.underline) run.underline = true;
+    if (r.strike) run.strike = true;
+    if (typeof r.color === "string" && r.color.trim()) run.color = r.color.trim();
+    if (typeof r.highlight === "string" && r.highlight.trim()) run.highlight = r.highlight.trim();
+    out.push(run);
+  }
+  return out.length ? out : undefined;
+}
+
+/** Khối danh sách chỉ giữ thêm căn lề (items là text thuần, không runs). */
+function styledList(block, base) {
+  const out = { ...base };
+  if (["left", "center", "right", "justify"].includes(block.align)) out.align = block.align;
+  return out;
+}
+
 /** Chỉ giữ các thuộc tính định dạng khối mà model + exporter hiểu. */
 function styledBlock(block, base) {
   const out = { ...base };
   if (typeof block.color === "string" && block.color.trim()) out.color = block.color.trim();
   if (["left", "center", "right", "justify"].includes(block.align)) out.align = block.align;
+  const font = fontOf(block.font);
+  if (font) out.font = font;
+  const runs = runsOf(block.runs);
+  if (runs) {
+    out.runs = runs;
+    out.text = runs.map((r) => r.text).join("");
+  }
   return out;
 }
 
@@ -68,7 +109,7 @@ export function wordJsonToModel(json) {
       switch (b.type) {
         case "heading": return styledBlock(b, { type: "heading", level: [1, 2, 3].includes(b.level) ? b.level : 1, text: str(b.text) });
         case "paragraph": return styledBlock(b, { type: "paragraph", text: str(b.text) });
-        case "list": return { type: "list", ordered: Boolean(b.ordered), items: strArr(b.items) };
+        case "list": return styledList(b, { type: "list", ordered: Boolean(b.ordered), items: strArr(b.items) });
         case "table": return { type: "table", rows: rowsOf(b.rows) };
         case "image": return { type: "image", src: str(b.src), alt: str(b.alt) };
         default: return { type: "paragraph", text: str(b.text) };
@@ -88,7 +129,7 @@ export function modelToWordJson(model) {
       switch (b.type) {
         case "heading": return styledBlock(b, { type: "heading", level: b.level || 1, text: b.text || "" });
         case "paragraph": return styledBlock(b, { type: "paragraph", text: b.text || "" });
-        case "list": return { type: "list", ordered: Boolean(b.ordered), items: [...(b.items || [])] };
+        case "list": return styledList(b, { type: "list", ordered: Boolean(b.ordered), items: [...(b.items || [])] });
         case "table": return { type: "table", rows: (b.rows || []).map((r) => [...r]) };
         case "image": return { type: "image", src: b.src || "", ...(b.alt ? { alt: b.alt } : {}) };
         default: return { type: "paragraph", text: b.text || "" };

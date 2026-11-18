@@ -13,9 +13,13 @@ import { ConfirmModal, Modal } from "../../components/ui";
 import CodeEditor from "./documents/CodeEditor.jsx";
 import { ComponentCard } from "./documents/ComponentPreview.jsx";
 import WordPreview from "./documents/WordPreview.jsx";
+import InteractiveWordPreview from "./documents/InteractiveWordPreview.jsx";
+import { FormatControls, FormatSheet, MobileFormatBar } from "./documents/FormatToolbar.jsx";
 import PowerPointPreview from "./documents/PowerPointPreview.jsx";
 import DocumentUploadModal from "./documents/DocumentUploadModal.jsx";
 import { applySource, convertSource } from "../../lib/documents/convert.js";
+import { applyBlockFormat, blockFormatState, wrapHtmlSelection } from "../../lib/documents/textFormat.js";
+import { useMediaQuery } from "../../lib/hooks.js";
 import { renderModelBodyHtml } from "../../lib/documents/modelRender.js";
 import { jsonItemIndexAt, htmlAnchorAt } from "../../lib/documents/sourceMap.js";
 import { templatesFor } from "../../lib/documents/templates.js";
@@ -60,6 +64,14 @@ import "./documents/docstudio.css";
 //     trong editor; tìm & thay thế (Ctrl+F / Ctrl+H); tải ảnh từ máy;
 //     thống kê số từ/khối/slide ở chân khung soạn; kéo thả thumbnail
 //     để sắp xếp slide; nút In / lưu PDF cho bản xem trước dạng iframe.
+//   • Đợt định dạng chữ + mobile (kiểu Word mobile): thanh định dạng
+//     DÙNG CHUNG desktop/mobile (đậm/nghiêng/gạch chân/gạch ngang, màu
+//     chữ, màu tô sáng, font, căn lề, danh sách) áp qua textFormat.js —
+//     chế độ Normal sửa runs/font/align của khối đích trong model,
+//     chế độ Beautiful bọc thẻ quanh vùng bôi đen; trên mobile có
+//     thanh định dạng dính đáy + panel trượt từ dưới lên, và bản xem
+//     trước Word Normal chuyển sang DOM tương tác để chạm chọn khối
+//     (iframe sandbox giữ nguyên cho mọi ngữ cảnh còn lại).
 
 const snapshotOf = ({ name, docType, mode, source }) => JSON.stringify({ name, docType, mode, source });
 
@@ -155,7 +167,16 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   // mounted) nên nội dung, mức zoom và vị trí cuộn được giữ nguyên khi
   // mở lại; trên mobile việc hiện/ẩn vẫn do showPreviewMobile quyết định.
   const [previewOpen, setPreviewOpen] = useState(true);
-  const [mobileSheet, setMobileSheet] = useState(null); // null | "tools" — bảng công cụ dưới mobile
+  const [mobileSheet, setMobileSheet] = useState(null); // null | "tools" | "format" — bảng trượt từ dưới lên trên mobile
+  // Định dạng chữ (thanh công cụ desktop + thanh đáy/panel mobile):
+  // khối đích được suy ra từ vị trí con trỏ trong khung soạn JSON
+  // (cursorPick, cập nhật cùng nhịp với reveal) hoặc từ khối giáo viên
+  // chạm chọn trong bản xem trước tương tác trên mobile (pickedBlock —
+  // ưu tiên hơn vì là lựa chọn chủ động gần nhất). Cả hai đều gắn KHOÁ
+  // ngữ cảnh (tài liệu|chế độ|loại) — đổi ngữ cảnh là lựa chọn cũ tự
+  // hết hiệu lực khi suy ra, không cần effect reset state.
+  const [cursorPick, setCursorPick] = useState(null); // { key, index }
+  const [picked, setPicked] = useState(null); // { key, index }
   const [reveal, setReveal] = useState(null); // đích cuộn/bôi xanh trong preview
   const revealToken = useRef(0);
   const cursorTimer = useRef(null);
@@ -196,6 +217,39 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     "--doc-accent-line": theme.accentLine,
     "--doc-banner": theme.banner,
   };
+
+  // ── Định dạng chữ: khối đích + trạng thái cho thanh công cụ ────────
+  // Mobile (< 1024px, đúng breakpoint bố cục hiện tại) + Word + chế độ
+  // Normal: bản xem trước chuyển sang bản DOM tương tác để chạm chọn
+  // khối (iframe sandbox không nhận được chạm chọn — xem
+  // InteractiveWordPreview). Desktop và các ngữ cảnh khác giữ nguyên
+  // iframe như cũ.
+  const isMobileLayout = useMediaQuery("(max-width: 1023px)");
+  const interactivePreview = isMobileLayout && docType === "word" && mode === "json";
+  const pickKey = `${documentId}|${mode}|${docType}`;
+  const pickedBlock = picked && picked.key === pickKey ? picked.index : null;
+  const cursorBlock = cursorPick && cursorPick.key === pickKey ? cursorPick.index : null;
+  const targetBlockIndex = pickedBlock ?? cursorBlock;
+  const formatState = useMemo(() => {
+    if (mode === "html") {
+      // Chế độ Beautiful: trạng thái đang bật không suy ra được từ mã
+      // nguồn — toolbar chỉ cần biết thao tác inline khả dụng.
+      return {
+        canText: true, canBlock: false,
+        marks: { bold: false, italic: false, underline: false, strike: false },
+        color: null, highlight: null, font: null, align: "left", listType: null,
+      };
+    }
+    const model = validApplied?.model;
+    const block = model?.kind === "word" && targetBlockIndex != null
+      ? (model.blocks || [])[targetBlockIndex]
+      : null;
+    return blockFormatState(block);
+  }, [mode, validApplied, targetBlockIndex]);
+  // Thanh định dạng chỉ hiện khi có đích áp dụng thật: Word (cả hai chế
+  // độ) hoặc PowerPoint ở chế độ Beautiful (bọc thẻ trong mã HTML).
+  // PowerPoint Normal dùng text thuần theo slide — không hiện nút chết.
+  const showFormatTools = docType === "word" || mode === "html";
 
   const goList = () => navigate("/dashboard/documents");
 
@@ -318,6 +372,12 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
         if (anchor) target = { kind: "tag", tag: anchor.tag, index: anchor.index };
       }
       if (target) setReveal({ ...target, token: ++revealToken.current });
+      // Khối tại con trỏ (chế độ Normal) là đích mặc định của thanh
+      // định dạng chữ — dùng lại đúng phép ánh xạ của reveal.
+      setCursorPick({
+        key: `${documentId}|${mode}|${docType}`,
+        index: target?.kind === "block" ? target.index : null,
+      });
     }, 130);
   };
   useEffect(() => () => clearTimeout(cursorTimer.current), []);
@@ -627,6 +687,65 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
         onConfirm: () => commit(removeSlide(obj, slideIndex), "Đã xoá slide khỏi bản nháp."),
       });
     }
+  };
+
+  // ── Thanh định dạng chữ (desktop + mobile dùng CHUNG một đường) ────
+  // Chế độ Beautiful: bọc thẻ/span quanh vùng đang bôi đen trong khung
+  // soạn (qua CodeEditor.replaceRange — giữ undo, chảy qua realtime
+  // apply như gõ tay; HTML lỗi vẫn bị pipeline chặn như cũ).
+  // Chế độ Normal (Word): sửa ĐÚNG khối đích trong bản nháp JSON (khối
+  // tại con trỏ hoặc khối chạm chọn ở xem trước mobile) bằng
+  // applyBlockFormat rồi áp dụng ngay — cùng cơ chế với thao tác slide.
+  // Mã JSON đang lỗi → từ chối thao tác, không đụng vào bản nháp.
+  const applyFormat = (op) => {
+    if (mode === "html") {
+      const sel = editorRef.current?.getSelection();
+      if (!sel || sel.from === sel.to) {
+        showToast?.("Hãy bôi đen đoạn chữ trong khung soạn trước khi áp định dạng.", "error");
+        return;
+      }
+      const replacement = wrapHtmlSelection(draft, sel.from, sel.to, op);
+      if (replacement == null) {
+        showToast?.("Thao tác này chưa áp dụng được ở chế độ Beautiful — căn lề/danh sách sửa trực tiếp trong mã HTML.", "error");
+        return;
+      }
+      editorRef.current?.replaceRange(sel.from, sel.to, replacement);
+      return;
+    }
+    if (docType !== "word") {
+      showToast?.("Thanh định dạng chữ áp dụng cho tài liệu Word (PowerPoint ở chế độ Normal dùng text thuần theo slide).", "error");
+      return;
+    }
+    let obj;
+    try {
+      obj = JSON.parse(draft);
+    } catch {
+      showToast?.("Mã JSON đang sai cú pháp — sửa xong mới dùng thanh định dạng được.", "error");
+      return;
+    }
+    const schemaErrors = validateDocumentJson(obj, "word");
+    if (schemaErrors.length) {
+      setApplyErrors(schemaErrors.map((e) => ({
+        message: e.path ? `${e.path}: ${e.message}` : e.message, path: e.path,
+      })));
+      showToast?.("Mã JSON đang có lỗi — sửa xong mới dùng thanh định dạng được.", "error");
+      return;
+    }
+    const blocks = Array.isArray(obj.blocks) ? obj.blocks : [];
+    const idx = targetBlockIndex;
+    if (idx == null || !blocks[idx]) {
+      showToast?.("Hãy đặt con trỏ vào một khối nội dung trong khung soạn (hoặc chạm chọn khối ở Xem trước) trước.", "error");
+      return;
+    }
+    const next = applyBlockFormat(blocks[idx], op);
+    if (!next) {
+      showToast?.("Khối đang chọn không áp dụng được thao tác này.", "error");
+      return;
+    }
+    blocks[idx] = next;
+    const src = JSON.stringify(obj, null, 2);
+    setDrafts((d) => ({ ...d, json: src }));
+    doApply(src, "json", docType);
   };
 
   const handleFormat = () => {
@@ -1235,6 +1354,11 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                 </button>
               </div>
 
+              {showFormatTools && (
+                <FormatControls layout="bar" state={formatState} onFormat={applyFormat}
+                  htmlMode={mode === "html"} />
+              )}
+
               <div className="docstudio-editor-code">
                 <CodeEditor ref={editorRef} value={draft} language={mode === "json" ? "json" : "html"}
                   onChange={(text) => setDrafts((d) => (d[mode] === text ? d : { ...d, [mode]: text }))}
@@ -1288,10 +1412,17 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
               </div>
               <div className="docstudio-preview-body">
                 {docType === "word" ? (
-                  <WordPreview
-                    bodyHtml={validApplied ? validApplied.bodyHtml : ""}
-                    cssText={validApplied?.mode === "html" ? validApplied.cssText : ""}
-                    zoom={zoom} reveal={reveal} />
+                  interactivePreview ? (
+                    <InteractiveWordPreview
+                      model={validApplied?.model}
+                      selectedIndex={targetBlockIndex}
+                      onSelectBlock={(i) => setPicked({ key: pickKey, index: i })} />
+                  ) : (
+                    <WordPreview
+                      bodyHtml={validApplied ? validApplied.bodyHtml : ""}
+                      cssText={validApplied?.mode === "html" ? validApplied.cssText : ""}
+                      zoom={zoom} reveal={reveal} />
+                  )
                 ) : (
                   <PowerPointPreview
                     model={validApplied?.mode === "json" ? validApplied.model : null}
@@ -1315,7 +1446,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                 <button type="button" className="docstudio-zoom-btn" aria-label="Toàn màn hình" onClick={toggleFullscreen}>
                   <Expand className="w-4 h-4" />
                 </button>
-                {(docType === "word" || mode === "html") && (
+                {(docType === "word" || mode === "html") && !interactivePreview && (
                   <button type="button" className="docstudio-zoom-btn" aria-label="In / lưu PDF" onClick={handlePrintPreview}
                     title="In hoặc lưu PDF qua hộp thoại in của trình duyệt">
                     <Printer className="w-4 h-4" />
@@ -1326,6 +1457,13 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
           </div>
         </div>
       </div>
+
+      {/* ── Thanh định dạng chữ dính đáy (mobile, kiểu Word) ────────── */}
+      {showFormatTools && (
+        <MobileFormatBar state={formatState} onFormat={applyFormat}
+          onInsert={() => { setTool("components"); setMobileSheet("tools"); }}
+          onOpenPanel={() => setMobileSheet("format")} />
+      )}
 
       {/* ── Điều hướng mobile: Soạn / Xem / Công cụ / Lưu / Xuất ─────── */}
       <nav className="docstudio-mobile-nav" aria-label="Thao tác soạn tài liệu">
@@ -1378,6 +1516,14 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
             </div>
           </section>
         </div>
+      )}
+
+      {mobileSheet === "format" && (
+        <FormatSheet state={formatState} onFormat={applyFormat} htmlMode={mode === "html"}
+          onClose={() => setMobileSheet(null)}
+          hint={mode === "html"
+            ? "Hãy bôi đen đoạn chữ trong khung Soạn trước — định dạng sẽ bọc thẻ quanh đúng đoạn đó."
+            : "Định dạng áp lên khối đang chọn: đặt con trỏ vào khối trong khung Soạn, hoặc chạm chọn khối ở tab Xem."} />
       )}
 
       {/* ── Kết quả xuất file (.docx / .pptx thật) ─────────────────────── */}

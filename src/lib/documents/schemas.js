@@ -33,6 +33,32 @@ function checkTheme(v, errors) {
   }
 }
 
+const RUN_BOOL_KEYS = ["bold", "italic", "underline", "strike"];
+const RUN_COLOR_KEYS = ["color", "highlight"];
+
+function checkRuns(b, p, errors) {
+  if (b.runs === undefined) return;
+  if (!Array.isArray(b.runs)) {
+    errors.push({ path: `${p}.runs`, message: "'runs' phải là mảng các đoạn chữ có định dạng riêng" });
+    return;
+  }
+  b.runs.forEach((r, i) => {
+    const rp = `${p}.runs[${i}]`;
+    if (!isObj(r)) { errors.push({ path: rp, message: "Mỗi run phải là một đối tượng { text, bold?, … }" }); return; }
+    if (!isStr(r.text)) errors.push({ path: `${rp}.text`, message: "Mỗi run cần 'text' là chuỗi văn bản" });
+    for (const k of RUN_BOOL_KEYS) {
+      if (r[k] !== undefined && typeof r[k] !== "boolean") {
+        errors.push({ path: `${rp}.${k}`, message: `'${k}' trong run phải là true hoặc false` });
+      }
+    }
+    for (const k of RUN_COLOR_KEYS) {
+      if (r[k] !== undefined && !isStr(r[k])) {
+        errors.push({ path: `${rp}.${k}`, message: `'${k}' trong run phải là mã màu dạng chuỗi` });
+      }
+    }
+  });
+}
+
 function checkBlockStyle(b, p, errors) {
   if (b.color !== undefined && !isStr(b.color)) {
     errors.push({ path: `${p}.color`, message: "'color' phải là mã màu hoặc tên màu" });
@@ -40,6 +66,10 @@ function checkBlockStyle(b, p, errors) {
   if (b.align !== undefined && !ALIGN_VALUES.includes(b.align)) {
     errors.push({ path: `${p}.align`, message: `'align' chỉ nhận ${ALIGN_VALUES.join(", ")}` });
   }
+  if (b.font !== undefined && !isStr(b.font)) {
+    errors.push({ path: `${p}.font`, message: "'font' phải là tên phông chữ dạng chuỗi" });
+  }
+  checkRuns(b, p, errors);
 }
 
 /** Ô bảng/danh sách: chấp nhận số/boolean bằng cách ép chuỗi; null/object là lỗi. */
@@ -127,6 +157,9 @@ export function validateWordJson(obj) {
     if (b.type === "list") {
       if (b.ordered !== undefined && typeof b.ordered !== "boolean") {
         errors.push({ path: `${p}.ordered`, message: "'ordered' phải là true (có thứ tự) hoặc false" });
+      }
+      if (b.align !== undefined && !ALIGN_VALUES.includes(b.align)) {
+        errors.push({ path: `${p}.align`, message: `'align' chỉ nhận ${ALIGN_VALUES.join(", ")}` });
       }
       checkStringArray(b.items, `${p}.items`, errors, "items");
     }
