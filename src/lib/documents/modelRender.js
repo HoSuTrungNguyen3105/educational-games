@@ -128,10 +128,24 @@ export const WORD_PREVIEW_CSS = `
   .doc-page hr.page-break { border: 0; border-top: 1px solid #b9b9b9; margin: 24px 0; }
   /* In / lưu PDF qua hộp thoại in của trình duyệt (trang cha gọi
      contentWindow.print() lên iframe này): bỏ nền xám + bóng đổ để bản
-     in là trang giấy sạch. */
+     in là trang giấy sạch; khổ giấy lấy theo @page A4 ở trên (lề 18mm
+     thay cho padding mô phỏng trang giấy trên màn hình nên .doc-page
+     phải về padding 0, bề rộng tự chảy theo vùng in). Quy tắc ngắt
+     trang: bảng dài được phép chảy qua trang nhưng không cắt ngang
+     một hàng, hàng tiêu đề (thead) lặp lại ở mỗi trang, tiêu đề không
+     bị bỏ lại cuối trang, ảnh/khung trích dẫn không bị xẻ đôi. */
   @media print {
-    body { background: #fff; }
-    .doc-page { box-shadow: none; margin: 0; width: auto; min-height: 0; padding: 0; }
+    html, body { background: #fff; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .doc-page { box-shadow: none; margin: 0; width: auto; min-height: 0; padding: 0;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .doc-page table { break-inside: auto; }
+    .doc-page thead { display: table-header-group; }
+    .doc-page tfoot { display: table-footer-group; }
+    .doc-page tr { break-inside: avoid; }
+    .doc-page h1, .doc-page h2, .doc-page h3 { break-after: avoid; }
+    .doc-page img, .doc-page blockquote, .doc-page figure { break-inside: avoid; }
+    .doc-page p, .doc-page li { orphans: 3; widows: 3; }
   }
 `;
 
@@ -304,9 +318,16 @@ export function buildSlidesScrollSrcDoc({ bodyHtml, cssText = "" }) {
     padding: 44px 52px; border: 1px solid #d1d5db; box-shadow: 0 1px 4px rgba(0,0,0,.12); border-radius: 0; }
   img { max-width: 100%; }
   table { border-collapse: collapse; } th, td { border: 1px solid #d1d5db; padding: 8px 10px; }
+  /* In slide (chế độ HTML) qua hộp thoại in: giấy ngang A4 cho vừa bề
+     ngang slide, mỗi slide bắt đầu ở trang mới, không xẻ đôi slide. */
+  @page { size: A4 landscape; margin: 10mm; }
   @media print {
-    body { background: #fff; }
-    .slide { box-shadow: none; margin: 0 auto 16px; max-width: 100%; border: 0; }
+    body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .slide { box-shadow: none; margin: 0 auto; max-width: 100%; width: auto; border: 0;
+      break-inside: avoid; break-after: page; }
+    .slide:last-child { break-after: auto; }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; }
   }
 </style>
 ${cssText ? `<style>${cssText}</style>` : ""}
