@@ -341,8 +341,6 @@ export const EXAM_003 = {
           explanationVi:
             "Đoạn nêu tiết kiệm tới 90% năng lượng trong khi 'design is simple' → B đúng. C sai vì chi phí xây cao hơn 15%; A sai vì vẫn dùng nhiệt bơm nóng chạy bằng điện; D hiểu sai chức năng của cửa ba lớp.",
         },
-      ],
-    },
         {
           id: 21,
           type: "multiple_choice",
@@ -486,6 +484,33 @@ export const EXAM_003 = {
         },
       ],
     },
-    /* __WRITING__ */
+    {
+      id: "writing",
+      skill: "writing",
+      title: "Writing",
+      promptVi:
+        "Viết một đoạn văn (80–120 từ) nêu quan điểm của em về ý kiến: 'Các thành phố nên chi nhiều tiền hơn để trồng cây xanh trên đường phố.' Đưa ra ít nhất hai lý do và một ví dụ hoặc số liệu minh họa.",
+      requirementsVi: [
+        "Đúng số từ: 80–120 từ",
+        "Nêu rõ quan điểm ở phần mở đầu",
+        "Đưa ít nhất hai lý do để ủng hộ quan điểm",
+        "Kèm một ví dụ hoặc số liệu minh họa cụ thể",
+        "Có câu kết luận tóm lại quan điểm",
+      ],
+      minWords: 80,
+      maxWords: 120,
+      sampleAnswer:
+        "In my opinion, cities should spend more money on planting street trees. First, trees lower the temperature in hot city centres. Studies show that neighbourhoods with mature trees are cooler and report fewer heat-related hospital visits. Second, trees clean the air and give people shade, so residents can walk or cycle more comfortably. For example, in my district, a row of new trees along the main road has made the walk to school much more pleasant in summer. Planting trees costs money and takes years of care, but the long-term benefits for health are worth it.",
+    },
+    {
+      id: "speaking",
+      skill: "speaking",
+      title: "Speaking",
+      promptVi:
+        "Nói trong 2 phút về cách em ghi nhớ kiến thức hiệu quả nhất khi ôn tập. Hãy nêu: em thường ôn theo cách nào, vì sao cách đó hiệu quả với em, và em khuyên bạn bè nên tránh thói quen ôn tập nào.",
+      timeLimitSec: 120,
+      sampleAnswer:
+        "The way I remember things best is to spread my revision over several days instead of studying everything the night before an exam. For example, when I learn new English words, I review them the next day, then again after a week, and once more after a month. Each time I try to recall the words before I look at the answers, and that effort makes the memory stronger. Research shows that this method can help you remember nearly twice as much as cramming. I always advise my friends to avoid reading their notes again and again in one long session, because it feels easy but the knowledge disappears quickly.",
+    },
   ],
 };
