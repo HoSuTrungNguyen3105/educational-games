@@ -111,6 +111,10 @@ const ROUTES = [
   // Bài học AI Studio phía học sinh: danh sách bài đã xuất bản + trang học
   { name: "lessons",      pattern: "/lessons" },
   { name: "lesson-play",  pattern: "/lessons/:lessonId" },
+  // Bộ đề luyện tập: combo câu hỏi đóng gói từ ngân hàng câu hỏi — danh sách
+  // thẻ combo + trang tự luyện cả bộ (API /question-banks/sets).
+  { name: "question-sets", pattern: "/question-sets" },
+  { name: "question-set-practice", pattern: "/question-sets/:setId" },
   { name: "math-adventure", pattern: "/math-adventure" },
   // Game nhập vai trường học (src/games/school_mission/School_mission.html)
   { name: "school-mission", pattern: "/school-mission" },
