@@ -26,6 +26,25 @@ async function removePushToken() {
   } catch { /* ignore — push is best-effort */ }
 }
 
+/**
+ * So sánh nông các field định danh/nội dung chính của user. Refresh nền
+ * (mỗi 20 giây) cấp token MỚI nhưng user KHÔNG đổi — nếu thay object user
+ * bằng một bản sao y hệt, các trang đặt `userAuth` làm dep của useEffect
+ * (Hồ sơ, Vòng quay…) sẽ tưởng tài khoản vừa đổi và nạp lại dữ liệu, trang
+ * Hồ sơ còn bật loading toàn trang gây hiệu ứng "trang load lại". Giữ
+ * nguyên tham chiếu cũ khi nội dung không đổi; field nào khác thật (tên,
+ * email, lớp, xu, bộ đồ…) thì mới thay.
+ */
+const USER_IDENTITY_FIELDS = [
+  "id", "username", "name", "email", "role", "ageCode", "gender",
+  "coins", "stars", "avatarLoadout", "avatar", "pet",
+];
+function sameUserIdentity(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return USER_IDENTITY_FIELDS.every((f) => a[f] === b[f]);
+}
+
 /** Nối lại Socket.IO với access token mới nhất (§7.5). */
 function bindSocket(token) {
   try {
@@ -51,10 +70,16 @@ function bindAuthWatchers(set, get) {
   });
 
   // Token vừa đổi (silent refresh / retry 401) → state và socket phải theo kịp.
+  // Token thì luôn cập nhật (bản xoay vòng là bản phải dùng cho socket),
+  // còn user chỉ thay khi nội dung THẬT khác (sameUserIdentity) — xem ghi
+  // chú ở helper phía trên: thay user y hệt khiến các trang nạp lại oan.
   subscribeAuth((auth) => {
     const token = auth?.token || null;
     if (!token) return;
-    if (get().token !== token) set({ token, user: auth?.user ?? get().user });
+    const patch = {};
+    if (get().token !== token) patch.token = token;
+    if (auth?.user && !sameUserIdentity(auth.user, get().user)) patch.user = auth.user;
+    if (Object.keys(patch).length) set(patch);
     if (get().user) bindSocket(token);
   });
 }
