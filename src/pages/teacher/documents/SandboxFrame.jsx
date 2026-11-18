@@ -11,6 +11,12 @@ import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 //     An toàn vì tài liệu trong khung không chạy script nên tự nó không
 //     thể bật alert/confirm/print — chỉ trang cha mới gọi được.
 //   • Nội dung luôn qua srcDoc (không nạp URL ngoài vào khung chính).
+//   • scrolling="no": iframe KHÔNG bao giờ tự hiện thanh cuộn bên trong
+//     trang tài liệu — chiều cao khung luôn được đo đủ theo toàn bộ nội
+//     dung (fit bên dưới) nên không cần cuộn nội bộ; thanh cuộn duy nhất
+//     là của vùng xem trước bên ngoài (docstudio-preview-body). Trước đây
+//     khi phép đo hụt vài pixel (ảnh/font nạp muộn) iframe tự bật thanh
+//     cuộn riêng nằm giữa trang A4, tạo cảm giác hai thanh cuộn lồng nhau.
 // Zoom bằng transform scale trên khung có kích thước logic cố định.
 // Ref (forwardRef) trả về chính DOM iframe để trang cha cuộn tới + bôi
 // xanh phần tử tương ứng vị trí con trỏ (frameReveal.js).
@@ -68,6 +74,7 @@ const SandboxFrame = forwardRef(function SandboxFrame({ srcDoc, width = 794, min
         ref={setFrame}
         title="Xem trước tài liệu"
         srcDoc={srcDoc}
+        scrolling="no"
         sandbox="allow-same-origin allow-modals"
         style={{
           width, height, border: 0, display: "block",
