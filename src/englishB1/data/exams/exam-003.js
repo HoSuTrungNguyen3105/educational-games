@@ -1,0 +1,491 @@
+// Đề thi thử số 3 — English B1 (VSTEP bậc 3). Xem src/englishB1/README.md §4.8.
+export const EXAM_003 = {
+  id: "exam-003",
+  code: "B1-003",
+  name: "Đề thi thử số 3",
+  type: "advanced",
+  level: "B1",
+  difficulty: "hard",
+  durationMin: 60,
+  description:
+    "Đề thi thử số 3 mức nâng cao với từ vựng học thuật và các câu hỏi suy luận. Dành cho người học muốn thử thách bản thân trước kỳ thi thật.",
+  sections: [
+    {
+      id: "listening",
+      skill: "listening",
+      title: "Listening",
+      durationMin: 30,
+      transcript: [
+        "A: There's a mistake on my electricity bill — it's almost double last month's.",
+        "B: Let me check your account. I see that you submitted a meter reading on the first.",
+        "A: I did, but the bill seems to use an estimated reading instead.",
+        "B: You're right. I'll send it back for correction and you'll receive a revised bill within five working days.",
+        "A: I'm calling about the interview for the design assistant post.",
+        "B: Yes, we've moved it to Friday morning because two panel members are away.",
+        "A: Friday is difficult — I finish my shift at nine.",
+        "B: In that case, we can offer you the last slot at half past eleven.",
+        "A: The heating in my flat has stopped working again.",
+        "B: When did you first notice it?",
+        "A: Two days ago, but I thought it would fix itself overnight.",
+        "B: It won't. I'll send an engineer tomorrow afternoon, and please leave the keys with your neighbour.",
+        "A: I'd like to return these shoes I ordered online. They're the wrong size.",
+        "B: No problem. Do you have the dispatch note?",
+        "A: Yes, but I've worn them outside, so the soles are a bit dirty.",
+        "B: I'm afraid we can't accept them once they've been worn outside. You could exchange them for a different size instead.",
+        "A: My daughter has broken a front tooth and needs to see someone today.",
+        "B: The dentist is fully booked, but I can fit her in at four o'clock if it's urgent.",
+        "A: It is urgent — she's in pain.",
+        "B: Then come straight over. Please bring her with you and fill in the new-patient form.",
+        "Speaker: Before the fourteenth century, few people in Europe could tell the exact time.",
+        "Speaker: Monasteries kept the hours for prayer, but ordinary townspeople relied on the sun and the church bell.",
+        "Speaker: When public clock towers appeared in wealthy trading cities, the market day became strictly scheduled.",
+        "Speaker: Merchants could agree on an exact hour, so a late arrival was no longer a matter of opinion.",
+        "Speaker: Historians have argued that this shift helped create the habit of punctuality that we still expect today.",
+        "Speaker: The towers were also symbols of power: only cities that could afford craftsmen and bronze built them.",
+        "Speaker: My team has been restoring coral on the western reef for six years.",
+        "Speaker: We grow young corals in underwater nurseries until they are strong enough to move.",
+        "Speaker: The fragments are then fixed to the damaged rock using a special, marine-safe glue.",
+        "Speaker: Roughly seven out of ten transplanted fragments survive the first year.",
+        "Speaker: The greatest threats are not divers but warm water and the crown-of-thorns starfish.",
+        "Speaker: Visitors can help by choosing operators that follow the reef code and by not touching the coral.",
+        "Speaker: We now train local fishermen as technicians, because they know the reef better than anyone.",
+      ],
+      questions: [
+        {
+          id: 1,
+          type: "multiple_choice",
+          question: "Part 1. Conversation 1. What is wrong with the electricity bill?",
+          options: [
+            "It was sent to the wrong address.",
+            "The meter reading was submitted twice.",
+            "It was based on an estimated reading.",
+            "The price of electricity has doubled.",
+          ],
+          answer: 2,
+          transcriptRef: 2,
+          explanationVi:
+            "transcriptRef = 2: 'the bill seems to use an estimated reading instead' (thay vì số đọc thực tế khách đã gửi) → đáp án C. A, B, D không phải lỗi được mô tả; số liệu 'double' chỉ là mức độ chênh lệch, không phải nguyên nhân.",
+        },
+        {
+          id: 2,
+          type: "multiple_choice",
+          question: "Part 1. Conversation 2. When will the interview take place?",
+          options: [
+            "Friday morning",
+            "Friday at half past eleven",
+            "Thursday at half past eleven",
+            "Monday at nine o'clock",
+          ],
+          answer: 1,
+          transcriptRef: 7,
+          explanationVi:
+            "transcriptRef = 7: vì khách tan ca lúc 9 giờ, nhân viên đề xuất 'the last slot at half past eleven' vào thứ Sáu → đáp án B. A đúng ngày nhưng không đúng khung giờ; C, D là ngày hoặc giờ không có trong hội thoại.",
+        },
+        {
+          id: 3,
+          type: "multiple_choice",
+          question: "Part 1. Conversation 3. What does the landlord ask the tenant to do?",
+          options: [
+            "Repair the heating himself.",
+            "Wait for a phone call from the office.",
+            "Leave the flat for the whole afternoon.",
+            "Leave the keys with his neighbour.",
+          ],
+          answer: 3,
+          transcriptRef: 11,
+          explanationVi:
+            "transcriptRef = 11: 'please leave the keys with your neighbour' để kỹ thuật viên vào nhà → đáp án D. A sai vì khách không tự sửa; B, C không được nhắc — kỹ thuật viên sẽ đến vào chiều mai chứ không gọi trước.",
+        },
+        {
+          id: 4,
+          type: "multiple_choice",
+          question: "Part 1. Conversation 4. What solution does the shop offer the customer?",
+          options: [
+            "She can exchange the shoes for a different size.",
+            "She can get a full refund immediately.",
+            "She can wear the shoes inside and return them later.",
+            "She can ask the manufacturer for a repair.",
+          ],
+          answer: 0,
+          transcriptRef: 15,
+          explanationVi:
+            "transcriptRef = 15: hàng đã đi ra ngoài nên không nhận trả lại, nhưng 'You could exchange them for a different size instead' → đáp án A. B sai vì không hoàn tiền; C sai vì giày đã mang ra ngoài; D không được đề cập.",
+        },
+        {
+          id: 5,
+          type: "multiple_choice",
+          question: "Part 1. Conversation 5. What is the mother advised to do?",
+          options: [
+            "Come at four o'clock without her daughter.",
+            "Book an appointment for next week.",
+            "Come straight over with her daughter and fill in the form.",
+            "Wait until the dentist is free.",
+          ],
+          answer: 2,
+          transcriptRef: 19,
+          explanationVi:
+            "transcriptRef = 19: 'come straight over. Please bring her with you and fill in the new-patient form' → đáp án C. A sai vì bắt buộc đưa con theo; B sai vì ca khẩn cấp được nhận trong ngày; D trái với hướng dẫn của lễ tân.",
+        },
+        {
+          id: 6,
+          type: "multiple_choice",
+          question: "Part 2. Talk 1. How did ordinary townspeople tell the time before clock towers?",
+          options: [
+            "From public clock towers in the market.",
+            "From the sun and the church bell.",
+            "From small pocket watches.",
+            "From the market schedule.",
+          ],
+          answer: 1,
+          transcriptRef: 21,
+          explanationVi:
+            "transcriptRef = 21: 'ordinary townspeople relied on the sun and the church bell' → đáp án B. A và D là kết quả sau khi có đồng hồ tháp; C không tồn tại trước thế kỷ 14 (đoạn nói 'few people could tell the exact time').",
+        },
+        {
+          id: 7,
+          type: "multiple_choice",
+          question: "Part 2. Talk 1. Why were clock towers symbols of power?",
+          options: [
+            "Only wealthy cities could afford the craftsmen and bronze.",
+            "They told the exact time for free.",
+            "They were built by foreign kings.",
+            "They were taller than the churches.",
+          ],
+          answer: 0,
+          transcriptRef: 25,
+          explanationVi:
+            "transcriptRef = 25: 'only cities that could afford craftsmen and bronze built them' → chỉ thành phố giàu mới có → đáp án A. B, C, D là các chi tiết không có trong đoạn; đồng hồ tháp không miễn phí hay do vua nước ngoài xây.",
+        },
+        {
+          id: 8,
+          type: "multiple_choice",
+          question: "Part 2. Talk 2. What happens to the coral fragments after they are strong enough?",
+          options: [
+            "They are thrown back onto the reef.",
+            "They are tied to the rock with rope.",
+            "They are painted with a safe colour.",
+            "They are fixed to the damaged rock with special glue.",
+          ],
+          answer: 3,
+          transcriptRef: 28,
+          explanationVi:
+            "transcriptRef = 28: 'fixed to the damaged rock using a special, marine-safe glue' → đáp án D. A, B, C là các phương pháp không được nhắc; chi tiết 'glue' là mốc thông tin duy nhất đúng.",
+        },
+        {
+          id: 9,
+          type: "multiple_choice",
+          question: "Part 2. Talk 2. What is the survival rate of transplanted coral in the first year?",
+          options: ["About three out of ten", "About seven out of ten", "About five out of ten", "Almost all of it"],
+          answer: 1,
+          transcriptRef: 29,
+          explanationVi:
+            "transcriptRef = 29: 'Roughly seven out of ten transplanted fragments survive the first year' → đáp án B. A là phần còn lại (3/10); C và D không khớp số liệu nào trong đoạn.",
+        },
+        {
+          id: 10,
+          type: "multiple_choice",
+          question: "Part 2. Talk 2. Who does the team now train as technicians?",
+          options: ["University students", "Local divers", "Local fishermen", "Foreign engineers"],
+          answer: 2,
+          transcriptRef: 32,
+          explanationVi:
+            "transcriptRef = 32: 'We now train local fishermen as technicians, because they know the reef better than anyone' → đáp án C. A, B, D là các nhóm không được nhắc trong đoạn.",
+        },
+      ],
+    },
+    {
+      id: "reading",
+      skill: "reading",
+      title: "Reading",
+      durationMin: 30,
+      paragraphs: [
+        "Students often revise a topic the night before a test and forget most of it a week later. Cognitive psychologists have shown that spacing the same amount of revision across several days produces much better long-term recall. In one study, participants learned four dozen foreign words. The group that reviewed the words after one day, one week, and one month remembered nearly twice as much as the group that crammed everything into a single session. The brain appears to strengthen a memory each time it is retrieved after a short period of forgetting.",
+        "A passive house uses up to ninety percent less energy for heating than an ordinary building, and it does so without expensive technology. The design is simple: very thick insulation, triple-glazed windows, and an airtight structure that keeps warm air inside. A small heat pump, powered by electricity, then supplies the rest. Critics point out that the construction cost is about fifteen percent higher, yet owners recover the difference within eight years through lower bills. Several European countries have now made similar standards compulsory for all new homes.",
+        "When the price of coffee fell sharply in 2001, thousands of small farmers in the highlands of Vien Lam were forced to sell their land. Those who survived often did so by changing the way they worked: instead of selling raw beans at the market, they began roasting and packing the coffee themselves. A cooperative formed in 2006 now exports directly to roasters in Europe, which cuts out three middlemen. The farmers also shade their coffee plants with native trees, which protects the soil and provides a home for birds.",
+        "On a hot afternoon, the centre of a large city can be five degrees warmer than the fields around it. Dark surfaces such as asphalt absorb sunlight during the day and release it slowly at night, while cars, air conditioners, and factories add even more heat. Trees offer a cheap defence: a mature tree can shade a pavement and release water vapour through its leaves, lowering the temperature beneath it. A study of twelve cities found that neighbourhoods with mature street trees reported fewer heat-related hospital visits. Planting is only the beginning, however, because young trees need several years of watering before they help.",
+      ],
+      questions: [
+        {
+          id: 11,
+          type: "multiple_choice",
+          question: "In the study, which group remembered more of the foreign words?",
+          options: [
+            "The group that crammed everything into one session.",
+            "The group that spaced its revision over days and weeks.",
+            "Both groups remembered exactly the same amount.",
+            "The group that learned only four words.",
+          ],
+          answer: 1,
+          paragraphRef: 0,
+          locationVi:
+            "Đoạn 1, câu 'The group that reviewed the words after one day, one week, and one month remembered nearly twice as much ...'",
+          explanationVi:
+            "Nhóm ôn cách quãng (1 ngày, 1 tuần, 1 tháng) nhớ 'gần gấp đôi' → B đúng. A là nhóm nhớ ít hơn; C trái với 'nearly twice as much'; D sai số lượng (học bốn chục từ, không phải bốn từ).",
+        },
+        {
+          id: 12,
+          type: "multiple_choice",
+          question: "What does the brain appear to do with a memory?",
+          options: [
+            "Forget it completely after one week.",
+            "Store words faster than numbers.",
+            "Refuse to retrieve information at night.",
+            "Strengthen it each time it is retrieved after a period of forgetting.",
+          ],
+          answer: 3,
+          paragraphRef: 0,
+          locationVi: "Đoạn 1, câu cuối 'The brain appears to strengthen a memory each time it is retrieved after a short period of forgetting.'",
+          explanationVi:
+            "Câu cuối đoạn nêu đúng 'strengthen a memory each time it is retrieved after a short period of forgetting' → D đúng. A, B, C không được đoạn văn đề cập.",
+        },
+        {
+          id: 13,
+          type: "true_false_not_given",
+          question: "Statement: The participants in the study learned four dozen foreign words.",
+          options: ["True", "False", "Not Given"],
+          answer: 0,
+          paragraphRef: 0,
+          locationVi: "Đoạn 1, câu 'In one study, participants learned four dozen foreign words.'",
+          explanationVi:
+            "Câu thứ 3 của đoạn 1 nêu đúng 'participants learned four dozen foreign words' → Statement True, không có thông tin mâu thuẫn.",
+        },
+        {
+          id: 14,
+          type: "gap_filling",
+          question:
+            "Complete the sentence using NO MORE THAN TWO WORDS from the passage. The spaced group remembered nearly twice as much as the group that ___ everything into a single session.",
+          answer: "crammed",
+          paragraphRef: 0,
+          locationVi: "Đoạn 1, câu '... as the group that crammed everything into a single session.'",
+          explanationVi:
+            "Câu gốc dùng 'the group that crammed everything into a single session' → điền 'crammed'. 'Studied' hay 'put' không nằm trong câu gốc nên không đạt yêu cầu 'from the passage'.",
+        },
+        {
+          id: 15,
+          type: "multiple_choice",
+          question: "What is the main idea of the first paragraph?",
+          options: [
+            "Spacing revision over time leads to better long-term recall than cramming.",
+            "Foreign words are easier to learn than grammar.",
+            "Tests should be held only in the evening.",
+            "Psychologists advise revising only once before a test.",
+          ],
+          answer: 0,
+          paragraphRef: 0,
+          locationVi: "Đoạn 1 (toàn đoạn): nguyên lý ở câu 2, thí nghiệm ở câu 3–4, cơ chế ở câu 5.",
+          explanationVi:
+            "Đoạn khẳng định chia đều việc ôn tập cho kết quả nhớ lâu hơn ('spacing ... produces much better long-term recall') → A đúng. B, C là chủ đề không có; D ngược với thông điệp của đoạn.",
+        },
+        {
+          id: 16,
+          type: "multiple_choice",
+          question: "How much less heating energy does a passive house use?",
+          options: ["Fifteen percent", "Fifty percent", "Up to ninety percent", "Exactly eighty percent"],
+          answer: 2,
+          paragraphRef: 1,
+          locationVi: "Đoạn 2, câu đầu 'A passive house uses up to ninety percent less energy for heating ...'",
+          explanationVi:
+            "Câu mở đầu đoạn 2 nêu 'up to ninety percent less energy' → C đúng. A (15%) là phần chênh lệch chi phí xây dựng; B và D không xuất hiện trong đoạn.",
+        },
+        {
+          id: 17,
+          type: "multiple_choice",
+          question: "What do critics of passive houses point out?",
+          options: [
+            "The construction cost is about fifteen percent higher.",
+            "The houses look ugly.",
+            "Owners never recover the extra cost.",
+            "Triple-glazed windows are too cold.",
+          ],
+          answer: 0,
+          paragraphRef: 1,
+          locationVi: "Đoạn 2, câu 'Critics point out that the construction cost is about fifteen percent higher ...'",
+          explanationVi:
+            "Các nhà phê bình nêu 'construction cost is about fifteen percent higher' → A đúng. C sai vì chủ nhà hoàn lại khoản chênh trong tám năm (mệnh đề 'yet'); B, D không được nhắc.",
+        },
+        {
+          id: 18,
+          type: "true_false_not_given",
+          question: "Statement: A passive house requires expensive technology to work.",
+          options: ["True", "False", "Not Given"],
+          answer: 1,
+          paragraphRef: 1,
+          locationVi: "Đoạn 2, câu đầu '... and it does so without expensive technology.'",
+          explanationVi:
+            "Đoạn nói rõ công nghệ không đắt đỏ ('without expensive technology') → Statement mâu thuẫn → False.",
+        },
+        {
+          id: 19,
+          type: "gap_filling",
+          question:
+            "Complete the sentence using NO MORE THAN TWO WORDS from the passage. The structure of a passive house is ___, which keeps the warm air inside.",
+          answer: "airtight",
+          paragraphRef: 1,
+          locationVi: "Đoạn 2, câu '... and an airtight structure that keeps warm air inside.'",
+          explanationVi:
+            "Câu gốc là 'an airtight structure that keeps warm air inside'; cấu trúc 'is ___' cần tính từ → 'airtight'. 'Warm' hay 'thick' sai nghĩa hoặc nằm ở vị trí khác trong câu gốc.",
+        },
+        {
+          id: 20,
+          type: "multiple_choice",
+          question: "What is the main advantage of the design described in the second paragraph?",
+          options: [
+            "It requires no electricity at all.",
+            "It achieves large energy savings with a simple design.",
+            "It costs less to build than an ordinary house.",
+            "It uses thick windows to store heat.",
+          ],
+          answer: 1,
+          paragraphRef: 1,
+          locationVi: "Đoạn 2, câu 1–2: 'ninety percent less energy' + 'The design is simple ...'",
+          explanationVi:
+            "Đoạn nêu tiết kiệm tới 90% năng lượng trong khi 'design is simple' → B đúng. C sai vì chi phí xây cao hơn 15%; A sai vì vẫn dùng nhiệt bơm nóng chạy bằng điện; D hiểu sai chức năng của cửa ba lớp.",
+        },
+      ],
+    },
+        {
+          id: 21,
+          type: "multiple_choice",
+          question: "What happened to thousands of coffee farmers after the price fell in 2001?",
+          options: [
+            "They were forced to sell their land.",
+            "They moved to the capital city.",
+            "They formed a cooperative that same year.",
+            "They started planting native trees immediately.",
+          ],
+          answer: 0,
+          paragraphRef: 2,
+          locationVi: "Đoạn 3, câu '... thousands of small farmers in the highlands of Vien Lam were forced to sell their land.'",
+          explanationVi:
+            "Câu đầu đoạn 3 nêu 'were forced to sell their land' → A đúng. C sai vì hợp tác xã thành lập năm 2006, không phải 2001; B, D không được nhắc.",
+        },
+        {
+          id: 22,
+          type: "multiple_choice",
+          question: "What does the cooperative do differently?",
+          options: [
+            "It sells raw beans at the local market.",
+            "It buys land from the middlemen.",
+            "It stops growing coffee and trades instead.",
+            "It exports directly to roasters in Europe.",
+          ],
+          answer: 3,
+          paragraphRef: 2,
+          locationVi: "Đoạn 3, câu 'A cooperative formed in 2006 now exports directly to roasters in Europe, which cuts out three middlemen.'",
+          explanationVi:
+            "Hợp tác xã 'exports directly to roasters in Europe' → D đúng. A là cách làm cũ mà họ đã bỏ; B, C trái với nội dung đoạn (vẫn trồng cà phê, không mua đất).",
+        },
+        {
+          id: 23,
+          type: "true_false_not_given",
+          question: "Statement: The farmers now sell raw beans directly to roasters in Europe.",
+          options: ["True", "False", "Not Given"],
+          answer: 1,
+          paragraphRef: 2,
+          locationVi: "Đoạn 3, câu '... instead of selling raw beans at the market, they began roasting and packing the coffee themselves.'",
+          explanationVi:
+            "Họ không bán hạt thô (raw beans) nữa mà tự rang và đóng gói rồi xuất khẩu → Statement mâu thuẫn với đoạn → False.",
+        },
+        {
+          id: 24,
+          type: "gap_filling",
+          question:
+            "Complete the sentence using NO MORE THAN TWO WORDS from the passage. Instead of selling raw beans at the market, the farmers began ___ and packing the coffee themselves.",
+          answer: "roasting",
+          paragraphRef: 2,
+          locationVi: "Đoạn 3, câu '... they began roasting and packing the coffee themselves.'",
+          explanationVi:
+            "Câu gốc là 'began roasting and packing' → cần dạng V-ing sau 'began' → 'roasting'. 'Roast' (nguyên dạng) sai ngữ pháp; 'growing' không nằm trong câu gốc.",
+        },
+        {
+          id: 25,
+          type: "multiple_choice",
+          question: "What do the coffee farmers do that helps the local environment?",
+          options: [
+            "They irrigate the plants with river water.",
+            "They grow coffee under native trees.",
+            "They sell birds to local zoos.",
+            "They remove all trees from the hillsides.",
+          ],
+          answer: 1,
+          paragraphRef: 2,
+          locationVi: "Đoạn 3, câu cuối 'The farmers also shade their coffee plants with native trees, which protects the soil and provides a home for birds.'",
+          explanationVi:
+            "Câu cuối nêu họ che bóng cà phê bằng cây bản địa, bảo vệ đất và làm tổ cho chim → B đúng. D trái ngược (giữ cây, không chặt); A, C không được nhắc.",
+        },
+        {
+          id: 26,
+          type: "multiple_choice",
+          question: "Why can the centre of a large city be hotter than the fields around it?",
+          options: [
+            "Because the fields around it are always cooler.",
+            "Because young trees drink all the available water.",
+            "Because dark surfaces absorb and release heat, and machines add more.",
+            "Because it rains less often in the centre.",
+          ],
+          answer: 2,
+          paragraphRef: 3,
+          locationVi:
+            "Đoạn 4, câu 'Dark surfaces such as asphalt absorb sunlight during the day and release it slowly at night, while cars, air conditioners, and factories add even more heat.'",
+          explanationVi:
+            "Câu thứ 2 của đoạn 4 nêu hai nguyên nhân: bề mặt tối hấp thụ/giải nhiệt và máy móc tạo thêm nhiệt → C đúng. A chỉ nói vòng vo; B, D không có trong đoạn.",
+        },
+        {
+          id: 27,
+          type: "multiple_choice",
+          question: "How does a mature tree cool the pavement beneath it?",
+          options: [
+            "By shading it and releasing water vapour through its leaves.",
+            "By covering the pavement with dark asphalt.",
+            "By running air conditioners underneath.",
+            "By reflecting the lights of nearby hospitals.",
+          ],
+          answer: 0,
+          paragraphRef: 3,
+          locationVi: "Đoạn 4, câu '... a mature tree can shade a pavement and release water vapour through its leaves, lowering the temperature beneath it.'",
+          explanationVi:
+            "Cây che bóng ('shade') và thoát hơi nước ('release water vapour') → hạ nhiệt bên dưới → A đúng. B làm tăng nhiệt (bề mặt tối); C, D không liên quan đến cây.",
+        },
+        {
+          id: 28,
+          type: "true_false_not_given",
+          question: "Statement: The research team plans to repeat the study in twelve more cities.",
+          options: ["True", "False", "Not Given"],
+          answer: 2,
+          paragraphRef: 3,
+          locationVi: "Đoạn 4, câu 'A study of twelve cities found ...' — không có câu nào về kế hoạch nghiên cứu tiếp theo.",
+          explanationVi:
+            "Đoạn chỉ nói nghiên cứu diễn ra ở mười hai thành phố, không nói gì về việc lặp lại ở mười hai thành phố khác → Not Given (thiếu thông tin).",
+        },
+        {
+          id: 29,
+          type: "gap_filling",
+          question:
+            "Complete the sentence using NO MORE THAN TWO WORDS from the passage. Neighbourhoods with mature street trees reported fewer heat-related hospital ___ .",
+          answer: "visits",
+          paragraphRef: 3,
+          locationVi: "Đoạn 4, câu '... reported fewer heat-related hospital visits.'",
+          explanationVi:
+            "Câu gốc là 'fewer heat-related hospital visits'; sau 'fewer' cần danh từ số nhiều → 'visits'. 'Visit' (số ít) sai ngữ pháp với 'fewer'; 'patients' không nằm trong câu gốc.",
+        },
+        {
+          id: 30,
+          type: "multiple_choice",
+          question: "What warning does the last sentence give?",
+          options: [
+            "Trees cannot survive in city centres.",
+            "Hospital visits will rise again soon.",
+            "Asphalt is cheaper than planting trees.",
+            "Planting trees takes years of care before it has an effect.",
+          ],
+          answer: 3,
+          paragraphRef: 3,
+          locationVi: "Đoạn 4, câu cuối 'Planting is only the beginning, however, because young trees need several years of watering before they help.'",
+          explanationVi:
+            "'Planting is only the beginning' + cây non cần nhiều năm tưới nước 'before they help' → trồng không phải xong ngay → D đúng. A, B, C không được đoạn văn khẳng định.",
+        },
+      ],
+    },
+    /* __WRITING__ */
+  ],
+};

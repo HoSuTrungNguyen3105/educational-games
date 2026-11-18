@@ -278,7 +278,12 @@ export default function RoleListManagement({ user, showToast }) {
   );
 
   const savePermissions = async () => {
-    if (!permRole || !features) return;
+    // Chưa tải được danh mục quyền (API lỗi) mà bấm Lưu sẽ gửi ma trận rỗng →
+    // xoá sạch quyền của vai trò, nên chặn ngay từ đầu.
+    if (!permRole || !features || !features.length || !catalog?.length) {
+      showToast?.("Chưa tải được danh mục quyền — không lưu được, thử lại sau", "error");
+      return;
+    }
     const nextMatrix = {};
     for (const feature of features) {
       nextMatrix[feature.key] = { view: false, edit: false, delete: false };
@@ -700,6 +705,139 @@ export default function RoleListManagement({ user, showToast }) {
               <Grid2x2 className="w-4 h-4" />
               Ma trận quyền
             </PrimaryButton>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── Ma trận quyền (?m=rolePerms&role=…) — gộp từ /dashboard/roles-matrix ── */}
+      {permOpen && (
+        <Modal onClose={closePermissions} wide contentStyle={{ maxWidth: "min(1120px, 95vw)" }}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-display text-xl text-ink">Ma trận quyền</h3>
+              <p className="text-xs text-[#8A7C63] font-body mt-0.5">
+                Bật/tắt checkbox quyền rồi bấm <span className="font-mono text-ink">Lưu</span> để đổi quyền cho vai trò.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={closePermissions}
+              className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-ink/45 hover:text-ticket hover:bg-ticket/10 transition"
+              title="Đóng"
+            >
+              <IconClose className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 mt-4">
+            <div className="bg-paper2 rounded-xl px-3 py-2">
+              <p className="text-[10px] font-mono uppercase text-[#8A7C63]">Vai trò</p>
+              <p className="text-sm font-mono text-ink truncate">{permRole?.key || "—"}</p>
+            </div>
+            <div className="bg-paper2 rounded-xl px-3 py-2">
+              <p className="text-[10px] font-mono uppercase text-[#8A7C63]">Tên vai trò (VI)</p>
+              <p className="text-sm font-body text-ink truncate">{permRole?.name_vi || permRole?.label || "—"}</p>
+            </div>
+            <div className="bg-paper2 rounded-xl px-3 py-2">
+              <p className="text-[10px] font-mono uppercase text-[#8A7C63]">Tên vai trò (EN)</p>
+              <p className="text-sm font-body text-ink truncate">{permRole?.name_en || "—"}</p>
+            </div>
+            <div className="bg-paper2 rounded-xl px-3 py-2">
+              <p className="text-[10px] font-mono uppercase text-[#8A7C63]">Số quyền</p>
+              <p className="text-sm font-mono text-ink">
+                {grantedCount}
+                <span className="text-[#8A7C63]"> / {(catalog || []).length}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_160px_200px] gap-2 mt-4">
+            <SearchInput value={permSearch} onChange={setPermSearch} placeholder="Tìm quyền hạn..." />
+            <Select
+              value={permStatus}
+              onChange={setPermStatus}
+              options={[
+                { value: "all", label: "Tất cả" },
+                { value: "granted", label: "Đã cấp" },
+                { value: "not_granted", label: "Chưa cấp" },
+              ]}
+            />
+            <Select value={permModule} onChange={setPermModule} options={moduleOptions} />
+          </div>
+
+          {permLoading ? (
+            <Loader label="Đang tải quyền..." />
+          ) : permError ? (
+            <div className="py-8 text-center text-sm text-ticket font-body">{permError}</div>
+          ) : (
+            <div className="mt-3 rounded-xl border border-ink/10 overflow-hidden">
+              <div className="overflow-auto max-h-[48vh]">
+                <table className="w-full min-w-[760px]">
+                  <thead className="sticky top-0 z-10 bg-paper2">
+                    <tr className="text-left text-[#8A7C63] font-mono text-[11px] uppercase border-b border-ink/10">
+                      <th className="py-3 pl-4 pr-2 font-medium w-12"> </th>
+                      <th className="py-3 pr-4 font-medium">Quyền hạn</th>
+                      <th className="py-3 pr-4 font-medium">Tên quyền (VI)</th>
+                      <th className="py-3 pr-4 font-medium">Tên quyền (EN)</th>
+                      <th className="py-3 pr-4 font-medium">Mô-đun</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPermissions.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-10 text-center text-sm text-[#8A7C63] font-body">
+                          Không có quyền phù hợp bộ lọc.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredPermissions.map((permission, index) => {
+                        const checked = granted.has(permission.slug);
+                        return (
+                          <tr
+                            key={permission.slug}
+                            className={`border-b border-ink/5 last:border-0 ${index % 2 ? "bg-paper2/45" : "bg-paper"}`}
+                          >
+                            <td className="py-2.5 pl-4 pr-2">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={!canEditPermissions || permission.is_base || permSaving}
+                                onChange={() => togglePermission(permission)}
+                                className="w-4 h-4 accent-[#7C5CFF] disabled:opacity-50"
+                                aria-label={`${permission.name_vi}: ${checked ? "đã cấp" : "chưa cấp"}`}
+                              />
+                            </td>
+                            <td className="py-2.5 pr-4">
+                              <span className="text-xs font-mono text-ink">{permission.slug}</span>
+                              {permission.is_base && (
+                                <span className="ml-2 text-[10px] font-mono uppercase text-[#8A7C63]">mặc định</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 pr-4 text-xs text-ink/80 font-body">{permission.name_vi}</td>
+                            <td className="py-2.5 pr-4 text-xs text-ink/60 font-body">{permission.name_en}</td>
+                            <td className="py-2.5 pr-4 text-xs font-mono text-[#8A7C63]">{permission.module}</td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
+            <p className="text-[11px] text-[#8A7C63] font-body">
+              Quyền có nhãn <span className="font-mono uppercase">mặc định</span> luôn được cấp cho mọi vai trò.
+            </p>
+            <div className="flex items-center gap-2">
+              <GhostButton onClick={closePermissions}>Đóng</GhostButton>
+              {canEditPermissions && (
+                <PrimaryButton onClick={savePermissions} disabled={permSaving || permLoading}>
+                  {permSaving ? "Đang lưu..." : "Lưu"}
+                </PrimaryButton>
+              )}
+            </div>
           </div>
         </Modal>
       )}

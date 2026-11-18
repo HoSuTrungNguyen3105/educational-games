@@ -228,8 +228,9 @@ export default function PermissionManagement({ user, showToast }) {
         chỉ để xem và tra cứu, không thêm/sửa/xóa quyền tại đây. Muốn cấp hoặc thu quyền cho từng vai trò,
         dùng trang{" "}
         <button type="button" onClick={() => navigate("/dashboard/roles")} className="font-semibold text-teal hover:underline">
-          Ma trận quyền
-        </button>.
+          Vai trò
+        </button>
+        (mở "Ma trận quyền" từ cột Số quyền).
       </p>
 
       {error && rows === null ? (

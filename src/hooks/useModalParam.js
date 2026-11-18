@@ -12,7 +12,7 @@
 //   đóng:  modal.close("roleCreate")           (bỏ trống tên = xoá mọi modal param)
 //   đọc :  modal.modal === "rolePerms", modal.params.get("role")
 // Muốn modal tự mở khi vào thẳng link, so sánh modal.modal trong useEffect
-// khởi tạo của trang (xem RoleManagement.jsx làm mẫu).
+// khởi tạo của trang (xem RoleListManagement.jsx làm mẫu).
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
