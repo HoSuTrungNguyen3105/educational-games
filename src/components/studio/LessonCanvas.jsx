@@ -48,6 +48,9 @@ export default function LessonCanvas({
   // ở trang Tạo bài học AI dùng để focus ô sửa tương ứng). Không truyền
   // thì không gắn handler nào — hành vi cũ nguyên vẹn.
   onElementClick = null,
+  // Tuỳ chọn: id phần tử cần viền nhấn ở MỌI chế độ (bản xem trước dọc của
+  // trang Tạo bài học AI đánh dấu phần tử đang chọn sửa). Mặc định null.
+  highlightId = null,
 }) {
   const wrapRef = useRef(null);
   const [width, setWidth] = useState(0);
@@ -135,6 +138,7 @@ export default function LessonCanvas({
           {bgOverlay ? <div aria-hidden="true" style={bgOverlay} /> : null}
           {elements.map((el) => {
             const selected = editable && selectedId === el.id;
+            const highlighted = !selected && highlightId != null && highlightId === el.id;
             return (
               <div
                 key={el.id}
@@ -143,9 +147,9 @@ export default function LessonCanvas({
                 style={{
                   position: "absolute", left: el.x, top: el.y, width: el.w, height: el.h,
                   cursor: editable ? "move" : undefined,
-                  outline: selected ? "3px solid #2F6FED" : undefined,
+                  outline: selected ? "3px solid #2F6FED" : highlighted ? "3px solid #8B5CF6" : undefined,
                   outlineOffset: 0,
-                  zIndex: selected ? 999 : undefined,
+                  zIndex: selected || highlighted ? 999 : undefined,
                 }}
               >
                 {renderElement

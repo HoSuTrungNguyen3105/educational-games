@@ -163,6 +163,64 @@ function QuestionPlay({ el, state, onChange, checkAnswer }) {
   );
 }
 
+/**
+ * LessonPageView — render MỘT trang bài học ở chế độ chơi/xem (canvas +
+ * câu hỏi tương tác qua QuestionPlay + nút mở game), tách ra từ
+ * LessonPlayer để các nơi cần xem TỪNG TRANG dùng chung đúng một cách
+ * render: LessonPlayer (phân trang cho học sinh) và bản xem trước DỌC
+ * của trang Tạo bài học AI (mọi trang xếp chồng, không chuyển trang).
+ * Trạng thái trả lời (`answers`) do nơi dùng giữ và truyền vào.
+ * `highlightId`: id phần tử cần viền nhấn (trang Tạo bài học AI dùng để
+ * đánh dấu phần tử đang được chọn sửa) — mặc định null = không nhấn.
+ */
+export function LessonPageView({
+  page, gameById = {}, answers = {}, onAnswerChange, checkAnswer, onPlayGame,
+  playedGameIds = null, onElementClick = null, highlightId = null,
+}) {
+  const renderElement = (el) => {
+    if (el.type === "question") {
+      return (
+        <QuestionPlay
+          el={el}
+          state={answers[el.id] || { value: el.props?.qtype === "fill" ? "" : null, result: null }}
+          onChange={onAnswerChange}
+          checkAnswer={checkAnswer}
+        />
+      );
+    }
+    if (el.type === "game" && el.props?.gameId) {
+      const game = gameById[el.props.gameId] || null;
+      const played = Boolean(playedGameIds && typeof playedGameIds.has === "function" && playedGameIds.has(el.id));
+      return (
+        <div className="relative w-full h-full">
+          <LessonElementView el={el} game={game} />
+          {played && (
+            <span className="absolute left-3 top-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-semibold text-white text-[13px] shadow"
+              style={{ background: "#1B998B" }}>
+              <Check className="w-4 h-4" /> Đã chơi
+            </span>
+          )}
+          <button type="button"
+            onClick={() => {
+              if (onPlayGame) onPlayGame(el.props.gameId, el);
+              else window.open(`#/play/${el.props.gameId}`, "_blank");
+            }}
+            className="absolute right-3 top-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full font-semibold text-white text-[14px] shadow"
+            style={{ background: "#1B998B" }}>
+            <Gamepad2 className="w-4 h-4" /> Mở game
+          </button>
+        </div>
+      );
+    }
+    return <LessonElementView el={el} game={gameById[el.props?.gameId] || null} />;
+  };
+
+  return (
+    <LessonCanvas page={page} gameById={gameById} mode="play"
+      renderElement={renderElement} onElementClick={onElementClick} highlightId={highlightId} />
+  );
+}
+
 export default function LessonPlayer({
   lesson, gameById = {}, preview = false, checkAnswer, onPlayGame, onExit,
   initialAnswers = {}, onAnswerChecked, onPageChange, playedGameIds = null, headerExtra = null,
@@ -220,44 +278,6 @@ export default function LessonPlayer({
     return () => window.removeEventListener("keydown", onKey);
   }, [pages.length, onExit, embedded]);
 
-  const renderElement = (el) => {
-    if (el.type === "question") {
-      return (
-        <QuestionPlay
-          el={el}
-          state={answers[el.id] || { value: el.props?.qtype === "fill" ? "" : null, result: null }}
-          onChange={onAnswerChange}
-          checkAnswer={checkAnswer}
-        />
-      );
-    }
-    if (el.type === "game" && el.props?.gameId) {
-      const game = gameById[el.props.gameId] || null;
-      const played = Boolean(playedGameIds && typeof playedGameIds.has === "function" && playedGameIds.has(el.id));
-      return (
-        <div className="relative w-full h-full">
-          <LessonElementView el={el} game={game} />
-          {played && (
-            <span className="absolute left-3 top-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-semibold text-white text-[13px] shadow"
-              style={{ background: "#1B998B" }}>
-              <Check className="w-4 h-4" /> Đã chơi
-            </span>
-          )}
-          <button type="button"
-            onClick={() => {
-              if (onPlayGame) onPlayGame(el.props.gameId, el);
-              else window.open(`#/play/${el.props.gameId}`, "_blank");
-            }}
-            className="absolute right-3 top-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full font-semibold text-white text-[14px] shadow"
-            style={{ background: "#1B998B" }}>
-            <Gamepad2 className="w-4 h-4" /> Mở game
-          </button>
-        </div>
-      );
-    }
-    return <LessonElementView el={el} game={gameById[el.props?.gameId] || null} />;
-  };
-
   return (
     <div className={embedded ? "absolute inset-0 flex flex-col" : "fixed inset-0 z-[95] flex flex-col"} style={{ background: "linear-gradient(180deg,#FFF6E7,#FFFBF2)" }}>
       <header className="shrink-0 flex items-center gap-3 px-4 h-14 border-b border-[#E7D9BE] bg-white/70 backdrop-blur">
@@ -281,7 +301,8 @@ export default function LessonPlayer({
       <div className="flex-1 overflow-auto flex flex-col items-center px-3 py-4">
         <div className="w-full" style={{ maxWidth: 1024 }}>
           {page
-            ? <LessonCanvas page={page} gameById={gameById} mode="play" renderElement={renderElement} onElementClick={onElementClick} />
+            ? <LessonPageView page={page} gameById={gameById} answers={answers} onAnswerChange={onAnswerChange}
+                checkAnswer={checkAnswer} onPlayGame={onPlayGame} playedGameIds={playedGameIds} onElementClick={onElementClick} />
             : <p className="text-center text-[#8A7C63] py-16">Bài học chưa có trang nào.</p>}
         </div>
 

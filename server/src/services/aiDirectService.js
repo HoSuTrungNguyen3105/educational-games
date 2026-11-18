@@ -844,10 +844,15 @@ async function directExplain(body) {
 //
 // Ánh xạ (chi tiết ở báo cáo của đợt này):
 //   title → title; objectives[] → chuỗi nối "\n"; sections[] → pages[]
-//   (heading=phần tử title, content=text, example=text, key_takeaway=note);
-//   summary → trang "Tổng kết bài học" cuối phần nội dung; estimated_time
-//   → dòng đầu của description; quick_quiz[] → phần tử question ở các
-//   trang "Kiểm tra nhanh", correct_answer (văn bản) → id của option khớp.
+//   (heading=phần tử title, hook=text dẫn nhập màu riêng ngay dưới tiêu
+//   đề, content=text, example=text, key_takeaway=note, emoji hợp lệ →
+//   phần tử decor góc phải trang); simulation hợp lệ của một section →
+//   TRANG RIÊNG "Mô phỏng: …" ngay sau trang section đó (tối đa 2/bài,
+//   sai cấu trúc → loại + meta.droppedSimulations); summary → trang
+//   "Tổng kết bài học" cuối phần nội dung; estimated_time → dòng đầu của
+//   description; quick_quiz[] → phần tử question ở các trang "Kiểm tra
+//   nhanh", correct_answer (văn bản) → id của option khớp. Mọi trang đều
+//   được gán background màu pastel (trang tổng kết dùng tông riêng).
 
 const LESSON_LENGTHS = {
   short: { id: "short", label: "Ngắn gọn", sections: 3, quiz: 3 },
@@ -880,6 +885,17 @@ const LESSON_LIMITS = {
 // ra phải nằm trọn trong canvas vì lessonService validate hình học khi lưu.
 const LESSON_LAYOUT = { x: 80, w: 1120, contentTop: 140, bottom: 700, gap: 16 };
 
+// Màu chữ của câu dẫn nhập (hook) — dấu hiệu để panel sửa ở client nhận ra
+// phần tử hook trong trang section (props.color sống sót qua validate của
+// lessonService, khác với mọi trường trang trí tự chế khác).
+const LESSON_HOOK_COLOR = "#B45309";
+// Nền pastel cho MỌI trang sinh ra, xoay vòng theo thứ tự trang; trang
+// tổng kết dùng tông riêng để học sinh nhận ra phần chốt bài.
+const LESSON_PAGE_BG_PALETTE = ["#FFF6E0", "#E8F4FF", "#EAF7EE", "#FDEEF4", "#F1EBFF", "#FFF0E6"];
+const LESSON_SUMMARY_BG = "#EDE9FE";
+// Trần mô phỏng mỗi bài (khớp yêu cầu trong prompt): phần vượt trần bị bỏ.
+const LESSON_MAX_SIMULATIONS = 2;
+
 /** Ước lượng chiều cao khối chữ theo độ dài nội dung (font tỉ lệ ~0,52em/ký tự). */
 function estimateTextHeight(text, fontSize, width) {
   const charsPerLine = Math.max(12, Math.floor(width / (fontSize * 0.52)));
@@ -888,18 +904,40 @@ function estimateTextHeight(text, fontSize, width) {
   return Math.ceil(lines * fontSize * 1.3) + 24;
 }
 
-function lessonTextElement(type, text, fontSize, x, y, w, h, z, align) {
+function lessonTextElement(type, text, fontSize, x, y, w, h, z, align, extraProps) {
   const props = { text, fontSize };
   if (align) props.align = align;
+  if (extraProps) Object.assign(props, extraProps);
   return { id: uid("el"), type, x, y, w, h, z, props };
 }
 
-/** Một section → một trang: tiêu đề + content/example/key_takeaway xếp dọc. */
+/**
+ * Emoji của một section: hợp lệ khi là chuỗi ≤ 8 ký tự (theo điểm mã)
+ * sau trim và KHÔNG chứa chữ cái/số/khoảng trắng — tức thuần biểu tượng.
+ * Không hợp lệ → "" (trang đó không có phần tử decor, không lỗi cả bài).
+ */
+function validLessonEmoji(raw) {
+  if (typeof raw !== "string") return "";
+  const s = raw.trim();
+  if (!s || [...s].length > 8) return "";
+  if (/[\p{L}\p{N}\s]/u.test(s)) return "";
+  return s;
+}
+
+/** Một section → một trang: tiêu đề + hook/content/example/key_takeaway xếp dọc + decor góc phải. */
 function buildSectionPage(section) {
   const elements = [
     lessonTextElement("title", section.heading, 40, LESSON_LAYOUT.x, 36, LESSON_LAYOUT.w, 88, 0, "left"),
   ];
+  if (section.emoji) {
+    elements.push({
+      id: uid("el"), type: "decor",
+      x: 1092, y: 20, w: 116, h: 116, z: 9,
+      props: { emoji: section.emoji },
+    });
+  }
   const parts = [];
+  if (section.hook) parts.push({ type: "text", text: section.hook, fontSize: 24, color: LESSON_HOOK_COLOR });
   if (section.content) parts.push({ type: "text", text: section.content, fontSize: 24 });
   if (section.example) parts.push({ type: "text", text: section.example, fontSize: 22 });
   if (section.keyTakeaway) parts.push({ type: "note", text: section.keyTakeaway, fontSize: 20 });
@@ -930,10 +968,80 @@ function buildSectionPage(section) {
   let y = LESSON_LAYOUT.contentTop;
   parts.forEach((p, i) => {
     elements.push(lessonTextElement(p.type, p.text, p.fontSize,
-      LESSON_LAYOUT.x, y, LESSON_LAYOUT.w, heights[i], elements.length));
+      LESSON_LAYOUT.x, y, LESSON_LAYOUT.w, heights[i], elements.length,
+      undefined, p.color ? { color: p.color } : undefined));
     y += heights[i] + LESSON_LAYOUT.gap;
   });
   return { id: uid("page"), title: section.heading.slice(0, 200), elements };
+}
+
+/**
+ * visual của simulation do AI trả: validate đúng các khoảng phía
+ * lessonService (fraction/numberline/groups). Sai → null: converter BỎ
+ * visual nhưng vẫn giữ mô phỏng (visual là tuỳ chọn), không loại cả bước.
+ */
+function convertSimulationVisual(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const intIn = (v, min, max) => {
+    const n = Number(v);
+    return Number.isInteger(n) && n >= min && n <= max ? n : null;
+  };
+  const kind = String(raw.kind || "");
+  if (kind === "fraction") {
+    const denominator = intIn(raw.denominator, 2, 12);
+    const numerator = denominator === null ? null : intIn(raw.numerator, 0, denominator);
+    return denominator !== null && numerator !== null ? { kind, numerator, denominator } : null;
+  }
+  if (kind === "numberline") {
+    const from = intIn(raw.from, -100, 100);
+    const to = intIn(raw.to, -100, 100);
+    if (from === null || to === null || from >= to) return null;
+    const highlight = intIn(raw.highlight, from, to);
+    return highlight !== null ? { kind, from, to, highlight } : null;
+  }
+  if (kind === "groups") {
+    const groups = intIn(raw.groups, 1, 6);
+    const perGroup = intIn(raw.perGroup, 1, 10);
+    return groups !== null && perGroup !== null ? { kind, groups, perGroup } : null;
+  }
+  return null;
+}
+
+/**
+ * Một node simulation của AI → props phần tử "simulation" THẬT, hoặc null
+ * khi không dùng được (thiếu tiêu đề / dưới 2 bước có nội dung) — caller
+ * đếm vào meta.droppedSimulations.
+ */
+function convertSimulation(node) {
+  if (node == null || typeof node !== "object" || Array.isArray(node)) return null;
+  const title = cleanText(jsonText(node, "title"), 120);
+  if (!title) return null;
+  const steps = (Array.isArray(node.steps) ? node.steps : [])
+    .map((s) => cleanText(s == null ? "" : String(s), 220))
+    .filter(Boolean)
+    .slice(0, 5);
+  if (steps.length < 2) return null;
+  const out = { title, steps };
+  const intro = cleanText(jsonText(node, "intro"), 300);
+  if (intro) out.intro = intro;
+  if (node.visual !== undefined && node.visual !== null) {
+    const visual = convertSimulationVisual(node.visual);
+    if (visual) out.visual = visual;
+  }
+  return out;
+}
+
+/** Trang mô phỏng RIÊNG ngay sau trang section của nó: một phần tử lớn giữa trang. */
+function buildSimulationPage(simProps) {
+  return {
+    id: uid("page"),
+    title: `Mô phỏng: ${simProps.title}`.slice(0, 200),
+    elements: [{
+      id: uid("el"), type: "simulation",
+      x: 140, y: 80, w: 1000, h: 560, z: 0,
+      props: simProps,
+    }],
+  };
 }
 
 function buildSummaryPage(summary) {
@@ -1028,6 +1136,8 @@ function normalizeAiLesson(root) {
   if (!title) return null;
 
   const sections = [];
+  let droppedSimulations = 0;
+  let simulationCount = 0;
   const rawSections = Array.isArray(root.sections) ? root.sections : [];
   for (const node of rawSections) {
     if (sections.length >= LESSON_LIMITS.maxSections) break;
@@ -1035,12 +1145,27 @@ function normalizeAiLesson(root) {
     const heading = cleanText(jsonText(node, "heading"), LESSON_LIMITS.maxSectionHeadingLength);
     const content = cleanText(jsonText(node, "content"), LESSON_LIMITS.maxTextLength);
     if (!heading && !content) continue;
-    sections.push({
+    const section = {
       heading: heading || `Phần ${sections.length + 1}`,
+      hook: cleanText(jsonText(node, "hook"), 300),
+      emoji: validLessonEmoji(node.emoji),
       content,
       example: cleanText(jsonText(node, "example"), LESSON_LIMITS.maxTextLength),
       keyTakeaway: cleanText(jsonText(node, "key_takeaway"), 1000),
-    });
+      simulation: null,
+    };
+    // simulation: chỉ giữ tối đa LESSON_MAX_SIMULATIONS mô phỏng mỗi bài;
+    // có mặt nhưng sai cấu trúc hoặc vượt trần → bỏ + đếm dropped.
+    if (node.simulation !== undefined && node.simulation !== null) {
+      const sim = convertSimulation(node.simulation);
+      if (sim && simulationCount < LESSON_MAX_SIMULATIONS) {
+        section.simulation = sim;
+        simulationCount += 1;
+      } else {
+        droppedSimulations += 1;
+      }
+    }
+    sections.push(section);
   }
   if (sections.length === 0) return null;
 
@@ -1069,6 +1194,8 @@ function normalizeAiLesson(root) {
     sections,
     quizProps,
     droppedQuestions,
+    droppedSimulations,
+    simulationCount,
     quizReturned: rawQuiz.length,
   };
 }
@@ -1121,11 +1248,30 @@ async function directGenerateLesson(body) {
 
   // subject/grade lấy từ LỰA CHỌN của giáo viên (request) — không tin bản
   // echo của AI trong JSON trả về.
-  const pages = normalized.sections.map((s) => buildSectionPage(s));
+  const pages = [];
+  for (const s of normalized.sections) {
+    pages.push(buildSectionPage(s));
+    // Trang mô phỏng nằm NGAY SAU trang section của nó.
+    if (s.simulation) pages.push(buildSimulationPage(s.simulation));
+  }
   if (normalized.summary) pages.push(buildSummaryPage(normalized.summary));
   pages.push(...buildQuizPages(normalized.quizProps));
+  // Mọi trang đều có nền pastel: xoay vòng theo thứ tự trang, riêng trang
+  // tổng kết dùng tông chốt bài. normalizeBackground phía lessonService
+  // chấp nhận đúng dạng { type: "color", value: "#RRGGBB" } này.
+  pages.forEach((page, i) => {
+    page.background = {
+      type: "color",
+      value: page.title === "Tổng kết bài học"
+        ? LESSON_SUMMARY_BG
+        : LESSON_PAGE_BG_PALETTE[i % LESSON_PAGE_BG_PALETTE.length],
+    };
+  });
 
   const warnings = ["Đây là bản nháp do AI soạn — hãy đọc lại nội dung trước khi lưu và xuất bản cho học sinh."];
+  if (normalized.droppedSimulations > 0) {
+    warnings.push(`${normalized.droppedSimulations} mô phỏng đã bị loại vì AI trả sai cấu trúc (thiếu tiêu đề/bước) hoặc vượt quá tối đa ${LESSON_MAX_SIMULATIONS} mô phỏng mỗi bài.`);
+  }
   if (normalized.droppedQuestions > 0) {
     warnings.push(`${normalized.droppedQuestions} câu trắc nghiệm đã bị loại vì đáp án đúng không khớp với các phương án AI đưa ra.`);
   }
@@ -1155,6 +1301,8 @@ async function directGenerateLesson(body) {
       sections: normalized.sections.length,
       generatedQuestions: normalized.quizProps.length,
       droppedQuestions: normalized.droppedQuestions,
+      simulations: normalized.simulationCount,
+      droppedSimulations: normalized.droppedSimulations,
       quizReturned: normalized.quizReturned,
       warnings,
     },
