@@ -23,7 +23,6 @@ const DocumentStudioEditor = lazy(() => import('./DocumentStudioEditor.jsx'));
 const GameConfigEditor = lazy(() => import('./GameConfigEditor.jsx'));
 const CategoryManagement = lazy(() => import('./CategoryManagement.jsx'));
 const SubjectManagement = lazy(() => import('./SubjectManagement.jsx'));
-const UnifiedQuestionManagement = lazy(() => import('./UnifiedQuestionManagement.jsx'));
 const QuestionBankManagement = lazy(() => import('./QuestionBankManagement.jsx'));
 const GameLibraryManagement = lazy(() => import('./GameLibraryManagement.jsx'));
 const CoinManagement = lazy(() => import('./CoinManagement.jsx'));
@@ -75,7 +74,11 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
    *   • AI Studio tách theo REFACTOR_AI_STUDIO.md: /dashboard/studio
    *     → /dashboard/ai-studio (trang cấu hình Gia sư AI mới);
    *     /dashboard/studio/:lessonId → /dashboard/ai-lesson-creator/:lessonId
-   *     (editor tạo bài học). */
+   *     (editor tạo bài học).
+   *   • Trang Câu hỏi theo game đã gộp vào Ngân hàng câu hỏi:
+   *     /dashboard/all-questions → /dashboard/question-bank, kèm
+   *     sessionStorage 'edu_qb_open'='all' để trang đích mở thẳng tab
+   *     "Theo game" ở góc nhìn "Tất cả câu hỏi" như trang cũ. */
   const legacyLessonId = route.params?.lessonId;
   useEffect(() => {
     if (page === "admin-avatar-template") {
@@ -86,6 +89,9 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
       window.location.replace("#/dashboard/ai-studio");
     } else if (page === "admin-studio-edit" && legacyLessonId) {
       window.location.replace(`#/dashboard/ai-lesson-creator/${legacyLessonId}`);
+    } else if (page === "admin-all-questions") {
+      try { sessionStorage.setItem("edu_qb_open", "all"); } catch { /* bỏ qua */ }
+      window.location.replace("#/dashboard/question-bank");
     }
   }, [page, legacyLessonId]);
 
@@ -121,8 +127,9 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
         {page === "admin-settings" && <AdminSettings user={user} showToast={showToast} />}
         {page === "admin-categories" && <CategoryManagement showToast={showToast} />}
         {page === "admin-subjects" && <SubjectManagement showToast={showToast} />}
-        {page === "admin-questions" && <UnifiedQuestionManagement showToast={showToast} />}
-        {page === "admin-all-questions" && <UnifiedQuestionManagement showToast={showToast} />}
+        {/* Route cũ /dashboard/all-questions: render tạm trang đích trong
+            lúc effect chuyển hướng thay URL (tránh nháy trang trống/404). */}
+        {page === "admin-all-questions" && <QuestionBankManagement showToast={showToast} />}
         {page === "admin-question-bank" && <QuestionBankManagement showToast={showToast} />}
         {page === "admin-chat" && <TeacherChat user={user} showToast={showToast} />}
         {page === "admin-profile" && <TeacherProfile user={user} onLogout={onLogout} showToast={showToast} />}

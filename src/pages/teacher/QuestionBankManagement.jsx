@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, Check, FileDown, FolderOpen, Link2, MessageSquare, RefreshCw, Rocket, Upload, Volume2 } from 'lucide-react'
-import { gameService, questionBankService } from '../../services/api.js'
+import { questionBankService } from '../../services/api.js'
 import { BulkDeleteBar, ConfirmModal, GhostButton, Loader, ManagementHeader, Modal, PrimaryButton } from '../../components/ui'
 import { bulkInChunks, useBulkSelection } from '../../lib/hooks.js'
 import { GRADES, SK, SK_KEYS, bankQuestionMatches, subjKey, subjLabel } from '../../lib/questionBankMeta.js'
 import QuestionSetsPanel from './QuestionSetsPanel.jsx'
+import GameQuestionsPanel from './GameQuestionsPanel.jsx'
 
 /*
  * Ngân hàng câu hỏi — bản React của mục "bank" trong src/games/_tools/admin.html.
@@ -173,7 +174,17 @@ function download(name, text, type = 'application/json') {
 export default function QuestionBankManagement({ showToast }) {
   // Tab "sets" = mục Bộ đề (combo đóng gói theo bài) — panel riêng dùng
   // chung danh sách câu hỏi + helper lọc của trang này.
-  const [tab, setTab] = useState('questions')
+  // Tab "byGame" = câu hỏi theo game (collection `questions`) — phần thay
+  // cho trang /dashboard/questions đã gỡ. Link cũ /dashboard/all-questions
+  // được TeacherApp chuyển hướng sang đây kèm sessionStorage 'edu_qb_open'
+  // ='all' để mở thẳng tab Theo game ở góc nhìn "Tất cả câu hỏi".
+  const [gameViewSeed] = useState(() => {
+    try { return sessionStorage.getItem('edu_qb_open') } catch { return null }
+  })
+  const [tab, setTab] = useState(gameViewSeed === 'all' ? 'byGame' : 'questions')
+  useEffect(() => {
+    if (gameViewSeed) { try { sessionStorage.removeItem('edu_qb_open') } catch { /* bỏ qua */ } }
+  }, [gameViewSeed])
   const [docs, setDocs] = useState(null)
   const [games, setGames] = useState([])
   const [stats, setStats] = useState(null)
@@ -398,9 +409,9 @@ export default function QuestionBankManagement({ showToast }) {
         subtitle="Chỉnh ở đây rồi liên kết vào game — sửa một câu, mọi bản sao đã liên kết tự cập nhật theo."
       />
 
-      {/* Tab: Câu hỏi | Bộ đề (combo) */}
+      {/* Tab: Câu hỏi | Bộ đề (combo) | Theo game */}
       <div className="flex gap-1.5" role="tablist" aria-label="Ngân hàng câu hỏi">
-        {[{ k: 'questions', t: 'Câu hỏi' }, { k: 'sets', t: 'Bộ đề' }].map(({ k, t }) => (
+        {[{ k: 'questions', t: 'Câu hỏi' }, { k: 'sets', t: 'Bộ đề' }, { k: 'byGame', t: 'Theo game' }].map(({ k, t }) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
             className={`px-4 py-1.5 rounded-full border text-sm font-body transition ${tab === k ? 'bg-ink text-paper border-ink font-semibold' : 'bg-paper text-ink/70 border-ink/15 hover:border-ink/35'}`}>
             {t}
@@ -410,6 +421,8 @@ export default function QuestionBankManagement({ showToast }) {
 
       {tab === 'sets' ? (
         <QuestionSetsPanel docs={docs} subjects={subjects} showToast={showToast} />
+      ) : tab === 'byGame' ? (
+        <GameQuestionsPanel showToast={showToast} initialView={gameViewSeed === 'all' ? 'all' : 'byGame'} />
       ) : (
       <>
       <div className="flex flex-wrap gap-2">

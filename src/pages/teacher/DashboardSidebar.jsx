@@ -9,7 +9,6 @@ import {
   Palette,
   Tag,
   BookOpen,
-  CircleQuestionMark,
   Database,
   House,
   MessageCircle,
@@ -83,7 +82,6 @@ const SECTIONS = [
     id: "content",
     label: "Nội dung",
     items: [
-      { id: "admin-questions", label: "Câu hỏi", icon: CircleQuestionMark, route: "/dashboard/questions", permission: "questions.manage" },
       { id: "admin-question-bank", label: "Ngân hàng câu hỏi", icon: Database, route: "/dashboard/question-bank", permission: "questions.manage" },
       { id: "admin-subjects", label: "Môn học", icon: BookOpen, route: "/dashboard/subjects", permission: "subjects.manage" },
       { id: "admin-categories", label: "Categories", icon: Tag, route: "/dashboard/categories", permission: "categories.manage" },
