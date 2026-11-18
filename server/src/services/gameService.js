@@ -165,6 +165,25 @@ export async function list(filters = {}) {
     result = result.filter((g) => g.templateId && tplIds.has(g.templateId.toString()));
   }
 
+  // Số câu hỏi trong response PHẢI là số THẬT trong collection `questions`.
+  // Field questionsCount lưu sẵn trên bản ghi game bị lệch khỏi thực tế
+  // (trên production 16/27 game lệch: nhãn ghi 5–8 câu nhưng game không có
+  // câu nào) vì câu hỏi bị thêm/xoá ngoài các đường ghi có đồng bộ counter
+  // của questionService (save/updateOne/removeOne, link của questionBank).
+  // Đếm lại bằng MỘT aggregation theo gameId (index {gameId:1} đã có) và
+  // ghi đè vào response — field lưu trong DB giữ nguyên. Mọi nơi tiêu thụ
+  // list (trang quản lý game, tab Theo game, dashboard, phía học sinh) chỉ
+  // HIỂN THỊ số này, không nơi nào ghi ngược lại từ response, nên số thật
+  // làm mọi màn hình cùng đúng. Aggregation lỗi thì giữ số lưu sẵn, không
+  // làm hỏng danh sách game.
+  try {
+    const countRows = await getCollection("questions")
+      .aggregate([{ $group: { _id: "$gameId", n: { $sum: 1 } } }])
+      .toArray();
+    const realCountByGame = new Map(countRows.map((r) => [String(r._id), r.n]));
+    for (const g of result) g.questionsCount = realCountByGame.get(String(g._id)) || 0;
+  } catch { /* giữ questionsCount lưu sẵn */ }
+
   const total = result.length;
   // Đường dashboard lấy đoạn ?from=&to= tùy ý: route cần TOÀN BỘ danh sách
   // đã lọc để tự cắt theo hợp đồng rangeList (trần 50 + clamp dưới đây là
