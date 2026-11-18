@@ -212,6 +212,32 @@ export function useClassRoster() {
   );
 
   /**
+   * Thêm mới hoặc thay thế một lớp theo `entry.id` rồi chọn làm lớp
+   * đang dùng. Dùng cho nạp lớp từ nguồn ngoài (vd "Lớp từ hệ thống" ở
+   * RosterPanel): phía gọi tự dựng entry đã merge sẵn (giữ học sinh/
+   * điểm/sơ đồ giáo viên đã chỉnh khi lớp đã tồn tại) — hook chỉ chuẩn
+   * hoá học sinh và ghi vào state, không tự quyết nội dung.
+   */
+  const upsertClass = useCallback((entry) => {
+    if (!entry || typeof entry !== "object" || !entry.id) return;
+    const normalized = {
+      ...entry,
+      id: String(entry.id),
+      name: String(entry.name ?? ""),
+      students: (Array.isArray(entry.students) ? entry.students : [])
+        .map(normalizeStudent)
+        .filter((s) => s.name),
+    };
+    setState((prev) => {
+      const exists = prev.classes.some((c) => c.id === normalized.id);
+      const classes = exists
+        ? prev.classes.map((c) => (c.id === normalized.id ? normalized : c))
+        : [...prev.classes, normalized];
+      return { classes, activeClassId: normalized.id };
+    });
+  }, []);
+
+  /**
    * Thay toàn bộ danh sách của lớp đang chọn bằng `list`
    * ([{ name, gender }]). Học sinh trùng tên với danh sách cũ được GIỮ LẠI
    * id/điểm/sao — sửa danh sách không làm mất điểm đã cộng.
@@ -324,6 +350,7 @@ export function useClassRoster() {
     addClass,
     removeClass,
     renameClass,
+    upsertClass,
     setStudents,
     addStudent,
     removeStudent,

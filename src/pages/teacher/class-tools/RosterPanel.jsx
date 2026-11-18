@@ -1,8 +1,10 @@
-import { useRef, useState } from "react";
-import { ClipboardList, Download, Pencil, Plus, RotateCcw, Star, Trash2, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, ClipboardList, Download, Info, Loader2, Pencil, Plus, RotateCcw, School, Star, Trash2, Upload } from "lucide-react";
 import { ConfirmModal, GhostButton, Input, Modal, Select } from "../../../components/ui";
 import { useConfirm } from "../../../hooks/useConfirm.js";
 import { genderFromWord, parseNameLine } from "../../../hooks/useClassRoster.js";
+import { classService } from "../../../services/api.js";
+import { apiLocalClassId, buildApiClassEntry } from "./apiRosterMock.js";
 import { GENDER_BADGE, GENDER_LABEL } from "./shared.js";
 
 /**
@@ -19,6 +21,11 @@ import { GENDER_BADGE, GENDER_LABEL } from "./shared.js";
  *    tên khớp qua roster.setStudents / importStudents replace).
  * Nhập/xuất Excel bằng thư viện `xlsx` đã có trong dự án (dynamic import
  * như src/services/question-import/excel.parser.js).
+ *
+ * Khu "Lớp từ hệ thống EduPlay": nạp danh sách lớp THẬT từ API /classes
+ * (classService.list); chọn một lớp là tạo bản sao local kèm HỌC SINH MẪU
+ * + sơ đồ chỗ ngồi mẫu (apiRosterMock.js) để xem trước — có banner ghi
+ * rõ "Học sinh mẫu (demo)", không ghi gì lên server.
  */
 
 function studentToLine(s) {
@@ -94,6 +101,29 @@ export default function RosterPanel({ roster, showToast }) {
   const [classModal, setClassModal] = useState(null); // { mode: "add"|"rename", name }
   const fileRef = useRef(null);
 
+  // Danh sách lớp THẬT từ hệ thống (API /classes qua classService.list —
+  // đúng đường gọi của trang quản lý lớp): null = đang tải; lỗi thì báo
+  // rõ và panel vẫn dùng bình thường với các lớp lưu trên máy này.
+  const [apiClasses, setApiClasses] = useState(null);
+  const [apiError, setApiError] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    classService
+      .list()
+      .then((list) => {
+        if (!cancelled) setApiClasses(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setApiClasses([]);
+          setApiError("Không tải được danh sách lớp từ hệ thống. Bạn vẫn dùng được các lớp đã lưu trên máy này.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (!activeClass) return null;
   const students = activeClass.students;
   const starCount = students.filter((s) => s.star).length;
@@ -162,6 +192,23 @@ export default function RosterPanel({ roster, showToast }) {
     setClassModal(null);
   };
 
+  /**
+   * Nạp một lớp hệ thống vào roster local: tạo bản sao kèm học sinh MẪU
+   * + sơ đồ chỗ ngồi mẫu (apiRosterMock, deterministic theo id lớp) để
+   * xem trước; nạp lại chỉ đồng bộ tên/sĩ số và mở lại đúng bản sao đó —
+   * không nhân đôi, không ghi đè điểm/sơ đồ giáo viên đã chỉnh, và
+   * không ghi bất cứ thứ gì lên server.
+   */
+  const handleImportApiClass = (apiCls) => {
+    const existing = classes.find((c) => c.id === apiLocalClassId(apiCls.id)) || null;
+    roster.upsertClass(buildApiClassEntry(apiCls, existing));
+    showToast?.(
+      existing
+        ? `Đã mở lớp "${apiCls.name}" — bản mẫu lưu trên máy này`
+        : `Đã nạp lớp "${apiCls.name}" kèm học sinh mẫu để xem trước`,
+    );
+  };
+
   return (
     <section className="bg-white rounded-3xl border border-ink/10 shadow-sm p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -179,7 +226,10 @@ export default function RosterPanel({ roster, showToast }) {
           <Select
             value={activeClass.id}
             onChange={(id) => roster.setActiveClass(id)}
-            options={classes.map((c, i) => ({ value: c.id, label: c.name || `Lớp ${i + 1} (chưa đặt tên)` }))}
+            options={classes.map((c, i) => {
+              const base = c.name || `Lớp ${i + 1} (chưa đặt tên)`;
+              return { value: c.id, label: c.source === "api" ? `${base} — lớp hệ thống (mẫu)` : base };
+            })}
           />
         </div>
         <button type="button" title="Đổi tên lớp" onClick={() => setClassModal({ mode: "rename", name: activeClass.name })}
@@ -187,6 +237,72 @@ export default function RosterPanel({ roster, showToast }) {
           <Pencil className="w-4 h-4" />
         </button>
       </div>
+
+      <div className="rounded-2xl border border-sky-200 bg-sky-50/70 px-3 py-2.5 flex flex-col gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-display font-bold text-sky-900">
+          <School className="w-4 h-4" />
+          Lớp từ hệ thống EduPlay
+          {apiClasses === null && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+        </div>
+        {apiError ? (
+          <p className="text-[11px] leading-relaxed text-rose-600">{apiError}</p>
+        ) : apiClasses === null ? (
+          <p className="text-[11px] text-sky-900/60">Đang tải danh sách lớp…</p>
+        ) : apiClasses.length === 0 ? (
+          <p className="text-[11px] text-sky-900/60">Tài khoản của bạn chưa có lớp nào trên hệ thống.</p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {apiClasses.map((cls) => {
+              const localId = apiLocalClassId(cls.id);
+              const imported = classes.some((c) => c.id === localId);
+              const isActive = activeClass.id === localId;
+              return (
+                <button
+                  key={cls.id}
+                  type="button"
+                  onClick={() => handleImportApiClass(cls)}
+                  className={`inline-flex items-center gap-1.5 text-xs font-semibold rounded-xl px-2.5 py-1.5 border transition active:scale-[0.98] ${
+                    isActive
+                      ? "bg-sky-600 text-white border-sky-600"
+                      : "bg-white text-sky-900 border-sky-200 hover:bg-sky-100"
+                  }`}
+                >
+                  <span>{cls.name}</span>
+                  {typeof cls.studentCount === "number" && (
+                    <span className={isActive ? "text-sky-100" : "text-sky-700/70"}>· {cls.studentCount} HS</span>
+                  )}
+                  {isActive ? (
+                    <span className="text-[10px] font-bold uppercase tracking-wide">Đang dùng</span>
+                  ) : imported ? (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-600">
+                      <Check className="w-3 h-3" /> Đã nạp
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-sky-600">Nạp lớp</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <p className="text-[10px] leading-relaxed text-sky-900/55">
+          Nạp lớp chỉ tạo bản sao trên máy này kèm học sinh mẫu để xem trước — không thay đổi dữ liệu trên hệ thống.
+        </p>
+      </div>
+
+      {activeClass.source === "api" && (
+        <div className="flex gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-3 py-2.5">
+          <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-[11px] leading-relaxed text-amber-800">
+            <b>Học sinh mẫu (demo):</b> danh sách học sinh của lớp này là dữ liệu giả sinh tự động để xem trước,
+            không phải học sinh thật đã ghi danh
+            {typeof activeClass.apiStudentCount === "number" && (
+              <> (lớp thật hiện có {activeClass.apiStudentCount} học sinh trên hệ thống)</>
+            )}
+            . Điểm, nhóm và chỗ ngồi của lớp mẫu chỉ lưu trên máy này.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 flex-wrap">
         <button type="button" onClick={() => setClassModal({ mode: "add", name: "" })}
