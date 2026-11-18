@@ -5,6 +5,11 @@ import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 //     bao giờ chạy (đúng §7/§11 đặc tả). Chỉ có allow-same-origin để
 //     trang cha đo được chiều cao nội dung mà tự co giãn khung (srcDoc
 //     không chạy script nên việc này không tạo lối thoát sandbox).
+//   • allow-modals: để TRANG CHA gọi được contentWindow.print() mở hộp
+//     thoại in cho chính tài liệu trong khung (nút In / lưu PDF). Thiếu
+//     cờ này Chrome âm thầm bỏ qua lệnh print() trên iframe sandbox.
+//     An toàn vì tài liệu trong khung không chạy script nên tự nó không
+//     thể bật alert/confirm/print — chỉ trang cha mới gọi được.
 //   • Nội dung luôn qua srcDoc (không nạp URL ngoài vào khung chính).
 // Zoom bằng transform scale trên khung có kích thước logic cố định.
 // Ref (forwardRef) trả về chính DOM iframe để trang cha cuộn tới + bôi
@@ -63,7 +68,7 @@ const SandboxFrame = forwardRef(function SandboxFrame({ srcDoc, width = 794, min
         ref={setFrame}
         title="Xem trước tài liệu"
         srcDoc={srcDoc}
-        sandbox="allow-same-origin"
+        sandbox="allow-same-origin allow-modals"
         style={{
           width, height, border: 0, display: "block",
           transform: `scale(${zoom})`, transformOrigin: "top left",

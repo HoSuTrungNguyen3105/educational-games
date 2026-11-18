@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft, ArrowLeftRight, BookOpen, Check, Copy, Download, Expand, Eye,
   FileText, FileWarning, FolderOpen, Image as ImageIcon, LayoutGrid, LayoutTemplate,
-  List, Play, Printer, Quote, Save, Search, Settings, Sparkles, Table2, Upload, UserRound,
+  Play, Printer, Save, Search, Settings, Sparkles, Upload, UserRound,
   Wand2, X, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { navigate } from "../../lib/router.js";
@@ -11,6 +11,7 @@ import { matchesQuery } from "../../lib/searchText.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import { ConfirmModal, Modal } from "../../components/ui";
 import CodeEditor from "./documents/CodeEditor.jsx";
+import { ComponentCard } from "./documents/ComponentPreview.jsx";
 import WordPreview from "./documents/WordPreview.jsx";
 import PowerPointPreview from "./documents/PowerPointPreview.jsx";
 import DocumentUploadModal from "./documents/DocumentUploadModal.jsx";
@@ -18,6 +19,9 @@ import { applySource, convertSource } from "../../lib/documents/convert.js";
 import { renderModelBodyHtml } from "../../lib/documents/modelRender.js";
 import { jsonItemIndexAt, htmlAnchorAt } from "../../lib/documents/sourceMap.js";
 import { templatesFor } from "../../lib/documents/templates.js";
+import {
+  COMPONENT_GROUPS, COMPONENTS, CUSTOM_FORM_KINDS, componentAvailable,
+} from "../../lib/documents/componentLibrary.js";
 import { exportWordDocx } from "../../lib/documents/wordExporter.js";
 import { exportPresentationPptx } from "../../lib/documents/pptxExporter.js";
 import { validateDocumentJson } from "../../lib/documents/schemas.js";
@@ -34,8 +38,9 @@ import "./documents/docstudio.css";
 //   • Thanh trên cùng: logo EduPlay + tên tài liệu + trạng thái lưu + Trợ lý AI.
 //   • Banner màu theo loại tài liệu (xanh dương cho Word, cam cho PowerPoint)
 //     với nút Mẫu có sẵn / Xem trước / Xuất file thật.
-//   • Workspace 3 cột: rail công cụ (Nội dung, Hình ảnh, Bảng biểu, Danh sách,
-//     Trích dẫn, Cài đặt) · khung mã nguồn · khung xem trước kéo chia được.
+//   • Workspace 3 cột: rail công cụ (Nội dung, Hình ảnh, Thành phần — thư
+//     viện chọn nhanh gộp Bảng biểu/Danh sách/Trích dẫn + mẫu bổ sung,
+//     Cài đặt) · khung mã nguồn · khung xem trước kéo chia được.
 //
 // Hai chế độ soạn (HTML/CSS ⇄ JSON) dùng chung MỘT mô hình trung gian
 // (src/lib/documents):
@@ -86,9 +91,7 @@ const THEMES = {
 const RAIL_ITEMS = [
   { id: "content", label: "Nội dung", icon: FileText },
   { id: "image", label: "Hình ảnh", icon: ImageIcon },
-  { id: "table", label: "Bảng biểu", icon: Table2 },
-  { id: "list", label: "Danh sách", icon: List },
-  { id: "quote", label: "Trích dẫn", icon: Quote },
+  { id: "components", label: "Thành phần", icon: LayoutGrid },
   { id: "settings", label: "Cài đặt", icon: Settings },
 ];
 
@@ -142,6 +145,9 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   const cursorTimer = useRef(null);
   const [tool, setTool] = useState("content");
   const [templateQuery, setTemplateQuery] = useState("");
+  const [componentQuery, setComponentQuery] = useState("");
+  const [componentGroup, setComponentGroup] = useState("all");
+  const [customKind, setCustomKind] = useState(null); // form tuỳ chỉnh cũ trong mục Thành phần
   const [uploadOpen, setUploadOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [toolForm, setToolForm] = useState({
@@ -587,18 +593,20 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   };
 
   // ── Công cụ chèn nhanh ở rail trái ────────────────────────────────────
-  const insertSnippet = (snippet) => {
+  // stay = giữ nguyên panel đang mở (thư viện Thành phần: giáo viên chèn
+  // liên tiếp nhiều mẫu); mặc định giữ hành vi cũ — chèn xong về Nội dung.
+  const insertSnippet = (snippet, { stay = false } = {}) => {
     const ok = editorRef.current?.insert(`\n${snippet}\n`);
     if (!ok) {
       showToast?.("Chưa chèn được — bấm vào khung mã nguồn rồi thử lại.", "error");
       return false;
     }
-    setTool("content");
+    if (!stay) setTool("content");
     showToast?.("Đã chèn vào mã nguồn — bấm Áp dụng thay đổi để xem trước.", "success");
     return true;
   };
 
-  const appendJsonItem = (mutate, label) => {
+  const appendJsonItem = (mutate, label, { stay = false } = {}) => {
     let obj;
     try {
       obj = JSON.parse(draft);
@@ -611,8 +619,30 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     setDrafts((d) => ({ ...d, json: src }));
     doApply(src, "json", docType);
     if (docType === "powerpoint" && Array.isArray(obj.slides)) setSlideIndex(obj.slides.length - 1);
-    setTool("content");
+    if (!stay) setTool("content");
     showToast?.(`Đã thêm ${label} — bấm Lưu để ghi lại.`, "success");
+  };
+
+  // ── Thư viện Thành phần: chèn một mẫu dựng sẵn qua ĐÚNG các đường
+  // chèn hiện có (snippet HTML tại con trỏ / thêm khối Word / thêm slide).
+  const handleInsertComponent = (comp) => {
+    if (mode === "html") {
+      insertSnippet(comp.html(), { stay: true });
+      return;
+    }
+    if (docType === "word") {
+      appendJsonItem((o) => {
+        o.blocks = [...(o.blocks || []), ...comp.word()];
+      }, `thành phần “${comp.name}”`, { stay: true });
+      return;
+    }
+    if (typeof comp.ppt === "function") {
+      appendJsonItem((o) => {
+        o.slides = [...(o.slides || []), comp.ppt()];
+      }, `slide “${comp.name}”`, { stay: true });
+    } else {
+      showToast?.(`Thành phần “${comp.name}” chỉ dùng cho tài liệu Word.`, "error");
+    }
   };
 
   const parseTableText = (text) => String(text || "")
@@ -752,7 +782,12 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   // In / lưu PDF: chỉ áp dụng khi preview là iframe sandbox (Word mọi
   // chế độ + PowerPoint chế độ HTML) — trang cha gọi print() lên chính
   // tài liệu trong iframe, trình duyệt mở hộp thoại in và giáo viên
-  // chọn "Lưu dưới dạng PDF" là có PDF thật. Preview slide dạng DOM
+  // chọn "Lưu dưới dạng PDF" là có PDF thật. Nhờ vậy bản in CHỈ chứa
+  // nội dung tài liệu (không lẫn giao diện app); khổ giấy/lề/ngắt trang
+  // do CSS @page + @media print nằm sẵn trong tài liệu xem trước quyết
+  // định (xem WORD_PREVIEW_CSS trong modelRender.js). Điều kiện cần:
+  // sandbox của iframe phải có allow-modals, nếu không Chrome âm thầm
+  // bỏ qua print() — SandboxFrame đã bật cờ này. Preview slide dạng DOM
   // (PowerPoint JSON) không in sạch được nên không hiện nút ở đó.
   const handlePrintPreview = () => {
     const frame = previewRef.current?.querySelector("iframe");
@@ -784,7 +819,6 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   }
 
   const warnings = validApplied?.warnings || [];
-  const toolMeta = RAIL_ITEMS.find((item) => item.id === tool);
 
   const renderToolPanel = () => {
     if (tool === "templates") {
@@ -928,43 +962,120 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
       );
     }
 
-    const isTable = tool === "table";
-    return (
-      <aside className="docstudio-flyout">
-        <h3>{toolMeta?.label || "Chèn nội dung"}</h3>
-        <p className="docstudio-flyout-hint">
-          {isTable
-            ? "Mỗi dòng là một hàng, các ô cách nhau bằng dấu |. Hàng đầu tiên là hàng tiêu đề."
-            : "Mỗi dòng là một mục. Nội dung sẽ được chèn vào bản nháp hiện tại."}
-        </p>
-        {(docType === "powerpoint" && mode === "json") && (
-          <>
-            <label className="docstudio-label" htmlFor="docstudio-tool-title">Tiêu đề slide</label>
-            <input id="docstudio-tool-title" className="docstudio-input" value={toolForm.title}
-              onChange={(e) => setToolForm((f) => ({ ...f, title: e.target.value }))}
-              placeholder={isTable ? "VD: Bảng so sánh" : "VD: Mục tiêu bài học"} />
-          </>
-        )}
-        <label className="docstudio-label" htmlFor="docstudio-tool-text">
-          {isTable ? "Nội dung bảng" : tool === "quote" ? "Nội dung trích dẫn" : "Các mục"}
-        </label>
-        <textarea id="docstudio-tool-text" className="docstudio-textarea" value={toolForm.text}
-          onChange={(e) => setToolForm((f) => ({ ...f, text: e.target.value }))}
-          placeholder={isTable ? "Cột 1 | Cột 2\nÔ 1 | Ô 2" : "Mục 1\nMục 2"} />
-        {tool === "list" && (
-          <label className="docstudio-check">
-            <input type="checkbox" checked={toolForm.ordered}
-              onChange={(e) => setToolForm((f) => ({ ...f, ordered: e.target.checked }))} />
-            Danh sách có thứ tự (1, 2, 3…)
+    // Form tuỳ chỉnh cũ (bảng / danh sách / trích dẫn tự nhập) — giữ
+    // nguyên handler và toolForm, nay mở từ mục Thành phần.
+    const renderCustomForm = (kind) => {
+      const isTable = kind === "table";
+      const kindLabel = CUSTOM_FORM_KINDS.find((k) => k.id === kind)?.label || "Tuỳ chỉnh";
+      return (
+        <aside className="docstudio-flyout">
+          <button type="button" className="docstudio-comp-back" onClick={() => setCustomKind(null)}>
+            <ArrowLeft className="w-3.5 h-3.5" /> Thư viện thành phần
+          </button>
+          <h3>{kindLabel}</h3>
+          <p className="docstudio-flyout-hint">
+            {isTable
+              ? "Mỗi dòng là một hàng, các ô cách nhau bằng dấu |. Hàng đầu tiên là hàng tiêu đề."
+              : "Mỗi dòng là một mục. Nội dung sẽ được chèn vào bản nháp hiện tại."}
+          </p>
+          {(docType === "powerpoint" && mode === "json") && (
+            <>
+              <label className="docstudio-label" htmlFor="docstudio-tool-title">Tiêu đề slide</label>
+              <input id="docstudio-tool-title" className="docstudio-input" value={toolForm.title}
+                onChange={(e) => setToolForm((f) => ({ ...f, title: e.target.value }))}
+                placeholder={isTable ? "VD: Bảng so sánh" : "VD: Mục tiêu bài học"} />
+            </>
+          )}
+          <label className="docstudio-label" htmlFor="docstudio-tool-text">
+            {isTable ? "Nội dung bảng" : kind === "quote" ? "Nội dung trích dẫn" : "Các mục"}
           </label>
-        )}
-        <button type="button" className="docstudio-btn-primary" onClick={
-          isTable ? handleInsertTable : tool === "list" ? handleInsertList : handleInsertQuote
-        }>
-          <Play className="w-4 h-4" /> Chèn vào tài liệu
-        </button>
-      </aside>
-    );
+          <textarea id="docstudio-tool-text" className="docstudio-textarea" value={toolForm.text}
+            onChange={(e) => setToolForm((f) => ({ ...f, text: e.target.value }))}
+            placeholder={isTable ? "Cột 1 | Cột 2\nÔ 1 | Ô 2" : "Mục 1\nMục 2"} />
+          {kind === "list" && (
+            <label className="docstudio-check">
+              <input type="checkbox" checked={toolForm.ordered}
+                onChange={(e) => setToolForm((f) => ({ ...f, ordered: e.target.checked }))} />
+              Danh sách có thứ tự (1, 2, 3…)
+            </label>
+          )}
+          <button type="button" className="docstudio-btn-primary" onClick={
+            isTable ? handleInsertTable : kind === "list" ? handleInsertList : handleInsertQuote
+          }>
+            <Play className="w-4 h-4" /> Chèn vào tài liệu
+          </button>
+        </aside>
+      );
+    };
+
+    if (tool === "components") {
+      if (customKind) return renderCustomForm(customKind);
+      const matching = COMPONENTS.filter((comp) => {
+        if (componentGroup !== "all" && comp.group !== componentGroup) return false;
+        const groupLabel = COMPONENT_GROUPS.find((g) => g.id === comp.group)?.label || "";
+        return matchesQuery(componentQuery, comp.name, comp.keywords || "", groupLabel);
+      });
+      const groupsToShow = COMPONENT_GROUPS
+        .map((g) => ({ ...g, items: matching.filter((c) => c.group === g.id) }))
+        .filter((g) => g.items.length);
+      return (
+        <aside className="docstudio-flyout">
+          <h3>Thư viện thành phần</h3>
+          <p className="docstudio-flyout-hint">
+            {mode === "html"
+              ? "Bấm vào một mẫu để chèn tại vị trí con trỏ trong khung mã nguồn."
+              : docType === "word"
+                ? "Bấm vào một mẫu để thêm vào cuối tài liệu."
+                : "Bấm vào một mẫu để thêm thành slide mới ở cuối bài."}
+            {" "}Nội dung chèn xong sửa lại như nội dung thường.
+          </p>
+          <label className="docstudio-template-search">
+            <Search className="w-3.5 h-3.5" />
+            <input value={componentQuery} onChange={(e) => setComponentQuery(e.target.value)}
+              placeholder="Tìm thành phần (gõ không dấu cũng được)…" aria-label="Tìm thành phần" />
+          </label>
+          <div className="docstudio-comp-chips" role="tablist" aria-label="Lọc theo nhóm thành phần">
+            {[{ id: "all", label: "Tất cả" }, ...COMPONENT_GROUPS].map((g) => (
+              <button key={g.id} type="button" role="tab" aria-selected={componentGroup === g.id}
+                className={`docstudio-comp-chip ${componentGroup === g.id ? "is-active" : ""}`}
+                onClick={() => setComponentGroup(g.id)}>
+                {g.label}
+              </button>
+            ))}
+          </div>
+          <div className="docstudio-comp-list">
+            {groupsToShow.map((g) => (
+              <div key={g.id} className="docstudio-comp-group">
+                <h4>{g.label}</h4>
+                <div className="docstudio-comp-grid">
+                  {g.items.map((comp) => (
+                    <ComponentCard key={comp.id} comp={comp}
+                      available={componentAvailable(comp, mode, docType)}
+                      onInsert={handleInsertComponent} />
+                  ))}
+                </div>
+              </div>
+            ))}
+            {!groupsToShow.length && (
+              <p className="docstudio-template-empty">Không có thành phần phù hợp từ khóa.</p>
+            )}
+          </div>
+          <div className="docstudio-comp-custom">
+            <span className="docstudio-label">Hoặc tự tạo nội dung</span>
+            <div className="docstudio-comp-custom-btns">
+              {CUSTOM_FORM_KINDS.map((k) => (
+                <button key={k.id} type="button" className="docstudio-comp-custom-btn"
+                  onClick={() => setCustomKind(k.id)}>
+                  {k.label}…
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
+      );
+    }
+
+    return null;
   };
 
   return (

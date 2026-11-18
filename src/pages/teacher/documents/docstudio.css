@@ -484,6 +484,111 @@
 .docstudio-template-icon.is-word { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
 .docstudio-template-icon.is-powerpoint { background: linear-gradient(135deg, #fb923c, #c2410c); }
 
+/* ── Thư viện Thành phần (rail gộp Bảng biểu / Danh sách / Trích dẫn) ── */
+.docstudio-comp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 10px 0 4px;
+}
+.docstudio-comp-chip {
+  padding: 4px 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  color: #64748b;
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.docstudio-comp-chip:hover { border-color: var(--doc-accent-line); color: var(--doc-accent-dark); }
+.docstudio-comp-chip.is-active {
+  border-color: var(--doc-accent);
+  background: var(--doc-accent-soft);
+  color: var(--doc-accent-dark);
+}
+.docstudio-comp-group h4 {
+  margin: 12px 0 6px;
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.docstudio-comp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.docstudio-comp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 11px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+.docstudio-comp-card:hover:not(:disabled) {
+  border-color: var(--doc-accent);
+  background: var(--doc-accent-soft);
+  box-shadow: 0 4px 10px rgba(29, 46, 74, 0.1);
+  transform: translateY(-1px);
+}
+.docstudio-comp-card:active:not(:disabled) { transform: translateY(0); }
+.docstudio-comp-card:disabled { opacity: 0.45; cursor: not-allowed; }
+.docstudio-comp-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--doc-accent-dark);
+}
+.docstudio-comp-card-head b {
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #1d2e4a;
+}
+.docstudio-comp-na { font-size: 10px; color: #94a3b8; }
+.docstudio-comp-custom { margin-top: 14px; border-top: 1px dashed #e2e8f0; }
+.docstudio-comp-custom-btns { display: flex; flex-direction: column; gap: 6px; }
+.docstudio-comp-custom-btn {
+  padding: 7px 10px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #475569;
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.docstudio-comp-custom-btn:hover { border-color: var(--doc-accent); color: var(--doc-accent-dark); background: var(--doc-accent-soft); }
+.docstudio-comp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--doc-accent-dark);
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.docstudio-comp-back:hover { text-decoration: underline; }
+
 /* ── Vùng chia soạn thảo | xem trước ────────────────────────────────── */
 .docstudio-split { flex: 1; min-width: 0; min-height: 0; display: flex; }
 
