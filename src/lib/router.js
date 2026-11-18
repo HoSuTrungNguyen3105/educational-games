@@ -48,8 +48,7 @@ const ROUTES = [
   { name: "admin-template-edit", pattern: "/dashboard/templates/:templateId" },
   { name: "admin-categories", pattern: "/dashboard/categories" },
   { name: "admin-subjects",  pattern: "/dashboard/subjects" },
-  { name: "admin-questions", pattern: "/dashboard/questions" },
-  { name: "admin-all-questions", pattern: "/dashboard/all-questions" }, // legacy redirect → /dashboard/questions
+  { name: "admin-all-questions", pattern: "/dashboard/all-questions" }, // legacy redirect → /dashboard/question-bank (tab Theo game, góc nhìn Tất cả)
   { name: "admin-question-bank", pattern: "/dashboard/question-bank" },
   { name: "admin-create",    pattern: "/dashboard/create" },
   { name: "admin-edit",      pattern: "/dashboard/edit/:gameId" },
