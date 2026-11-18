@@ -21,8 +21,10 @@ import { usePagedList } from "../../../hooks/usePagedList.js";
  * - `renderGridCard(item, idx)`: thẻ theo anatomy GridCard — khi có, chế độ
  *   "Lưới" dùng lưới chuẩn `.edu-grid` (grid là mặc định qua useViewMode),
  *   chế độ còn lại hiện bảng; nút Thêm đổi sang nút xanh lá kiểu dashboard.
+ * - `extraActions`: ReactNode tuỳ chọn hiện trong hàng nút của header (trước
+ *   Import/Thêm) — cho trang gắn thêm hành động riêng, vd "Tạo bằng AI".
  */
-export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, renderCard, renderGridCard, viewKey, onRemoveAll, removeAllLabel, onCreate, createLabel, addLabel, onImport, importLabel, search, pageSize }) {
+export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, renderCard, renderGridCard, viewKey, onRemoveAll, removeAllLabel, onCreate, createLabel, addLabel, onImport, importLabel, search, pageSize, extraActions }) {
   const [mode, setMode] = useViewMode(viewKey || title || "admin-table");
   const gridMode = typeof renderGridCard === "function";
   const hasCards = gridMode || typeof renderCard === "function";
@@ -47,6 +49,7 @@ export function ManagementTable({ title, count, data, error, onRetry, emptyLabel
             />
           )}
           {hasCards && <ViewToggle mode={mode} onChange={setMode} />}
+          {extraActions}
           {onRemoveAll && <button onClick={onRemoveAll} className="text-xs text-ticket/70 hover:text-ticket">{removeAllLabel || "Xóa tất cả"}</button>}
           {onImport && <GhostButton onClick={onImport}>{importLabel || "Import"}</GhostButton>}
           {onCreate && (gridMode ? (

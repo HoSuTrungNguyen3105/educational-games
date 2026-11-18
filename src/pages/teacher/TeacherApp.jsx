@@ -77,8 +77,8 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
    *     (editor tạo bài học).
    *   • Trang Câu hỏi theo game đã gộp vào Ngân hàng câu hỏi:
    *     /dashboard/all-questions → /dashboard/question-bank, kèm
-   *     sessionStorage 'edu_qb_open'='all' để trang đích mở thẳng tab
-   *     "Theo game" ở góc nhìn "Tất cả câu hỏi" như trang cũ. */
+   *     sessionStorage 'edu_qb_open'='byGame' để trang đích mở thẳng
+   *     tab "Theo game" (góc nhìn "Tất cả câu hỏi" đã gỡ). */
   const legacyLessonId = route.params?.lessonId;
   useEffect(() => {
     if (page === "admin-avatar-template") {
@@ -90,7 +90,7 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
     } else if (page === "admin-studio-edit" && legacyLessonId) {
       window.location.replace(`#/dashboard/ai-lesson-creator/${legacyLessonId}`);
     } else if (page === "admin-all-questions") {
-      try { sessionStorage.setItem("edu_qb_open", "all"); } catch { /* bỏ qua */ }
+      try { sessionStorage.setItem("edu_qb_open", "byGame"); } catch { /* bỏ qua */ }
       window.location.replace("#/dashboard/question-bank");
     }
   }, [page, legacyLessonId]);
