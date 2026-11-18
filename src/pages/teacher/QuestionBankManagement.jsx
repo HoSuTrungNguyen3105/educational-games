@@ -176,15 +176,16 @@ export default function QuestionBankManagement({ showToast }) {
   // chung danh sách câu hỏi + helper lọc của trang này.
   // Tab "byGame" = câu hỏi theo game (collection `questions`) — phần thay
   // cho trang /dashboard/questions đã gỡ. Link cũ /dashboard/all-questions
-  // được TeacherApp chuyển hướng sang đây kèm sessionStorage 'edu_qb_open'
-  // ='all' để mở thẳng tab Theo game ở góc nhìn "Tất cả câu hỏi".
-  const [gameViewSeed] = useState(() => {
-    try { return sessionStorage.getItem('edu_qb_open') } catch { return null }
+  // được TeacherApp chuyển hướng sang đây kèm sessionStorage 'edu_qb_open':
+  // có seed (mọi giá trị — kể cả 'all' do bản cũ ghi, từ khi góc nhìn
+  // "Tất cả câu hỏi" đã gỡ) thì mở thẳng tab Theo game, vì đó là nơi link
+  // cũ trỏ tới. Seed chỉ dùng một lần rồi xoá ngay khi trang mở.
+  const [tab, setTab] = useState(() => {
+    try { return sessionStorage.getItem('edu_qb_open') ? 'byGame' : 'questions' } catch { return 'questions' }
   })
-  const [tab, setTab] = useState(gameViewSeed === 'all' ? 'byGame' : 'questions')
   useEffect(() => {
-    if (gameViewSeed) { try { sessionStorage.removeItem('edu_qb_open') } catch { /* bỏ qua */ } }
-  }, [gameViewSeed])
+    try { sessionStorage.removeItem('edu_qb_open') } catch { /* bỏ qua */ }
+  }, [])
   const [docs, setDocs] = useState(null)
   const [games, setGames] = useState([])
   const [stats, setStats] = useState(null)
@@ -422,7 +423,7 @@ export default function QuestionBankManagement({ showToast }) {
       {tab === 'sets' ? (
         <QuestionSetsPanel docs={docs} subjects={subjects} showToast={showToast} />
       ) : tab === 'byGame' ? (
-        <GameQuestionsPanel showToast={showToast} initialView={gameViewSeed === 'all' ? 'all' : 'byGame'} bankDocs={docs} bankSubjects={subjects} />
+        <GameQuestionsPanel showToast={showToast} bankDocs={docs} bankSubjects={subjects} />
       ) : (
       <>
       <div className="flex flex-wrap gap-2">

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { FileText, Pencil, Trash2, X } from 'lucide-react'
+import { FileText, Pencil, Sparkles, Trash2, X } from 'lucide-react'
 import { gameService, questionService } from '../../services/api.js'
 import { rangeAll } from '../../lib/rangePagination.js'
 import { gameLabel } from '../../lib/gameLabel.js'
 import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, PrimaryButton, GhostButton, EmptyState, ErrorState } from '../../components/ui'
 import QuestionImportModal from './QuestionImportModal.jsx'
 import BankQuestionPickerModal from './BankQuestionPickerModal.jsx'
+import AiQuestionGenerateModal from './AiQuestionGenerateModal.jsx'
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -23,6 +24,7 @@ export default function QuestionManagement({ showToast, bankDocs = [], bankSubje
   const [confirm, setConfirm] = useState({ open: false, item: null });
   const [importOpen, setImportOpen] = useState(false);
   const [bankPickerOpen, setBankPickerOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const loadGames = useCallback(() => {
     setGames(null); setError(null);
@@ -43,6 +45,7 @@ export default function QuestionManagement({ showToast, bankDocs = [], bankSubje
     setQuestions(null);
     setModalOpen(false);
     setBankPickerOpen(false);
+    setAiOpen(false);
     setEditingIdx(null);
   };
 
@@ -212,15 +215,23 @@ export default function QuestionManagement({ showToast, bankDocs = [], bankSubje
             <div className="space-y-3 py-2">
               <p>
                 Game này chưa có câu hỏi nào. Học sinh mở game sẽ không có gì để chơi —
-                hãy thêm câu hỏi đầu tiên bằng một trong ba cách:
+                hãy thêm câu hỏi đầu tiên bằng một trong các cách:
               </p>
               <div className="flex flex-wrap justify-center gap-2">
                 <PrimaryButton onClick={openCreate}>+ Thêm câu hỏi</PrimaryButton>
                 <GhostButton onClick={() => setImportOpen(true)}>Import từ file</GhostButton>
                 <GhostButton onClick={() => setBankPickerOpen(true)}>Lấy từ ngân hàng câu hỏi</GhostButton>
+                <GhostButton onClick={() => setAiOpen(true)}>
+                  <Sparkles className="w-4 h-4 mr-1 inline-block -mt-0.5" /> Tạo câu hỏi bằng AI
+                </GhostButton>
               </div>
             </div>
           ) : "Chưa có câu hỏi nào."}
+          extraActions={(
+            <GhostButton onClick={() => setAiOpen(true)} disabled={!questions} title={questions ? 'Sinh câu hỏi trắc nghiệm bằng AI rồi thêm vào game này' : 'Đang tải câu hỏi của game…'}>
+              <Sparkles className="w-4 h-4 mr-1 inline-block -mt-0.5" /> Tạo câu hỏi bằng AI
+            </GhostButton>
+          )}
           onCreate={openCreate}
           onImport={() => setImportOpen(true)}
           onRemoveAll={questions && questions.length > 0 ? confirmRemoveAll : null}
@@ -336,6 +347,18 @@ export default function QuestionManagement({ showToast, bankDocs = [], bankSubje
           : `Xóa "${confirm.item?.q?.content?.slice(0, 60)}..."?`}
         onConfirm={confirm.item?._all ? doRemoveAll : doRemove}
         onClose={() => setConfirm({ open: false, item: null })} />
+
+      {aiOpen && selectedGame && (
+        <AiQuestionGenerateModal
+          gameId={selectedGame}
+          gameName={selectedGameObj ? gameLabel(selectedGameObj) : ""}
+          gameSubject={selectedGameObj?.subject || ""}
+          existingQuestions={questions || []}
+          showToast={showToast}
+          onClose={() => setAiOpen(false)}
+          onAdded={() => { loadQuestions(); loadGames(); }}
+        />
+      )}
 
       {bankPickerOpen && selectedGame && (
         <BankQuestionPickerModal
