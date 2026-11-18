@@ -15,6 +15,7 @@ import {
   ToggleSwitch, Input, Select, EmptyState, ThemeToggle,
 } from '../../components/ui'
 import { useTheme } from '../../lib/hooks.js'
+import { rangeAll } from '../../lib/rangePagination.js'
 
 const label = 'text-[11px] font-mono text-[#8A7C63] leading-tight block mb-1'
 const box = 'w-full rounded-lg border border-ink/15 px-3 py-2 bg-white text-sm font-body focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/60 transition'
@@ -405,7 +406,7 @@ export default function AdminSettings({ user, showToast }) {
     setLogLoading(true)
     try {
       const f = filters || { keyword: logKeyword, action: logAction, from: logFrom, to: logTo }
-      const r = await systemService.logs({ page, perPage: 15, ...f })
+      const r = await systemService.logs(rangeAll())
       setLogs(r)
       setLogPage(page)
     } catch (e) {
