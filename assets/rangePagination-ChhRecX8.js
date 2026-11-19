@@ -1,1 +1,0 @@
-function e(e,t=10){let n=Math.max(1,Math.floor(Number(e))||1),r=Math.max(1,Math.floor(Number(t))||10);return{from:(n-1)*r+1,to:n*r}}function t(){return{from:1,to:10}}export{e as n,t};
