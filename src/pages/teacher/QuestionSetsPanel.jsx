@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, Eye, Layers, Pencil, RefreshCw, Trash2 } from 'lucide-react'
+import { Check, Eye, Layers, Pencil, RefreshCw, Sparkles, Trash2 } from 'lucide-react'
 import { questionBankService } from '../../services/api.js'
 import { ConfirmModal, GhostButton, Loader, Modal, PrimaryButton } from '../../components/ui'
 import { GRADES, bankQuestionMatches, subjKey, subjLabel } from '../../lib/questionBankMeta.js'
+import { AiGenerateQuestionsModal } from '../../components/ai/AiGenerateQuestionsModal.jsx'
+import { matchBankIds, toBankQuestion } from '../../lib/bankQuestionShape.js'
 
 /*
  * Mục BỘ ĐỀ trong trang Ngân hàng câu hỏi: đóng gói câu hỏi của bank thành
@@ -12,6 +14,11 @@ import { GRADES, bankQuestionMatches, subjKey, subjLabel } from '../../lib/quest
  * Panel này KHÔNG nạp lại câu hỏi: dùng chung `docs` + helper lọc
  * (bankQuestionMatches) của trang Ngân hàng để bộ chọn câu hỏi lọc đúng y
  * hệt danh sách câu hỏi. Xóa bộ chỉ xóa bộ — câu hỏi trong bank còn nguyên.
+ *
+ * Nút "Tạo câu hỏi bằng AI" (thanh công cụ + ngay trong form tạo/sửa bộ)
+ * mở modal dùng chung AiGenerateQuestionsModal: câu AI sinh ra luôn vào
+ * NGÂN HÀNG trước rồi mới nối vào bộ (xem addAiQuestions) — trang cha
+ * được báo qua `onBankChanged` để nạp lại `docs` cho khớp.
  */
 
 const label = 'text-[11px] font-mono text-[#8A7C63] leading-tight block mb-1'
@@ -22,7 +29,7 @@ const PICK_LIMIT = 300
 
 const emptySetForm = () => ({ name: '', subject: 'viet', grade: '', description: '', questionIds: [] })
 
-export default function QuestionSetsPanel({ docs = [], subjects = [], showToast }) {
+export default function QuestionSetsPanel({ docs = [], subjects = [], showToast, onBankChanged }) {
   const [sets, setSets] = useState(null)
   const [loadErr, setLoadErr] = useState('')
 
@@ -37,6 +44,12 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast 
   const [viewSet, setViewSet] = useState(null) // chi tiết bộ (kèm questions) đang xem
   const [viewBusy, setViewBusy] = useState(false)
   const [confirmDel, setConfirmDel] = useState(null)
+
+  // Tạo câu hỏi bằng AI: null = đóng; 'panel' = mở từ thanh công cụ
+  // (chọn thêm bộ đích qua aiTargetSetId); 'form' = mở từ trong form
+  // tạo/sửa bộ (câu mới nối thẳng vào form.questionIds của bộ đang mở).
+  const [aiCtx, setAiCtx] = useState(null)
+  const [aiTargetSetId, setAiTargetSetId] = useState('')
 
   const load = useCallback(async () => {
     setLoadErr('')
@@ -100,6 +113,52 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast 
     } catch (e) { setFormErr(e.message || 'Không lưu được bộ đề') } finally { setSaving(false) }
   }
 
+  /* ── Tạo câu hỏi bằng AI → ngân hàng (+ bộ đề) ──
+   * Modal dùng chung lo phần sinh + duyệt chọn. Các câu đã chọn LUÔN
+   * vào ngân hàng trước (createMany mode merge như đường nhập file —
+   * server tự bỏ câu trùng); createMany không trả id nên tải lại bank
+   * rồi khớp id thật bằng lib/bankQuestionShape.matchBankIds (câu bị
+   * bỏ qua vì trùng khớp sang chính câu có sẵn — thêm câu đó vào bộ là
+   * đúng ý người dùng). Đích sau đó tuỳ ngữ cảnh mở modal:
+   *   · 'form'  — nối id vào form.questionIds của bộ đang tạo/sửa
+   *               (chưa gọi API bộ; bộ được lưu khi bấm Lưu ở form).
+   *   · 'panel' — nếu có chọn bộ đích thì getSet + updateSet nối thêm
+   *               questionIds (server tự loại id không tồn tại);
+   *               không chọn thì chỉ vào ngân hàng. */
+  const addAiQuestions = async (chosen, meta) => {
+    const payloads = chosen
+      .map((q) => toBankQuestion(q, { subject: meta.subject, grade: meta.grade, difficulty: meta.difficulty }))
+      .filter(Boolean)
+    if (!payloads.length) throw new Error('Không có câu hỏi hợp lệ nào để thêm.')
+    const r = await questionBankService.createMany(payloads, 'merge')
+    const fresh = await questionBankService.list({ from: 1, to: 5000 }).catch(() => null)
+    const ids = fresh ? matchBankIds(fresh, payloads) : payloads.map((p) => p.id)
+    if (!ids.length) throw new Error('Không thêm được câu nào vào ngân hàng (câu AI trùng hoặc không hợp lệ).')
+    const reused = ids.length - (r.created || 0)
+    const reusedNote = reused > 0 ? ` (${reused} câu đã có sẵn trong ngân hàng)` : ''
+    if (aiCtx === 'form') {
+      setForm((f) => ({ ...f, questionIds: [...new Set([...f.questionIds, ...ids])] }))
+      onBankChanged?.()
+      showToast?.(`Đã thêm ${ids.length} câu vào bộ đang ${editing === 'new' ? 'tạo' : 'sửa'}${reusedNote}`)
+      return
+    }
+    onBankChanged?.()
+    if (aiTargetSetId) {
+      const detail = await questionBankService.getSet(aiTargetSetId)
+      const merged = [...new Set([...(detail.questionIds || []), ...ids])]
+      await questionBankService.updateSet(aiTargetSetId, {
+        name: detail.name, subject: subjKey(detail), grade: detail.grade ?? null,
+        description: detail.description || '', questionIds: merged,
+      })
+      load()
+      showToast?.(`Đã thêm ${ids.length} câu vào bộ “${detail.name}”${reusedNote}`)
+    } else if (r.created > 0) {
+      showToast?.(`Đã thêm ${r.created} câu hỏi AI vào ngân hàng${r.skipped ? ` · bỏ qua ${r.skipped} câu trùng hoặc không hợp lệ` : ''}`)
+    } else {
+      showToast?.('Các câu đã chọn đều đã có trong ngân hàng (trùng) — không thêm câu mới', 'info')
+    }
+  }
+
   const openView = async (s) => {
     setViewBusy(true)
     try { setViewSet(await questionBankService.getSet(s.id)) }
@@ -124,6 +183,7 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast 
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         <button onClick={openCreate} className={`${toolBtn} bg-ink text-paper border-ink font-semibold`}>+ Tạo bộ đề</button>
+        <button onClick={() => { setAiTargetSetId(''); setAiCtx('panel') }} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><Sparkles className="w-3.5 h-3.5" /> Tạo câu hỏi bằng AI</button>
         <button onClick={load} className={`${toolBtn} bg-paper text-ink/70 border-ink/15 hover:border-ink/35 inline-flex items-center gap-1`}><RefreshCw className="w-3.5 h-3.5" /> Tải lại</button>
       </div>
 
@@ -204,6 +264,9 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast 
                 <span className={label + ' !mb-0'}>Câu hỏi trong bộ</span>
                 <span className="px-2 py-0.5 rounded-full bg-gold/20 text-[#7A5B12] text-[11px] font-semibold">Đã chọn {form.questionIds.length} câu</span>
                 <span className="flex-1" />
+                <button onClick={() => setAiCtx('form')} className="text-[11px] font-semibold text-teal hover:underline inline-flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> Tạo bằng AI
+                </button>
                 {form.questionIds.length > 0 && (
                   <button onClick={() => setForm((f) => ({ ...f, questionIds: [] }))}
                     className="text-[11px] text-red-600 hover:underline">Bỏ chọn tất cả</button>
@@ -288,6 +351,43 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast 
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Tạo câu hỏi bằng AI — modal dùng chung; mở từ form thì đè lên
+          modal form (Modal hỗ trợ xếp chồng, ESC chỉ đóng lớp trên). */}
+      {aiCtx && (
+        <AiGenerateQuestionsModal
+          description={aiCtx === 'form' ? (
+            <>
+              AI sinh câu hỏi trắc nghiệm, thêm vào <strong className="text-ink">ngân hàng</strong> và
+              chọn sẵn vào bộ đề đang {editing === 'new' ? 'tạo' : 'sửa'}. Bạn duyệt từng câu rồi mới thêm.
+            </>
+          ) : (
+            <>
+              AI sinh câu hỏi trắc nghiệm rồi thêm vào <strong className="text-ink">ngân hàng câu hỏi</strong> —
+              có thể chọn thêm luôn vào một bộ đề bên dưới. Bạn duyệt từng câu rồi mới thêm.
+            </>
+          )}
+          subjectField={{ kind: 'select', options: subjects.map((k) => ({ value: k, label: subjLabel(k) })) }}
+          subjectText={(key) => subjLabel(key)}
+          initialSubject={aiCtx === 'form' ? form.subject : 'viet'}
+          initialGrade={aiCtx === 'form' ? (form.grade === '' ? 3 : Number(form.grade)) : 3}
+          addLabel={(n) => (aiCtx === 'form' ? `Thêm ${n} câu đã chọn vào ngân hàng & bộ này` : `Thêm ${n} câu đã chọn`)}
+          onAdd={addAiQuestions}
+          onClose={() => setAiCtx(null)}
+        >
+          {aiCtx === 'panel' && (
+            <div>
+              <label className={label} htmlFor="ai-gen-target-set">Đồng thời thêm vào bộ đề</label>
+              <select id="ai-gen-target-set" value={aiTargetSetId} onChange={(e) => setAiTargetSetId(e.target.value)} className={box}>
+                <option value="">Chỉ thêm vào ngân hàng</option>
+                {(sets || []).map((s) => (
+                  <option key={s.id} value={s.id}>{s.name} ({s.questionCount || 0} câu)</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </AiGenerateQuestionsModal>
       )}
 
       <ConfirmModal open={!!confirmDel} title="Xóa bộ đề"

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, Check, FileDown, FolderOpen, Link2, MessageSquare, RefreshCw, Rocket, Upload, Volume2 } from 'lucide-react'
+import { AlertTriangle, Check, FileDown, FolderOpen, Link2, MessageSquare, RefreshCw, Rocket, Sparkles, Upload, Volume2 } from 'lucide-react'
 import { questionBankService } from '../../services/api.js'
+import { AiGenerateQuestionsModal } from '../../components/ai/AiGenerateQuestionsModal.jsx'
+import { toBankQuestion } from '../../lib/bankQuestionShape.js'
 import { BulkDeleteBar, ConfirmModal, GhostButton, Loader, ManagementHeader, Modal, PrimaryButton } from '../../components/ui'
 import { bulkInChunks, useBulkSelection } from '../../lib/hooks.js'
 import { GRADES, SK, SK_KEYS, bankQuestionMatches, subjKey, subjLabel } from '../../lib/questionBankMeta.js'
@@ -213,6 +215,7 @@ export default function QuestionBankManagement({ showToast }) {
   const [impBusy, setImpBusy] = useState(false)
   const [confirmDel, setConfirmDel] = useState(null) // { ids:[], label }
   const [confirmWipe, setConfirmWipe] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoadErr(null)
@@ -299,6 +302,26 @@ export default function QuestionBankManagement({ showToast }) {
       else { await questionBankService.create(payload); showToast?.('Đã thêm câu hỏi vào ngân hàng') }
       setFormOpen(false); setEditing(null); load()
     } catch (e) { setFormErr(e.message || 'Không lưu được') } finally { setSaving(false) }
+  }
+
+  /* ── Tạo câu hỏi bằng AI → thêm vào ngân hàng ──
+   * Modal dùng chung (components/ai) lo phần sinh + duyệt chọn; ở đây
+   * chỉ map các câu đã chọn sang shape bank (lib/bankQuestionShape —
+   * correctAnswer trỏ đúng id đáp án mới) rồi ghi bằng ĐÚNG đường nhập
+   * hàng loạt của trang (createMany, mode merge): server tự bỏ câu
+   * trùng với câu đã có và câu sai luật, trả về { created, skipped }. */
+  const addAiToBank = async (chosen, meta) => {
+    const payloads = chosen
+      .map((q) => toBankQuestion(q, { subject: meta.subject, grade: meta.grade, difficulty: meta.difficulty }))
+      .filter(Boolean)
+    if (!payloads.length) throw new Error('Không có câu hỏi hợp lệ nào để thêm vào ngân hàng.')
+    const r = await questionBankService.createMany(payloads, 'merge')
+    if (r.created > 0) {
+      showToast?.(`Đã thêm ${r.created} câu hỏi AI vào ngân hàng${r.skipped ? ` · bỏ qua ${r.skipped} câu trùng hoặc không hợp lệ` : ''}`)
+    } else {
+      showToast?.('Các câu đã chọn đều đã có trong ngân hàng (trùng) — không thêm câu mới', 'info')
+    }
+    load()
   }
 
   const duplicate = async (d) => {
@@ -421,13 +444,14 @@ export default function QuestionBankManagement({ showToast }) {
       </div>
 
       {tab === 'sets' ? (
-        <QuestionSetsPanel docs={docs} subjects={subjects} showToast={showToast} />
+        <QuestionSetsPanel docs={docs} subjects={subjects} showToast={showToast} onBankChanged={load} />
       ) : tab === 'byGame' ? (
         <GameQuestionsPanel showToast={showToast} bankDocs={docs} bankSubjects={subjects} />
       ) : (
       <>
       <div className="flex flex-wrap gap-2">
         <button onClick={openCreate} className={`${toolBtn} bg-ink text-paper border-ink font-semibold`}>+ Thêm câu</button>
+        <button onClick={() => setAiOpen(true)} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><Sparkles className="w-3.5 h-3.5" /> Tạo câu hỏi bằng AI</button>
         <button onClick={() => { setImpParsed(null); setImpOpen(true) }} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><Upload className="w-3.5 h-3.5" /> Nhập CSV/JSON</button>
         <button onClick={doExportCSV} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Xuất CSV</button>
         <button onClick={doExportJSON} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Xuất JSON</button>
@@ -724,6 +748,25 @@ export default function QuestionBankManagement({ showToast }) {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Tạo câu hỏi bằng AI — modal dùng chung, ghi qua createMany */}
+      {aiOpen && (
+        <AiGenerateQuestionsModal
+          description={(
+            <>
+              AI sinh câu hỏi trắc nghiệm rồi thêm vào <strong className="text-ink">ngân hàng câu hỏi</strong>.
+              Bạn duyệt từng câu rồi mới thêm — câu trùng với câu đã có trong ngân hàng sẽ tự bị bỏ qua.
+            </>
+          )}
+          subjectField={{ kind: 'select', options: subjects.map((k) => ({ value: k, label: subjLabel(k) })) }}
+          subjectText={(key) => subjLabel(key)}
+          initialSubject={fSubj !== 'all' ? fSubj : 'viet'}
+          initialGrade={fGrade || 3}
+          addLabel={(n) => `Thêm ${n} câu đã chọn vào ngân hàng`}
+          onAdd={addAiToBank}
+          onClose={() => setAiOpen(false)}
+        />
       )}
 
       <ConfirmModal open={!!confirmDel} title="Xóa câu hỏi"
