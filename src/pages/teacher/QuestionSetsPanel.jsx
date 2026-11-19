@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, Eye, Layers, Pencil, RefreshCw, Sparkles, Trash2 } from 'lucide-react'
 import { questionBankService } from '../../services/api.js'
 import { ConfirmModal, GhostButton, Loader, Modal, PrimaryButton } from '../../components/ui'
+import RangePagination from '../../components/RangePagination.jsx'
+import { useRangePager } from '../../hooks/useRangePager.js'
 import { GRADES, bankQuestionMatches, subjKey, subjLabel } from '../../lib/questionBankMeta.js'
 import { AiGenerateQuestionsModal } from '../../components/ai/AiGenerateQuestionsModal.jsx'
-import { matchBankIds, toBankQuestion } from '../../lib/bankQuestionShape.js'
-import { rangeAll } from '../../lib/rangePagination.js'
+import { matchBankIds, suggestSetNameFromPrompt, toBankQuestion } from '../../lib/bankQuestionShape.js'
 
 /*
  * Mục BỘ ĐỀ trong trang Ngân hàng câu hỏi: đóng gói câu hỏi của bank thành
@@ -19,7 +20,15 @@ import { rangeAll } from '../../lib/rangePagination.js'
  * Nút "Tạo câu hỏi bằng AI" (thanh công cụ + ngay trong form tạo/sửa bộ)
  * mở modal dùng chung AiGenerateQuestionsModal: câu AI sinh ra luôn vào
  * NGÂN HÀNG trước rồi mới nối vào bộ (xem addAiQuestions) — trang cha
- * được báo qua `onBankChanged` để nạp lại `docs` cho khớp.
+ * được báo qua `onBankChanged` để nạp lại `docs` cho khớp. Mở từ thanh
+ * công cụ còn có lựa chọn "Tạo bộ đề mới…": tạo luôn một bộ mới (tên
+ * gợi ý từ prompt đã nhập) chứa các câu vừa sinh.
+ *
+ * Lưới thẻ bộ đề PHÂN TRANG PHÍA SERVER bằng cụm RangePagination +
+ * useRangePager dùng chung (listSetsPaged, SETS_PER_PAGE thẻ/trang);
+ * endpoint /question-banks/sets cắt đoạn sau khi lọc như các list quản
+ * trị khác. Danh sách đầy đủ (allSets) chỉ phục vụ ô chọn bộ đích của
+ * modal AI nên nạp riêng không kèm range.
  */
 
 const label = 'text-[11px] font-mono text-[#8A7C63] leading-tight block mb-1'
@@ -30,9 +39,22 @@ const PICK_LIMIT = 300
 
 const emptySetForm = () => ({ name: '', subject: 'viet', grade: '', description: '', questionIds: [] })
 
+/* Giá trị ô chọn bộ đích trong modal AI cho lựa chọn "Tạo bộ đề mới…". */
+const NEW_SET_VALUE = '__new__'
+
+/* Cỡ trang lưới thẻ bộ đề — như lưới ảnh ở trang Thư viện ảnh (PR #149). */
+const SETS_PER_PAGE = 20
+
 export default function QuestionSetsPanel({ docs = [], subjects = [], showToast, onBankChanged }) {
+  // `sets` là MỘT TRANG thẻ bộ đề do server cắt (listSetsPaged); `allSets`
+  // là toàn bộ danh sách (chỉ tên + số câu) cho ô chọn bộ đích của modal
+  // AI — ô chọn đó cần mọi bộ, không chỉ bộ ở trang đang xem.
   const [sets, setSets] = useState(null)
+  const [setsTotal, setSetsTotal] = useState(0)
+  const [allSets, setAllSets] = useState([])
+  const [setsTick, setSetsTick] = useState(0)
   const [loadErr, setLoadErr] = useState('')
+  const pager = useRangePager(setsTotal, SETS_PER_PAGE)
 
   const [form, setForm] = useState(emptySetForm)
   const [editing, setEditing] = useState(null) // null = đóng; 'new' = tạo; object = bộ đang sửa
@@ -51,20 +73,39 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast,
   // tạo/sửa bộ (câu mới nối thẳng vào form.questionIds của bộ đang mở).
   const [aiCtx, setAiCtx] = useState(null)
   const [aiTargetSetId, setAiTargetSetId] = useState('')
+  // Prompt hiện tại trong modal AI (modal báo ra qua onPromptChange) +
+  // tên bộ đề MỚI khi aiTargetSetId là NEW_SET_VALUE: tên được gợi ý từ
+  // prompt (suggestSetNameFromPrompt) lúc người dùng chọn "Tạo bộ đề
+  // mới…", sau đó họ tự sửa được trước khi bấm Thêm.
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiNewSetName, setAiNewSetName] = useState('')
 
-  const load = useCallback(async () => {
-    setLoadErr('')
-    try {
-      const list = await questionBankService.listSets()
-      setSets(Array.isArray(list) ? list : [])
-    } catch (e) {
-      setLoadErr(e.message || 'Không đọc được danh sách bộ đề')
-      setSets([])
-    }
-  }, [])
+  // Mọi thao tác ghi (tạo/sửa/xoá bộ, thêm câu AI) gọi load() để nạp lại
+  // cả trang hiện tại lẫn danh sách đầy đủ; đổi trang chỉ chạy effect
+  // phân trang. Trang vượt quá tổng mới (xoá bộ cuối của trang cuối) thì
+  // useRangePager tự kẹp về trang hợp lệ → range đổi → effect nạp lại.
+  const load = useCallback(() => setSetsTick((t) => t + 1), [])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    let alive = true
+    questionBankService.listSets()
+      .then((list) => { if (alive) setAllSets(Array.isArray(list) ? list : []) })
+      .catch(() => { if (alive) setAllSets([]) })
+    return () => { alive = false }
+  }, [setsTick])
+
+  const { from: setsFrom, to: setsTo } = pager.range
+  useEffect(() => {
+    let alive = true
+    questionBankService.listSetsPaged({ from: setsFrom, to: setsTo })
+      .then((r) => { if (!alive) return; setSets(r.items); setSetsTotal(r.total); setLoadErr('') })
+      .catch((e) => {
+        if (!alive) return
+        setLoadErr(e.message || 'Không đọc được danh sách bộ đề')
+        setSets([]); setSetsTotal(0)
+      })
+    return () => { alive = false }
+  }, [setsFrom, setsTo, setsTick])
 
   const picked = useMemo(() => new Set(form.questionIds), [form.questionIds])
 
@@ -123,8 +164,10 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast,
    * đúng ý người dùng). Đích sau đó tuỳ ngữ cảnh mở modal:
    *   · 'form'  — nối id vào form.questionIds của bộ đang tạo/sửa
    *               (chưa gọi API bộ; bộ được lưu khi bấm Lưu ở form).
-   *   · 'panel' — nếu có chọn bộ đích thì getSet + updateSet nối thêm
-   *               questionIds (server tự loại id không tồn tại);
+   *   · 'panel' — tuỳ ô chọn bộ đích: bộ có sẵn thì getSet + updateSet
+   *               nối thêm questionIds (server tự loại id không tồn
+   *               tại); "Tạo bộ đề mới…" thì createSet với tên người
+   *               dùng đã duyệt (gợi ý từ prompt) + môn/lớp của modal;
    *               không chọn thì chỉ vào ngân hàng. */
   const addAiQuestions = async (chosen, meta) => {
     const payloads = chosen
@@ -132,7 +175,7 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast,
       .filter(Boolean)
     if (!payloads.length) throw new Error('Không có câu hỏi hợp lệ nào để thêm.')
     const r = await questionBankService.createMany(payloads, 'merge')
-    const fresh = await questionBankService.list(rangeAll()).catch(() => null)
+    const fresh = await questionBankService.list({ limit: 5000 }).catch(() => null)
     const ids = fresh ? matchBankIds(fresh, payloads) : payloads.map((p) => p.id)
     if (!ids.length) throw new Error('Không thêm được câu nào vào ngân hàng (câu AI trùng hoặc không hợp lệ).')
     const reused = ids.length - (r.created || 0)
@@ -144,7 +187,23 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast,
       return
     }
     onBankChanged?.()
-    if (aiTargetSetId) {
+    if (aiTargetSetId === NEW_SET_VALUE) {
+      const name = aiNewSetName.trim() || suggestSetNameFromPrompt(meta.prompt)
+      if (!name) throw new Error('Hãy nhập tên cho bộ đề mới.')
+      try {
+        await questionBankService.createSet({
+          name, subject: meta.subject, grade: meta.grade ?? null,
+          description: '', questionIds: ids,
+        })
+      } catch (e) {
+        // Câu ĐÃ vào ngân hàng ở bước trên — nói rõ để người dùng biết,
+        // và bấm Thêm lần nữa là an toàn: createMany merge tự bỏ câu
+        // trùng, matchBankIds khớp lại đúng id, chỉ tạo lại bộ.
+        throw new Error(`Đã thêm ${ids.length} câu vào ngân hàng nhưng chưa tạo được bộ đề mới: ${e?.message || 'lỗi không rõ'}. Bấm “Thêm” lần nữa để thử tạo lại bộ — câu hỏi sẽ không bị trùng.`, { cause: e })
+      }
+      load()
+      showToast?.(`Đã thêm ${ids.length} câu vào ngân hàng và tạo bộ đề mới “${name}”${reusedNote}`)
+    } else if (aiTargetSetId) {
       const detail = await questionBankService.getSet(aiTargetSetId)
       const merged = [...new Set([...(detail.questionIds || []), ...ids])]
       await questionBankService.updateSet(aiTargetSetId, {
@@ -184,7 +243,7 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast,
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         <button onClick={openCreate} className={`${toolBtn} bg-ink text-paper border-ink font-semibold`}>+ Tạo bộ đề</button>
-        <button onClick={() => { setAiTargetSetId(''); setAiCtx('panel') }} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><Sparkles className="w-3.5 h-3.5" /> Tạo câu hỏi bằng AI</button>
+        <button onClick={() => { setAiTargetSetId(''); setAiNewSetName(''); setAiCtx('panel') }} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><Sparkles className="w-3.5 h-3.5" /> Tạo câu hỏi bằng AI</button>
         <button onClick={load} className={`${toolBtn} bg-paper text-ink/70 border-ink/15 hover:border-ink/35 inline-flex items-center gap-1`}><RefreshCw className="w-3.5 h-3.5" /> Tải lại</button>
       </div>
 
@@ -195,7 +254,7 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast,
         “Bộ đề luyện tập” sẽ thấy cả bộ (tên, môn, lớp, tổng số câu) và làm lần lượt hết các câu trong bộ.
       </p>
 
-      {sets.length === 0 ? (
+      {setsTotal === 0 ? (
         <div className="note-card p-6 text-center text-sm text-[#8A7C63]">
           Chưa có bộ đề nào. Bấm “+ Tạo bộ đề” để đóng gói câu hỏi theo bài.
         </div>
@@ -226,6 +285,13 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast,
               </div>
             </article>
           ))}
+        </div>
+      )}
+
+      {setsTotal > 0 && (
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-xs text-[#8A7C63]">{setsTotal} bộ đề</span>
+          <RangePagination {...pager.props} />
         </div>
       )}
 
@@ -375,17 +441,45 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast,
           initialGrade={aiCtx === 'form' ? (form.grade === '' ? 3 : Number(form.grade)) : 3}
           addLabel={(n) => (aiCtx === 'form' ? `Thêm ${n} câu đã chọn vào ngân hàng & bộ này` : `Thêm ${n} câu đã chọn`)}
           onAdd={addAiQuestions}
+          onPromptChange={setAiPrompt}
           onClose={() => setAiCtx(null)}
         >
           {aiCtx === 'panel' && (
             <div>
               <label className={label} htmlFor="ai-gen-target-set">Đồng thời thêm vào bộ đề</label>
-              <select id="ai-gen-target-set" value={aiTargetSetId} onChange={(e) => setAiTargetSetId(e.target.value)} className={box}>
+              <select
+                id="ai-gen-target-set"
+                value={aiTargetSetId}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setAiTargetSetId(v)
+                  // Chọn "Tạo bộ đề mới…" → điền sẵn tên gợi ý từ prompt
+                  // đã nhập (giữ nguyên tên nếu người dùng đã tự sửa).
+                  if (v === NEW_SET_VALUE) setAiNewSetName((cur) => cur || suggestSetNameFromPrompt(aiPrompt))
+                }}
+                className={box}
+              >
                 <option value="">Chỉ thêm vào ngân hàng</option>
-                {(sets || []).map((s) => (
+                <option value={NEW_SET_VALUE}>Tạo bộ đề mới…</option>
+                {allSets.map((s) => (
                   <option key={s.id} value={s.id}>{s.name} ({s.questionCount || 0} câu)</option>
                 ))}
               </select>
+              {aiTargetSetId === NEW_SET_VALUE && (
+                <div className="mt-2">
+                  <label className={label} htmlFor="ai-gen-new-set-name">Tên bộ đề mới *</label>
+                  <input
+                    id="ai-gen-new-set-name"
+                    value={aiNewSetName}
+                    onChange={(e) => setAiNewSetName(e.target.value)}
+                    className={box}
+                    placeholder="VD: Phép trừ 2 chữ số lớp 3"
+                  />
+                  <p className="text-[11px] text-[#8A7C63] mt-1">
+                    Tên được gợi ý từ yêu cầu bạn đã nhập cho AI — sửa lại nếu muốn. Bộ mới lấy môn/lớp theo lựa chọn ở trên.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </AiGenerateQuestionsModal>

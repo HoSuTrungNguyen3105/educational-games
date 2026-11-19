@@ -487,6 +487,18 @@ export const questionBankService = {
     const qs = new URLSearchParams(params).toString();
     return apiFetch(`/question-banks${qs ? `?${qs}` : ""}`) || [];
   },
+  /**
+   * Bản PHÂN TRANG PHÍA SERVER của list() cho tab Câu hỏi (trang Ngân
+   * hàng): params gồm { from, to } + lọc tuỳ chọn { subject, grade,
+   * search, bad, limit } — server lọc TRƯỚC khi cắt đoạn nên kết quả
+   * chuẩn hoá { items, total, pagination } có total là tổng ĐÃ lọc.
+   * list() thường giữ nguyên cho các caller cần toàn bộ bank.
+   */
+  async listPaged(params = {}) {
+    const { from, to, ...filters } = params || {};
+    const qs = new URLSearchParams(filters).toString();
+    return fetchRangedList(`/question-banks${qs ? `?${qs}` : ""}`, { from, to });
+  },
   async get(id) { return apiFetch(`/question-banks/${encodeURIComponent(id)}`); },
   async stats() { return apiFetch("/question-banks/stats"); },
   async create(data) { return apiFetch("/question-banks", { method: "POST", body: data }); },
@@ -503,6 +515,12 @@ export const questionBankService = {
   async listSets(params = {}) {
     const qs = new URLSearchParams(params).toString();
     return apiFetch(`/question-banks/sets${qs ? `?${qs}` : ""}`) || [];
+  },
+  /** Bản phân trang phía server của listSets() cho tab Bộ đề — xem listPaged. */
+  async listSetsPaged(params = {}) {
+    const { from, to, ...filters } = params || {};
+    const qs = new URLSearchParams(filters).toString();
+    return fetchRangedList(`/question-banks/sets${qs ? `?${qs}` : ""}`, { from, to });
   },
   async getSet(id) { return apiFetch(`/question-banks/sets/${encodeURIComponent(id)}`); },
   async createSet(data) { return apiFetch("/question-banks/sets", { method: "POST", body: data }); },

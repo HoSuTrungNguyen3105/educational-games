@@ -4,11 +4,12 @@ import { questionBankService } from '../../services/api.js'
 import { AiGenerateQuestionsModal } from '../../components/ai/AiGenerateQuestionsModal.jsx'
 import { toBankQuestion } from '../../lib/bankQuestionShape.js'
 import { BulkDeleteBar, ConfirmModal, GhostButton, Loader, ManagementHeader, Modal, PrimaryButton } from '../../components/ui'
+import RangePagination from '../../components/RangePagination.jsx'
+import { useRangePager } from '../../hooks/useRangePager.js'
 import { bulkInChunks, useBulkSelection } from '../../lib/hooks.js'
-import { GRADES, SK, SK_KEYS, bankQuestionMatches, subjKey, subjLabel } from '../../lib/questionBankMeta.js'
+import { GRADES, SK, SK_KEYS, subjKey, subjLabel } from '../../lib/questionBankMeta.js'
 import QuestionSetsPanel from './QuestionSetsPanel.jsx'
 import GameQuestionsPanel from './GameQuestionsPanel.jsx'
-import { rangeAll } from '../../lib/rangePagination.js'
 
 /*
  * Ngân hàng câu hỏi — bản React của mục "bank" trong src/games/_tools/admin.html.
@@ -26,6 +27,9 @@ import { rangeAll } from '../../lib/rangePagination.js'
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 9)}`
 const LANGS = { 'vi-VN': 'Tiếng Việt', 'en-US': 'Tiếng Anh' }
 const LET = 'ABCD'
+
+/* Cỡ trang lưới thẻ câu hỏi — như lưới ảnh ở trang Thư viện ảnh (PR #149). */
+const PER_PAGE = 20
 
 /* Cột CSV giống trang admin cũ — tệp xuất từ đó nhập sang đây không cần sửa. */
 const CSVH = ['mon', 'lop', 'cau_hoi', 'dap_an_dung', 'sai_1', 'sai_2', 'sai_3', 'bieu_tuong', 'giai_thich', 'ngon_ngu']
@@ -198,7 +202,24 @@ export default function QuestionBankManagement({ showToast }) {
   const [fGrade, setFGrade] = useState(0)
   const [fBad, setFBad] = useState(false)
   const [search, setSearch] = useState('')
-  const [limit, setLimit] = useState(40)
+
+  /* Danh sách câu hỏi hiển thị được PHÂN TRANG PHÍA SERVER (listPaged):
+   * server lọc môn/lớp/tìm kiếm/câu-lỗi TRƯỚC khi cắt đoạn nên listTotal
+   * là tổng đã lọc. `docs` (toàn bộ bank) vẫn nạp riêng cho ma trận môn ×
+   * lớp, bộ đếm trùng/lỗi, xuất CSV/JSON và các panel con (bộ chọn câu
+   * của Bộ đề, modal lấy câu của Theo game) — các phần đó cần toàn bộ
+   * dữ liệu như trước. Tìm kiếm debounce 350ms như trang Nhắc nhở
+   * (PR #149) để không gọi API theo từng phím gõ. */
+  const [pageDocs, setPageDocs] = useState(null)
+  const [listTotal, setListTotal] = useState(0)
+  const [listTick, setListTick] = useState(0)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const pager = useRangePager(listTotal, PER_PAGE)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 350)
+    return () => clearTimeout(t)
+  }, [search])
+  useEffect(() => { pager.setPage(1) }, [debouncedSearch]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [form, setForm] = useState(emptyForm)
   const [editing, setEditing] = useState(null)
@@ -222,7 +243,10 @@ export default function QuestionBankManagement({ showToast }) {
     setLoadErr(null)
     try {
       const [qs, gs, st] = await Promise.all([
-        questionBankService.list(rangeAll()).catch(() => []),
+        // Toàn bộ bank (không from/to → shape cũ) cho ma trận/đếm/xuất
+        // file/panel con; trần 5000 là trần route cho phép cho đúng
+        // mục đích này. Danh sách hiển thị đi đường listPaged riêng.
+        questionBankService.list({ limit: 5000 }).catch(() => []),
         // gameService.list().catch(() => []),
         questionBankService.stats().catch(() => null),
       ])
@@ -237,6 +261,30 @@ export default function QuestionBankManagement({ showToast }) {
 
   useEffect(() => { load() }, [load])
 
+  /* Trang câu hỏi hiện tại từ server: chạy lại khi đổi trang, đổi bộ
+   * lọc, hoặc listTick tăng (sau mọi thao tác ghi). Xoá vơi trang cuối
+   * thì useRangePager kẹp trang về trang hợp lệ → range đổi → effect
+   * này tự nạp lại trang trước (tự lùi trang như các trang mẫu). */
+  const { from: rangeFrom, to: rangeTo } = pager.range
+  useEffect(() => {
+    let alive = true
+    const params = { from: rangeFrom, to: rangeTo, limit: 5000 }
+    if (fSubj !== 'all') params.subject = fSubj
+    if (fGrade) params.grade = fGrade
+    if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
+    if (fBad) params.bad = 1
+    questionBankService.listPaged(params)
+      .then((r) => { if (!alive) return; setPageDocs(r.items); setListTotal(r.total) })
+      .catch(() => { if (alive) { setPageDocs([]); setListTotal(0) } })
+    return () => { alive = false }
+  }, [rangeFrom, rangeTo, fSubj, fGrade, debouncedSearch, fBad, listTick])
+
+  /* Nạp lại CẢ bank đầy đủ lẫn trang đang xem sau một thao tác ghi. */
+  const reloadAll = useCallback(() => {
+    load()
+    setListTick((t) => t + 1)
+  }, [load])
+
   const rows = useMemo(() => (docs || []).map((d) => ({ d, s: subjKey(d), bad: qIssues(d).length })), [docs])
 
   const subjects = useMemo(() => {
@@ -244,11 +292,6 @@ export default function QuestionBankManagement({ showToast }) {
     rows.forEach((r) => { if (!list.includes(r.s)) list.push(r.s) })
     return list
   }, [rows])
-
-  const filtered = useMemo(() => rows.filter((r) =>
-    bankQuestionMatches(r.d, r.s, { subj: fSubj, grade: fGrade, search })
-    && (!fBad || r.bad.length)
-  ), [rows, fSubj, fGrade, fBad, search])
 
   const dupN = useMemo(() => {
     const m = new Map()
@@ -301,7 +344,7 @@ export default function QuestionBankManagement({ showToast }) {
     try {
       if (editing) { await questionBankService.update(editing.id, payload); showToast?.('Đã cập nhật và đồng bộ tới các game liên kết') }
       else { await questionBankService.create(payload); showToast?.('Đã thêm câu hỏi vào ngân hàng') }
-      setFormOpen(false); setEditing(null); load()
+      setFormOpen(false); setEditing(null); reloadAll()
     } catch (e) { setFormErr(e.message || 'Không lưu được') } finally { setSaving(false) }
   }
 
@@ -322,17 +365,17 @@ export default function QuestionBankManagement({ showToast }) {
     } else {
       showToast?.('Các câu đã chọn đều đã có trong ngân hàng (trùng) — không thêm câu mới', 'info')
     }
-    load()
+    reloadAll()
   }
 
   const duplicate = async (d) => {
     try {
       await questionBankService.create({ ...d, id: undefined, content: `${d.content} (bản sao)` })
-      showToast?.('Đã nhân bản câu hỏi'); load()
+      showToast?.('Đã nhân bản câu hỏi'); reloadAll()
     } catch (e) { showToast?.(e.message || 'Không nhân bản được', 'error') }
   }
   const removeOne = async (d) => {
-    try { await questionBankService.remove(d.id); showToast?.('Đã xóa câu hỏi'); setConfirmDel(null); load() }
+    try { await questionBankService.remove(d.id); showToast?.('Đã xóa câu hỏi'); setConfirmDel(null); reloadAll() }
     catch (e) { showToast?.(e.message || 'Lỗi xóa', 'error') }
   }
   // Xoá hàng loạt theo bộ dùng chung (useBulkSelection + bulkInChunks +
@@ -356,7 +399,7 @@ export default function QuestionBankManagement({ showToast }) {
       } else {
         showToast?.(`Đã xóa ${r.deleted.length} câu hỏi`)
       }
-      sel.clear(); load()
+      sel.clear(); reloadAll()
     } catch (e) { showToast?.(e.message || 'Lỗi xóa hàng loạt', 'error') }
     finally { setBulkDeleting(false) }
   }
@@ -412,7 +455,7 @@ export default function QuestionBankManagement({ showToast }) {
       const list = impParsed.out.map(normaliseImport)
       const r = await questionBankService.createMany(list, impMode)
       showToast?.(`Đã nhập ${r.created} câu${r.skipped ? `, bỏ qua ${r.skipped}` : ''}`)
-      setImpOpen(false); setImpParsed(null); setImpMode('merge'); load()
+      setImpOpen(false); setImpParsed(null); setImpMode('merge'); reloadAll()
     } catch (e) { setImpParsed((p) => ({ ...p, err: e.message || 'Import thất bại' })) } finally { setImpBusy(false) }
   }
 
@@ -425,7 +468,10 @@ export default function QuestionBankManagement({ showToast }) {
     )
   }
 
-  const shown = filtered.slice(0, limit)
+  // Một trang câu hỏi từ server, gắn thêm key môn + số lỗi để render thẻ
+  // (số lỗi tính ở client bằng qIssues như trước — chỉ để hiện cảnh báo
+  // trên thẻ; việc LỌC câu lỗi đã do server làm qua param bad).
+  const shown = (pageDocs || []).map((d) => ({ d, s: subjKey(d), bad: qIssues(d).length }))
 
   return (
     <div className="space-y-3">
@@ -445,7 +491,7 @@ export default function QuestionBankManagement({ showToast }) {
       </div>
 
       {tab === 'sets' ? (
-        <QuestionSetsPanel docs={docs} subjects={subjects} showToast={showToast} onBankChanged={load} />
+        <QuestionSetsPanel docs={docs} subjects={subjects} showToast={showToast} onBankChanged={reloadAll} />
       ) : tab === 'byGame' ? (
         <GameQuestionsPanel showToast={showToast} bankDocs={docs} bankSubjects={subjects} />
       ) : (
@@ -456,7 +502,7 @@ export default function QuestionBankManagement({ showToast }) {
         <button onClick={() => { setImpParsed(null); setImpOpen(true) }} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><Upload className="w-3.5 h-3.5" /> Nhập CSV/JSON</button>
         <button onClick={doExportCSV} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Xuất CSV</button>
         <button onClick={doExportJSON} className={`${toolBtn} inline-flex items-center gap-1.5 bg-paper text-ink border-ink/15 hover:border-ink/35`}><FileDown className="w-3.5 h-3.5" /> Xuất JSON</button>
-        <button onClick={load} className={`${toolBtn} bg-paper text-ink/70 border-ink/15 hover:border-ink/35 inline-flex items-center gap-1`}><RefreshCw className="w-3.5 h-3.5" /> Tải lại</button>
+        <button onClick={reloadAll} className={`${toolBtn} bg-paper text-ink/70 border-ink/15 hover:border-ink/35 inline-flex items-center gap-1`}><RefreshCw className="w-3.5 h-3.5" /> Tải lại</button>
         {docs.length > 0 && (
           <button onClick={() => setConfirmWipe(true)} className={`${toolBtn} bg-paper text-red-600 border-red-200 hover:bg-red-50`}>Xóa tất cả</button>
         )}
@@ -474,7 +520,7 @@ export default function QuestionBankManagement({ showToast }) {
       {badN > 0 && (
         <p className="note-card p-2.5 bg-red-50 border-red-200 text-sm text-red-700 flex flex-wrap items-center gap-2">
           <span>{badN} câu có lỗi. Sửa hết lỗi rồi liên kết vào game.</span>
-          <button onClick={() => setFBad(true)} className={`${toolBtn} !py-1 !text-xs bg-paper border-red-200 text-red-700`}>Chỉ hiện câu lỗi</button>
+          <button onClick={() => { setFBad(true); pager.setPage(1) }} className={`${toolBtn} !py-1 !text-xs bg-paper border-red-200 text-red-700`}>Chỉ hiện câu lỗi</button>
         </p>
       )}
       {dupN > 0 && <p className="note-card p-2.5 bg-amber-50 border-amber-200 text-sm text-amber-800">{dupN} câu hỏi bị trùng nội dung.</p>}
@@ -497,7 +543,7 @@ export default function QuestionBankManagement({ showToast }) {
                 return (
                   <tr key={s} className="border-t border-ink/10">
                     <td className="py-1.5 pr-2">
-                      <button onClick={() => { setFSubj(fSubj === s ? 'all' : s); setLimit(40) }}
+                      <button onClick={() => { setFSubj(fSubj === s ? 'all' : s); pager.setPage(1) }}
                         className={`text-left hover:underline ${fSubj === s ? 'font-semibold text-ink' : 'text-ink/80'}`}>{subjLabel(s)}</button>
                     </td>
                     {GRADES.map((g) => {
@@ -517,24 +563,24 @@ export default function QuestionBankManagement({ showToast }) {
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-1.5">
           {['all', ...subjects].map((s) => (
-            <button key={s} onClick={() => { setFSubj(s); setLimit(40) }}
+            <button key={s} onClick={() => { setFSubj(s); pager.setPage(1) }}
               className={`px-3 py-1.5 rounded-full border text-sm transition ${fSubj === s ? 'bg-ink text-paper border-ink' : 'bg-paper text-ink/70 border-ink/15 hover:border-ink/35'}`}>
               {s === 'all' ? 'Tất cả' : subjLabel(s)}
             </button>
           ))}
         </div>
-        <select value={fGrade} onChange={(e) => { setFGrade(Number(e.target.value)); setLimit(40) }} className={`${box} !w-auto`}>
+        <select value={fGrade} onChange={(e) => { setFGrade(Number(e.target.value)); pager.setPage(1) }} className={`${box} !w-auto`}>
           <option value={0}>Mọi lớp</option>
           {GRADES.map((g) => <option key={g} value={g}>Lớp {g}</option>)}
         </select>
-        <button onClick={() => setFBad((v) => !v)}
+        <button onClick={() => { setFBad((v) => !v); pager.setPage(1) }}
           className={`px-3 py-1.5 rounded-full border text-sm transition ${fBad ? 'bg-red-500/10 border-red-300 text-red-700' : 'bg-paper text-ink/70 border-ink/15 hover:border-ink/35'}`}>
           Chỉ câu lỗi
         </button>
         <input type="search" value={search} placeholder="Tìm câu hỏi..."
-          onChange={(e) => { setSearch(e.target.value); setLimit(40) }}
+          onChange={(e) => setSearch(e.target.value)}
           className={`${box} flex-1 min-w-[160px] !w-auto`} />
-        <span className="text-xs text-[#8A7C63] whitespace-nowrap">{filtered.length} câu</span>
+        <span className="text-xs text-[#8A7C63] whitespace-nowrap">{listTotal} câu</span>
       </div>
 
       {sel.count > 0 && (
@@ -549,8 +595,11 @@ export default function QuestionBankManagement({ showToast }) {
         </div>
       )}
 
-      {/* Danh sách câu hỏi */}
-      {shown.length === 0 ? (
+      {/* Danh sách câu hỏi — một trang do server cắt, RangePagination
+          dùng chung ở dưới lưới */}
+      {pageDocs === null ? (
+        <div className="py-10 flex justify-center"><Loader label="Đang đọc danh sách câu hỏi..." /></div>
+      ) : shown.length === 0 ? (
         <div className="note-card p-6 text-center text-sm text-[#8A7C63]">
           {rows.length ? 'Không có câu hỏi phù hợp bộ lọc.' : 'Chưa có câu hỏi nào. Bấm “+ Thêm câu” hoặc “Nhập CSV/JSON”.'}
         </div>
@@ -600,11 +649,10 @@ export default function QuestionBankManagement({ showToast }) {
         </div>
       )}
 
-      {filtered.length > shown.length && (
-        <div className="flex justify-center">
-          <button onClick={() => setLimit((v) => v + 60)} className={`${toolBtn} bg-paper text-ink border-ink/15 hover:border-ink/35`}>
-            Hiện thêm ({filtered.length - shown.length})
-          </button>
+      {listTotal > 0 && (
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-xs text-[#8A7C63]">{listTotal} câu theo bộ lọc</span>
+          <RangePagination {...pager.props} />
         </div>
       )}
 
@@ -778,7 +826,7 @@ export default function QuestionBankManagement({ showToast }) {
       <ConfirmModal open={confirmWipe} title="Xóa toàn bộ ngân hàng" confirmLabel="Xóa tất cả"
         message={`${docs.length} câu sẽ bị xóa khỏi máy chủ, mọi liên kết bankId trong game bị cắt. Không hoàn tác được — hãy “Xuất” trước.`}
         onConfirm={async () => {
-          try { const r = await questionBankService.removeAll(); showToast?.(`Đã xóa ${r?.deleted ?? docs.length} câu hỏi`); sel.clear(); load() }
+          try { const r = await questionBankService.removeAll(); showToast?.(`Đã xóa ${r?.deleted ?? docs.length} câu hỏi`); sel.clear(); reloadAll() }
           catch (e) { showToast?.(e.message || 'Không xóa được', 'error') }
           setConfirmWipe(false)
         }}
