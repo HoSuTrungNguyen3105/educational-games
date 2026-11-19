@@ -188,6 +188,67 @@
 
 .edu-pdf-canvas { display: block; user-select: none; -webkit-user-drag: none; }
 
+/* ── Lớp chữ THẬT của PDF (TextLayer của PDF.js) ───────────────────────────
+   Span chữ trong suốt đặt đúng vị trí chữ trên canvas: hover ra cursor text,
+   kéo bôi đen / Ctrl+C sao chép như trình xem PDF thường. Các biến CSS và
+   công thức font-size/transform theo đúng pdf_viewer.css của PDF.js. */
+.edu-pdf-textlayer {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  letter-spacing: normal;
+  word-spacing: normal;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+  transform-origin: 0 0;
+  caret-color: #1d2327;
+  z-index: 0;
+  pointer-events: none;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+/* Chế độ Chọn + Chọn chữ: bôi đen được; công cụ vẽ thì nhường sự kiện cho trang. */
+.edu-pdf-page:not([class*="is-tool-"]) .edu-pdf-textlayer,
+.edu-pdf-page.is-tool-edit-text .edu-pdf-textlayer { pointer-events: auto; }
+.edu-pdf-textlayer :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.edu-pdf-textlayer > :not(.markedContent),
+.edu-pdf-textlayer .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+.edu-pdf-textlayer .markedContent { display: contents; }
+.edu-pdf-textlayer ::selection { background: rgba(30, 100, 220, 0.35); color: transparent; }
+.edu-pdf-textlayer br::selection { background: transparent; }
+.edu-pdf-textlayer .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.edu-pdf-textlayer.selecting .endOfContent { top: 0; }
+/* Chế độ Chọn chữ: đối tượng thường nhường chỗ cho bôi đen; cặp che+chữ sửa
+   vẫn bắt sự kiện để chữ gốc bên dưới không bị chọn lại. */
+.edu-pdf-page.is-tool-edit-text .edu-pdf-obj { pointer-events: none; }
+.edu-pdf-page.is-tool-edit-text .edu-pdf-obj.is-pair { pointer-events: auto; }
+
 .edu-pdf-render-error {
   position: absolute;
   left: 50%;
@@ -230,6 +291,12 @@
 }
 .edu-pdf-obj-shape { box-sizing: border-box; width: 100%; height: 100%; }
 .edu-pdf-obj-line { position: absolute; }
+
+/* index.css ép mọi textarea ≥16px !important (chống zoom iOS) — ô sửa chữ tại
+   chỗ phải đúng cỡ chữ thật của đối tượng: biến CSS + !important chọn lọc. */
+.edu-admin textarea.edu-pdf-text-input {
+  font-size: var(--edu-pdf-inline-fs, 16px) !important;
+}
 
 /* Ô sửa chữ tại chỗ */
 .edu-admin .edu-pdf-text-input {
@@ -281,21 +348,36 @@
 /* Xem trước hình vẽ đang kéo */
 .edu-pdf-draft { position: absolute; pointer-events: none; box-sizing: border-box; }
 
-/* ── Công cụ “Sửa chữ”: dòng chữ gốc nhấp được ─────────────────────────── */
-.edu-pdf-text-target {
+/* ── Bubble nổi trên vùng bôi đen: "Sửa chữ đã chọn" ────────────────────── */
+.edu-pdf-selbubble {
   position: absolute;
-  box-sizing: border-box;
-  cursor: text;
-  touch-action: none;
-  background: rgba(34, 113, 177, 0.06);
-  outline: 1px dashed rgba(34, 113, 177, 0.55);
-  outline-offset: 0;
-  transition: background-color 0.1s ease;
+  z-index: 6;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 4px;
+  background: var(--edu-panel, #fff);
+  border: 1px solid var(--edu-line, #dcdcde);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(29, 35, 39, 0.18);
 }
-.edu-pdf-text-target:hover {
-  background: rgba(34, 113, 177, 0.16);
-  outline: 1.5px solid var(--edu-blue);
+.edu-pdf-selbubble button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: #fff;
+  background: var(--edu-blue, #2271b1);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
 }
+.edu-pdf-selbubble button:hover { background: #135e96; }
+.edu-pdf-selbubble button svg { width: 14px; height: 14px; }
+.edu-pdf-selbubble-hint { font-size: 11px; color: var(--edu-muted, #646970); white-space: nowrap; }
 
 .edu-pdf-target-note {
   position: absolute;

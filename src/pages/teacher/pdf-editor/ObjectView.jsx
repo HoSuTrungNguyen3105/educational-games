@@ -23,13 +23,14 @@ export default function ObjectView({
   selected,
   editing,
   measure,
-  fontCss,
+  face,
   onObjectPointerDown,
   onObjectPointerMove,
   onObjectPointerUp,
   onDoubleClick,
   onTextInput,
   onTextEditEnd,
+  initialSelection,
 }) {
   const shell = {
     left: box.x * scale,
@@ -47,11 +48,17 @@ export default function ObjectView({
     const lh = obj.fontSize * (obj.lineHeight || DEFAULT_LINE_HEIGHT);
     const lines = wrapText(obj.text, obj.w, measure);
     const textStyle = {
-      fontFamily: fontCss,
+      // face: mặt font thật sự dùng (font gốc nhúng hoặc DejaVu thay thế) —
+      // font gốc đã đậm/nghiêng sẵn nên không xin trình duyệt tô đậm giả.
+      fontFamily: face ? `"${face.cssFamily}", "Segoe UI", sans-serif` : undefined,
       fontSize: `${obj.fontSize * scale}px`,
+      // index.css ép mọi textarea ≥16px (chống zoom iOS) — ô sửa chữ tại chỗ
+      // phải đúng cỡ chữ thật nên đưa cỡ qua biến CSS, thắng lại bằng !important
+      // có chọn lọc trong pdfEditor.css.
+      "--edu-pdf-inline-fs": `${obj.fontSize * scale}px`,
       lineHeight: `${lh * scale}px`,
-      fontWeight: obj.bold ? 700 : 400,
-      fontStyle: obj.italic ? "italic" : "normal",
+      fontWeight: face ? face.weight : obj.bold ? 700 : 400,
+      fontStyle: face ? face.style : obj.italic ? "italic" : "normal",
       color: obj.color,
       textAlign: obj.align,
       opacity: obj.opacity ?? 1,
@@ -63,6 +70,18 @@ export default function ObjectView({
         style={textStyle}
         autoFocus
         wrap="soft"
+        ref={(el) => {
+          // Vùng bôi đen trước đó được chọn sẵn trong ô sửa — gõ đè lên đúng
+          // phần chữ đã chọn, phần còn lại của dòng giữ nguyên.
+          if (el && initialSelection && el.dataset.selApplied !== "1") {
+            el.dataset.selApplied = "1";
+            const len = el.value.length;
+            el.setSelectionRange(
+              Math.max(0, Math.min(initialSelection.start, len)),
+              Math.max(0, Math.min(initialSelection.end, len)),
+            );
+          }
+        }}
         onChange={(e) => onTextInput(obj.id, e.target.value)}
         onBlur={onTextEditEnd}
         onPointerDown={(e) => e.stopPropagation()}
@@ -154,7 +173,7 @@ export default function ObjectView({
 
   return (
     <div
-      className={`edu-pdf-obj ${selected ? "is-selected" : ""} ${editing ? "is-editing" : ""}`}
+      className={`edu-pdf-obj ${selected ? "is-selected" : ""} ${editing ? "is-editing" : ""} ${obj.pairId ? "is-pair" : ""}`}
       style={shell}
       onPointerDown={startMove}
       onPointerMove={onObjectPointerMove}

@@ -1,12 +1,14 @@
 /**
- * PageStage.jsx — vùng làm việc: canvas render trang + lớp phủ đối tượng.
+ * PageStage.jsx — vùng làm việc: canvas render trang + LỚP CHỮ THẬT (TextLayer
+ * của PDF.js: hover / bôi đen / sao chép chữ gốc) + lớp phủ đối tượng.
  *
  * Tách riêng phần RENDER (canvas) khỏi phần THAO TÁC (lớp phủ DOM) theo yêu
  * cầu §4. Mọi tọa độ trong component này là pt (đơn vị PDF), đổi sang pixel
  * bằng `scale` — nhờ vậy zoom chỉ là nhân số, không phải tính lại toạ độ.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { renderPageToCanvas, sampleTextColors } from "./pdfLoader.js";
+import { TextCursorInput } from "lucide-react";
+import { renderPageToCanvas, renderTextLayer, sampleTextColors } from "./pdfLoader.js";
 import {
   createLine,
   createRect,
@@ -49,13 +51,13 @@ export default function PageStage({
   tool,
   selectedId,
   editingId,
-  textTargets,
+  editSelection,
   measureFor,
-  fontCssFor,
+  faceFor,
   stageApiRef,
   onSelect,
   onCreate,
-  onEditOriginal,
+  onConvertSelection,
   onLiveObject,
   onSnapshot,
   onTextInput,
@@ -63,11 +65,14 @@ export default function PageStage({
 }) {
   const pageRef = useRef(null);
   const canvasRef = useRef(null);
+  const textLayerRef = useRef(null);
+  const layerRef = useRef(null);
   const taskRef = useRef(null);
   const dragRef = useRef(null);
   const draftRef = useRef(null);
   const [draft, setDraft] = useState(null);
   const [renderError, setRenderError] = useState("");
+  const [selBox, setSelBox] = useState(null);
 
   /* ── Render trang bằng PDF.js ─────────────────────────────────────────── */
   useEffect(() => {
@@ -113,6 +118,86 @@ export default function PageStage({
     if (task) { try { task.cancel(); } catch { /* noop */ } }
   }, []);
 
+  /* ── Lớp chữ THẬT của PDF (TextLayer) — hover / bôi đen / sao chép ─────── */
+  useEffect(() => {
+    const el = textLayerRef.current;
+    if (!el || !pdfPage) return undefined;
+    let cancelled = false;
+    let layer = null;
+    el.innerHTML = "";
+    (async () => {
+      try {
+        const l = await renderTextLayer(pdfPage, el, { scale, rotation });
+        if (cancelled) { try { l.cancel(); } catch { /* noop */ } return; }
+        layer = l;
+        layerRef.current = l;
+      } catch (err) {
+        // Không có lớp chữ (PDF scan…) hoặc lỗi đọc: trang vẫn xem / vẽ bình thường.
+        if (!cancelled) console.warn("[pdf-editor] không dựng được lớp chữ:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      layerRef.current = null;
+      if (layer) { try { layer.cancel(); } catch { /* noop */ } }
+      el.innerHTML = "";
+    };
+  }, [pdfPage, scale, rotation]);
+
+  /* Theo dõi vùng bôi đen trong lớp chữ → đặt bubble "Sửa chữ đã chọn". */
+  const refreshSelBox = useCallback(() => {
+    const el = textLayerRef.current;
+    const page = pageRef.current;
+    const sel = window.getSelection();
+    if (!el || !page || !sel || sel.isCollapsed || sel.rangeCount === 0) {
+      setSelBox(null);
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    if (!el.contains(range.commonAncestorContainer)) { setSelBox(null); return; }
+    const r = range.getBoundingClientRect();
+    if (r.width < 2 && r.height < 2) { setSelBox(null); return; }
+    const pr = page.getBoundingClientRect();
+    setSelBox({ left: r.left - pr.left, top: r.top - pr.top, width: r.width, height: r.height });
+  }, []);
+
+  useEffect(() => {
+    let raf = 0;
+    const onSel = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(refreshSelBox); };
+    document.addEventListener("selectionchange", onSel);
+    return () => { cancelAnimationFrame(raf); document.removeEventListener("selectionchange", onSel); };
+  }, [refreshSelBox]);
+
+  /* Vùng bôi đen → danh sách span chữ gốc (kèm khoảng ký tự được chọn). */
+  const readSelectionSpans = () => {
+    const sel = window.getSelection();
+    const divs = layerRef.current?.textDivs || [];
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !divs.length) return [];
+    const range = sel.getRangeAt(0);
+    const spans = [];
+    divs.forEach((div, i) => {
+      if (!div || !range.intersectsNode(div)) return;
+      const len = (div.textContent || "").length;
+      let start = 0;
+      let end = len;
+      if (div.contains(range.startContainer)) {
+        start = range.startContainer.nodeType === 3 ? range.startOffset : 0;
+      }
+      if (div.contains(range.endContainer)) {
+        end = range.endContainer.nodeType === 3 ? range.endOffset : len;
+      }
+      if (end > start) spans.push({ index: i, start, end });
+    });
+    return spans;
+  };
+
+  const convertSelection = () => {
+    const spans = readSelectionSpans();
+    setSelBox(null);
+    window.getSelection()?.removeAllRanges();
+    if (spans.length) onConvertSelection(spans);
+  };
+
   /* ── API cho trang cha: lấy màu nền/chữ từ canvas đã render ───────────── */
   useEffect(() => {
     if (!stageApiRef) return undefined;
@@ -151,7 +236,7 @@ export default function PageStage({
       return;
     }
     if (tool === "edit-text") {
-      // Dòng chữ gốc tự bắt sự kiện riêng (textTargets); bấm vùng trống = bỏ chọn.
+      // Lớp chữ thật tự bắt sự kiện chọn chữ; bấm vùng trống = bỏ chọn đối tượng.
       onSelect(null);
       return;
     }
@@ -288,6 +373,16 @@ export default function PageStage({
       <canvas ref={canvasRef} className="edu-pdf-canvas" />
       {renderError && <div className="edu-pdf-render-error">{renderError}</div>}
 
+      {/* Lớp chữ thật của PDF: trong suốt, đè đúng vị trí chữ trên canvas —
+          hover ra cursor text, kéo bôi đen / Ctrl+C như trình xem PDF thường. */}
+      <div
+        ref={textLayerRef}
+        className="edu-pdf-textlayer textLayer"
+        onPointerDown={(e) => { e.currentTarget.classList.add("selecting"); }}
+        onPointerUp={(e) => { e.currentTarget.classList.remove("selecting"); refreshSelBox(); }}
+        onPointerCancel={(e) => { e.currentTarget.classList.remove("selecting"); refreshSelBox(); }}
+      />
+
       <div className="edu-pdf-overlay" style={{ width: cssW, height: cssH }}>
         {objects.map((obj) => {
           const box = objectBBox(obj);
@@ -299,8 +394,9 @@ export default function PageStage({
               scale={scale}
               selected={selectedId === obj.id}
               editing={editingId === obj.id}
+              initialSelection={editSelection && editSelection.id === obj.id ? editSelection : null}
               measure={measureFor(obj)}
-              fontCss={fontCssFor(obj)}
+              face={faceFor(obj)}
               onObjectPointerDown={startObjectDrag}
               onObjectPointerMove={handleObjectPointerMove}
               onObjectPointerUp={endObjectDrag}
@@ -311,26 +407,25 @@ export default function PageStage({
           );
         })}
 
-        {tool === "edit-text" && (textTargets || []).map((t) => (
-          <div
-            key={t.key}
-            className="edu-pdf-text-target"
-            style={{
-              left: t.box.x * scale,
-              top: t.box.y * scale,
-              width: Math.max(2, t.box.w * scale),
-              height: Math.max(2, t.box.h * scale),
-            }}
-            title="Nhấp để sửa dòng chữ này"
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              onEditOriginal(t);
-            }}
-          />
-        ))}
-
         {draftBox && <div className="edu-pdf-draft" style={draftBox} />}
       </div>
+
+      {selBox && (tool === "select" || tool === "edit-text") && (
+        <div
+          className="edu-pdf-selbubble"
+          style={{
+            left: Math.min(Math.max(selBox.left + selBox.width / 2, 110), Math.max(110, cssW - 110)),
+            top: selBox.top > 44 ? selBox.top - 40 : selBox.top + selBox.height + 8,
+          }}
+          onPointerDown={(e) => e.preventDefault()}
+        >
+          <button type="button" onClick={convertSelection}>
+            <TextCursorInput />
+            <span>Sửa chữ đã chọn</span>
+          </button>
+          <span className="edu-pdf-selbubble-hint">Ctrl+C: sao chép</span>
+        </div>
+      )}
     </div>
   );
 }

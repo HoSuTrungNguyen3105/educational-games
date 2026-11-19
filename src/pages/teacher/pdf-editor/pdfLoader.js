@@ -61,6 +61,9 @@ export async function openPdf(bytes) {
     data: bytes.slice(),
     isEvalSupported: false,
     disableAutoFetch: true,
+    // Giữ lại bytes font nhúng + tên font thật trong commonObjs để "Sửa chữ"
+    // tái dùng đúng font gốc (xem srcFonts.js).
+    fontExtraProperties: true,
   });
   const pdfDoc = await task.promise;
   const pages = [];
@@ -95,6 +98,27 @@ export function renderPageToCanvas(pdfPage, canvas, { scale, rotation, dpr = 1 }
     viewport: pxViewport,
     background: "#ffffff",
   });
+}
+
+/**
+ * Dựng LỚP CHỮ THẬT của PDF.js (TextLayer) phủ lên canvas: các span chữ trong
+ * suốt đặt đúng vị trí từng dòng chữ gốc → hover ra cursor text, kéo bôi đen /
+ * Ctrl+C sao chép như mọi trình xem PDF (chữ là chữ thật của file, không phải
+ * chữ mô phỏng). Container phải có class "textLayer" (xem pdfEditor.css).
+ * Trả về TextLayer để caller cancel() khi đổi trang / zoom.
+ */
+export async function renderTextLayer(pdfPage, container, { scale, rotation }) {
+  const viewport = pdfPage.getViewport({ scale, rotation });
+  // TextLayer tính cỡ chữ / bề rộng span qua các biến CSS này (theo pdf_viewer).
+  container.style.setProperty("--scale-factor", String(scale));
+  container.style.setProperty("--user-unit", "1");
+  container.style.setProperty("--total-scale-factor", "calc(var(--scale-factor) * var(--user-unit))");
+  container.style.setProperty("--scale-round-x", "1px");
+  container.style.setProperty("--scale-round-y", "1px");
+  const content = await pdfPage.getTextContent();
+  const layer = new pdfjsLib.TextLayer({ textContentSource: content, container, viewport });
+  await layer.render();
+  return layer;
 }
 
 /**
@@ -171,12 +195,17 @@ export async function extractTextItems(pdfPage) {
  * Chỉ gộp các run CẠNH NHAU trên cùng baseline (không gộp cả trang như bản
  * che hàng loạt) để nhấp dòng nào sửa đúng dòng đó, kể cả trang nhiều cột.
  * Toạ độ trả về theo hệ PDF gốc (gốc dưới-trái, y tăng dần, chưa gọt xoay).
+ *
+ * `srcFonts` (tuỳ chọn, từ collectSrcFonts): nhận diện đậm/nghiêng/họ font theo
+ * TÊN THẬT của font nhúng — tên nội bộ kiểu "g_d0_f3" không nói lên kiểu chữ.
  */
-export async function extractEditableText(pdfPage) {
+export async function extractEditableText(pdfPage, srcFonts = null) {
   const content = await pdfPage.getTextContent();
   const styles = content.styles || {};
   const runs = [];
-  for (const item of content.items || []) {
+  const items = content.items || [];
+  for (let idx = 0; idx < items.length; idx += 1) {
+    const item = items[idx];
     if (!item || typeof item.str !== "string" || !item.str.trim()) continue;
     const [a, b, c, d, e, f] = item.transform || [1, 0, 0, 1, 0, 0];
     const fontSize = Math.hypot(a, b) || Math.abs(d) || item.height || 12;
@@ -197,11 +226,15 @@ export async function extractEditableText(pdfPage) {
     const xs = corners.map((p) => p[0]);
     const ys = corners.map((p) => p[1]);
     const st = styles[item.fontName] || {};
+    const entry = srcFonts ? srcFonts[item.fontName] : null;
     const hay = `${item.fontName || ""} ${st.fontFamily || ""}`;
     const cssFamily = String(st.fontFamily || "");
     const horizontal = Math.abs(b) < 0.02 && Math.abs(c) < 0.02;
     runs.push({
       str: item.str,
+      // Chỉ số item trong getTextContent — trùng chỉ số span của TextLayer,
+      // nhờ đó ánh xạ được vùng bôi đen về đúng dòng chữ này.
+      srcIndex: idx,
       x0: Math.min(...xs),
       // Chừa chỗ cho phần chữ thòng xuống dưới baseline (g, y, ỵ…) và dấu
       // tiếng Việt xếp chồng phía trên — hộp chữ của pdf.js chỉ cao 1 cỡ chữ.
@@ -212,13 +245,16 @@ export async function extractEditableText(pdfPage) {
       baseline: f,
       startX: e,
       fontSize,
-      bold: /bold|black|heavy|semibold|demibold/i.test(hay),
-      italic: /italic|oblique/i.test(hay),
-      family: /mono/i.test(hay)
-        ? "mono"
-        : /serif/i.test(cssFamily) && !/sans/i.test(cssFamily)
-          ? "serif"
-          : "sans",
+      fontKey: item.fontName || null,
+      bold: entry ? entry.bold : /bold|black|heavy|semibold|demibold/i.test(hay),
+      italic: entry ? entry.italic : /italic|oblique/i.test(hay),
+      family: entry
+        ? entry.family
+        : /mono/i.test(hay)
+          ? "mono"
+          : /serif/i.test(cssFamily) && !/sans/i.test(cssFamily)
+            ? "serif"
+            : "sans",
     });
   }
 
@@ -227,7 +263,7 @@ export async function extractEditableText(pdfPage) {
   const sorted = [...runs].sort((p, q) => p.baseline - q.baseline || p.x0 - q.x0);
   for (const it of sorted) {
     if (!it.horizontal) {
-      lines.push({ ...it, text: it.str });
+      lines.push({ ...it, text: it.str, parts: [{ i: it.srcIndex, start: 0, end: it.str.length }] });
       continue;
     }
     const key = Math.round(it.baseline * 2) / 2;
@@ -235,6 +271,7 @@ export async function extractEditableText(pdfPage) {
     const gap = bucket ? it.x0 - bucket.x1 : Infinity;
     const sameStyle =
       bucket &&
+      bucket.fontKey === it.fontKey &&
       bucket.bold === it.bold &&
       bucket.italic === it.italic &&
       bucket.family === it.family &&
@@ -242,14 +279,19 @@ export async function extractEditableText(pdfPage) {
     // Khoảng cách <= ~1 cỡ chữ = cùng một dòng (kể cả khoảng trắng giữa từ);
     // xa hơn là cột / ô khác → tách dòng riêng.
     if (sameStyle && gap <= it.fontSize * 1.1 && gap >= -it.fontSize * 0.3) {
-      bucket.text += gap > it.fontSize * 0.12 ? ` ${it.str}` : it.str;
+      const joiner = gap > it.fontSize * 0.12 ? " " : "";
+      const start = bucket.text.length + joiner.length;
+      bucket.text += joiner + it.str;
+      // parts: khoảng ký tự của từng span gốc trong dòng đã gộp — dùng để
+      // đặt vùng chọn sẵn trong ô sửa chữ khi người dùng bôi đen một phần dòng.
+      bucket.parts.push({ i: it.srcIndex, start, end: start + it.str.length });
       bucket.x0 = Math.min(bucket.x0, it.x0);
       bucket.y0 = Math.min(bucket.y0, it.y0);
       bucket.x1 = Math.max(bucket.x1, it.x1);
       bucket.y1 = Math.max(bucket.y1, it.y1);
       bucket.fontSize = Math.max(bucket.fontSize, it.fontSize);
     } else {
-      const line = { ...it, text: it.str };
+      const line = { ...it, text: it.str, parts: [{ i: it.srcIndex, start: 0, end: it.str.length }] };
       byBaseline.set(key, line);
       lines.push(line);
     }

@@ -12,7 +12,8 @@
  */
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import { ensureFontLoaded, familyById, getFontBytes } from "./fonts.js";
+import { ensureFontLoaded, getFontBytes } from "./fonts.js";
+import { resolveTextFace } from "./srcFonts.js";
 import {
   DEFAULT_LINE_HEIGHT,
   baselineAt,
@@ -54,6 +55,27 @@ async function embedFace(out, cache, familyId, bold, italic) {
   return font;
 }
 
+/**
+ * Nhúng lại ĐÚNG font gốc đã trích từ PDF (giữ nguyên nét chữ + độ đậm).
+ * Không nhúng được → trả null để caller rơi về font DejaVu thay thế.
+ */
+async function embedSrcFace(out, cache, entry) {
+  const key = `src:${entry.key}`;
+  if (cache.has(key)) return cache.get(key);
+  let font = null;
+  try {
+    font = await out.embedFont(entry.bytes, { subset: true });
+  } catch {
+    try {
+      font = await out.embedFont(entry.bytes);
+    } catch {
+      /* caller rơi về font DejaVu thay thế */
+    }
+  }
+  if (font) cache.set(key, font);
+  return font;
+}
+
 function decodeDataUrl(dataUrl) {
   const comma = String(dataUrl).indexOf(",");
   const b64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
@@ -72,14 +94,19 @@ async function embedImage(out, cache, src) {
   return img;
 }
 
-async function drawObject(out, page, obj, geo, caches) {
+async function drawObject(out, page, obj, geo, caches, srcFonts) {
   const { rot, W, H } = geo;
   const ctx = { rot, W, H };
 
   if (obj.type === "text") {
-    const family = familyById(obj.fontFamily);
-    const font = await embedFace(out, caches.fonts, family.id, obj.bold, obj.italic);
-    const measure = textMeasure(family.cssFamily, obj.fontSize, obj.bold, obj.italic);
+    // Font gốc nhúng của PDF nếu dùng được — đo và vẽ phải cùng một mặt font.
+    let face = resolveTextFace(obj, srcFonts);
+    let font = face.embedded ? await embedSrcFace(out, caches.fonts, face.embedded) : null;
+    if (!font) {
+      if (face.embedded) face = resolveTextFace({ ...obj, useSrcFont: false }, srcFonts);
+      font = await embedFace(out, caches.fonts, face.familyId, face.bold, face.italic);
+    }
+    const measure = textMeasure(face.cssFamily, obj.fontSize, face.bold, face.italic);
     const lines = wrapText(obj.text, obj.w, measure);
     const lh = obj.fontSize * (obj.lineHeight || DEFAULT_LINE_HEIGHT);
     const color = pdfColor(obj.color);
@@ -167,10 +194,11 @@ async function drawObject(out, page, obj, geo, caches) {
 
 /**
  * Dựng PDF đã chỉnh sửa.
- * @param {{doc: object, originalBytes: Uint8Array}} input
+ * @param {{doc: object, originalBytes: Uint8Array, srcFonts?: object}} input
+ *   srcFonts: registry font gốc nhúng (collectSrcFonts) — chữ sửa giữ đúng font PDF.
  * @returns {Promise<Uint8Array>}
  */
-export async function buildPdf({ doc, originalBytes }) {
+export async function buildPdf({ doc, originalBytes, srcFonts = null }) {
   if (!doc || !originalBytes) throw new Error("Chưa có tài liệu để xuất.");
   if (!doc.order.length) throw new Error("Tài liệu không còn trang nào để xuất.");
 
@@ -197,7 +225,7 @@ export async function buildPdf({ doc, originalBytes }) {
 
     const objects = doc.objects.filter((o) => o.page === pageIndex);
     for (const obj of objects) {
-      await drawObject(out, page, obj, { rot, W: meta.width, H: meta.height }, caches);
+      await drawObject(out, page, obj, { rot, W: meta.width, H: meta.height }, caches, srcFonts);
     }
   }
 

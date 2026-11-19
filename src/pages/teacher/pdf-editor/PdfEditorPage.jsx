@@ -56,6 +56,7 @@ import {
   pdfOpenError,
   validatePdfFile,
 } from "./pdfLoader.js";
+import { collectSrcFonts, resolveTextFace, wantsSrcFont } from "./srcFonts.js";
 import { useEditorDoc } from "./useEditorDoc.js";
 import {
   FONT_FAMILIES,
@@ -93,7 +94,7 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
 const TOOLS = [
   { id: "select", label: "Chọn", Icon: MousePointer2, hint: "Chọn / kéo di chuyển đối tượng" },
-  { id: "edit-text", label: "Sửa chữ", Icon: TextCursorInput, hint: "Nhấp vào dòng chữ gốc trong PDF để sửa nội dung" },
+  { id: "edit-text", label: "Chọn chữ", Icon: TextCursorInput, hint: "Kéo bôi đen chữ gốc trong PDF rồi bấm “Sửa chữ đã chọn” (Ctrl+C để sao chép)" },
   { id: "text", label: "Văn bản", Icon: Type, hint: "Nhấp lên trang để đặt chữ" },
   { id: "image", label: "Hình ảnh", Icon: ImageIcon, hint: "Chèn ảnh từ thiết bị" },
   { id: "rect", label: "Chữ nhật", Icon: Square, hint: "Kéo để vẽ khung" },
@@ -156,9 +157,13 @@ export default function PdfEditorPage({ showToast }) {
   const [tool, setTool] = useState("select");
   const [selectedId, setSelectedId] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const [editSelection, setEditSelection] = useState(null);
   const [sideTab, setSideTab] = useState("object"); // object | pages | text
   const [analysis, setAnalysis] = useState(null);
   const [editTargets, setEditTargets] = useState(null);
+  // Registry font nhúng gốc của tài liệu (collectSrcFonts) — chữ sửa giữ đúng
+  // font PDF. Nằm NGOÀI doc snapshot để lịch sử undo không phình theo bytes font.
+  const [srcFonts, setSrcFonts] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
@@ -170,6 +175,7 @@ export default function PdfEditorPage({ showToast }) {
   const contRef = useRef(null);
   const ignoreHashRef = useRef(false);
   const stageApiRef = useRef(null);
+  const srcFontsRef = useRef(null); // { version, map } — cache theo tài liệu
 
   // Trang render: id trang trong mảng gốc (giữ nguyên khi sắp xếp lại).
   const order = doc?.order || [];
@@ -209,16 +215,27 @@ export default function PdfEditorPage({ showToast }) {
     return clamp(availW / display.w, 0.05, 6);
   }, [zoom, stageSize, display.w, display.h]);
 
-  /* ── Đo chữ: cùng font với lúc xuất file ─────────────────────────────── */
+  /* ── Đo chữ + mặt font: ưu tiên font gốc nhúng, cùng lựa chọn với xuất file ── */
   const measureFor = (obj) => {
     if (!obj || obj.type !== "text") return () => 0;
-    const family = familyById(obj.fontFamily);
-    return textMeasure(family.cssFamily, obj.fontSize, obj.bold, obj.italic);
+    const face = resolveTextFace(obj, srcFonts);
+    return textMeasure(face.cssFamily, obj.fontSize, face.bold, face.italic);
   };
-  const fontCssFor = (obj) =>
-    obj && obj.type === "text"
-      ? `"${familyById(obj.fontFamily).cssFamily}", "Segoe UI", sans-serif`
-      : undefined;
+  const faceFor = (obj) => {
+    if (!obj || obj.type !== "text") return null;
+    const face = resolveTextFace(obj, srcFonts);
+    return { cssFamily: face.cssFamily, weight: face.weight, style: face.style };
+  };
+
+  // Đọc font nhúng của trang (gộp vào registry chung của tài liệu, không đọc
+  // lại tên đã có). Gọi trước khi trích dòng chữ / phân tích / xuất file.
+  const loadSrcFonts = async (page) => {
+    const cached = srcFontsRef.current?.version === docVersion ? srcFontsRef.current.map : {};
+    const map = { ...cached, ...(await collectSrcFonts(page, cached)) };
+    srcFontsRef.current = { version: docVersion, map };
+    setSrcFonts(map);
+    return map;
+  };
 
   /* ── Mở / đóng tài liệu ──────────────────────────────────────────────── */
   const resetToIdle = () => {
@@ -233,6 +250,8 @@ export default function PdfEditorPage({ showToast }) {
     setEditingId(null);
     setAnalysis(null);
     setEditTargets(null);
+    setSrcFonts(null);
+    srcFontsRef.current = null;
     setTool("select");
     load(null);
   };
@@ -273,6 +292,8 @@ export default function PdfEditorPage({ showToast }) {
       setEditingId(null);
       setAnalysis(null);
       setEditTargets(null);
+      setSrcFonts(null);
+      srcFontsRef.current = null;
       setTool("select");
       setZoom({ mode: "fit-width", scale: 1 });
       setDocVersion((v) => v + 1);
@@ -315,7 +336,7 @@ export default function PdfEditorPage({ showToast }) {
     return () => { cancelled = true; };
   }, [pageKey, pageId, status]);
 
-  /* ── Chữ gốc sửa được: đọc theo dòng khi bật công cụ "Sửa chữ" ────────── */
+  /* ── Chữ gốc theo dòng: dữ liệu cho vùng bôi đen → chữ sửa được ───────── */
   // Dòng chữ gốc (toạ độ PDF) → hộp màn hình + metadata để dựng chữ thay thế.
   const buildTextLines = (items) =>
     items.map((it, i) => {
@@ -329,6 +350,8 @@ export default function PdfEditorPage({ showToast }) {
         bold: Boolean(it.bold),
         italic: Boolean(it.italic),
         family: it.family || "sans",
+        fontKey: it.fontKey || null,
+        parts: it.parts || [],
         box,
         baselineY: bp.y,
       };
@@ -336,7 +359,7 @@ export default function PdfEditorPage({ showToast }) {
 
   const targetsKey = `${docVersion}:${pageId}:${rotation}`;
   useEffect(() => {
-    if (tool !== "edit-text" || status !== "ready" || !pdfRef.current || pageId === undefined) {
+    if (status !== "ready" || !pdfRef.current || pageId === undefined) {
       return undefined;
     }
     if (editTargets?.key === targetsKey) return undefined;
@@ -346,7 +369,8 @@ export default function PdfEditorPage({ showToast }) {
     (async () => {
       try {
         const page = await pdfRef.current.getPage(pageId + 1);
-        const items = await extractEditableText(page);
+        const map = await loadSrcFonts(page);
+        const items = await extractEditableText(page, map);
         if (!cancelled) {
           setEditTargets({ key: targetsKey, loading: false, lines: buildTextLines(items) });
         }
@@ -357,22 +381,7 @@ export default function PdfEditorPage({ showToast }) {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tool, targetsKey, status, pageId]);
-
-  // Ẩn các dòng đã được chuyển thành cặp "che + chữ mới" để không chuyển trùng.
-  const visibleTargets = useMemo(() => {
-    if (!editTargets || editTargets.key !== targetsKey) return [];
-    const covers = objects.filter((o) => o.type === "redact" && o.pairId);
-    if (!covers.length) return editTargets.lines;
-    return editTargets.lines.filter((t) => {
-      const b = t.box;
-      return !covers.some((c) => {
-        const iw = Math.min(b.x + b.w, c.x + c.w) - Math.max(b.x, c.x);
-        const ih = Math.min(b.y + b.h, c.y + c.h) - Math.max(b.y, c.y);
-        return iw > 1 && ih > 1;
-      });
-    });
-  }, [editTargets, targetsKey, objects]);
+  }, [targetsKey, status, pageId]);
 
   /* ── Đo khung làm việc (tính "vừa khung nhìn") ───────────────────────── */
   useLayoutEffect(() => {
@@ -496,14 +505,19 @@ export default function PdfEditorPage({ showToast }) {
   };
 
   /* ── Sửa chữ gốc: che dòng cũ + dựng chữ mới sửa được tại chỗ ─────────── */
-  const handleEditOriginal = async (line) => {
-    if (!doc || !pageMeta || !line?.box) return;
+  // selRange: khoảng ký tự được bôi đen trong dòng (chọn sẵn trong ô sửa chữ).
+  // baseDoc: cho phép chuyển nhiều dòng liên tiếp trong một lượt bôi đen.
+  const handleEditOriginal = async (line, selRange = null, opts = {}, baseDoc = doc) => {
+    if (!baseDoc || !pageMeta || !line?.box) return baseDoc;
     const colors =
       (await stageApiRef.current?.sampleColors(line.box)) || { bg: "#ffffff", fg: "#1d2327" };
+    // Font gốc nhúng của dòng chữ — dùng lại được thì giữ nguyên nét chữ/độ đậm.
+    const entry = line.fontKey ? srcFonts?.[line.fontKey] : null;
+    const useSrc = Boolean(entry?.bytes && entry.cssFamily);
     const family = familyById(line.family);
     let bold = line.bold;
     let italic = line.italic;
-    if (!hasFace(family, bold, italic)) {
+    if (!useSrc && !hasFace(family, bold, italic)) {
       if (hasFace(family, bold, false)) italic = false;
       else if (hasFace(family, false, italic)) bold = false;
       else { bold = false; italic = false; }
@@ -515,11 +529,18 @@ export default function PdfEditorPage({ showToast }) {
     const y = line.baselineY - halfLeading - fontSize * FONT_ASCENT;
     const pairId = nextId();
     try {
+      if (useSrc) await entry.ready;
+      // Font thay thế cũng nạp sẵn — gõ ký tự font gốc thiếu là đổi font tức thì.
       await ensureFontLoaded(family.id, bold, italic);
     } catch { /* font dự phòng vẫn sửa được */ }
-    // Đo bằng font thay thế: item.width của pdf.js có thể hẹp hơn mực chữ thật
-    // (glyph advance ≠ ink extent) — vùng che phải phủ đủ phần chữ sẽ hiển thị.
-    const measureOrig = textMeasure(family.cssFamily, fontSize, bold, italic);
+    // Đo bằng ĐÚNG mặt font sẽ hiển thị (font gốc hoặc DejaVu): item.width của
+    // pdf.js có thể hẹp hơn mực chữ thật — vùng che phải phủ đủ phần chữ mới.
+    const measureOrig = textMeasure(
+      useSrc ? entry.cssFamily : family.cssFamily,
+      fontSize,
+      useSrc ? false : bold,
+      useSrc ? false : italic,
+    );
     const naturalW = measureOrig(line.text);
     const coverW = Math.max(line.box.w, naturalW) + 3;
     const cover = createRedact(
@@ -540,13 +561,72 @@ export default function PdfEditorPage({ showToast }) {
       // Khung đủ rộng để nguyên dòng gốc không bị xuống dòng.
       w: Math.max(60, line.box.w + 16, naturalW + 8),
       pairId,
+      srcFontKey: useSrc ? line.fontKey : null,
+      useSrcFont: true,
     });
     textObj = withTextMetrics(textObj, measureFor(textObj));
-    commit({ ...doc, objects: [...doc.objects, cover, textObj] });
-    setSelectedId(textObj.id);
-    setEditingId(textObj.id);
-    setSideTab("object");
-    setTool("select");
+    const nextDoc = { ...baseDoc, objects: [...baseDoc.objects, cover, textObj] };
+    commit(nextDoc);
+    if (opts.edit !== false) {
+      setSelectedId(textObj.id);
+      setEditingId(textObj.id);
+      setSideTab("object");
+      setEditSelection(
+        selRange ? { id: textObj.id, start: selRange.start, end: selRange.end } : null,
+      );
+    }
+    return nextDoc;
+  };
+
+  /* ── Vùng bôi đen trên lớp chữ thật → chuyển thành chữ sửa được ───────── */
+  const handleConvertSelection = async (spans) => {
+    if (!spans?.length || !doc || pageId === undefined) return;
+    let lines = editTargets?.key === targetsKey ? editTargets.lines : null;
+    if (!lines) {
+      try {
+        const page = await pdfRef.current.getPage(pageId + 1);
+        const map = await loadSrcFonts(page);
+        const items = await extractEditableText(page, map);
+        lines = buildTextLines(items);
+        setEditTargets({ key: targetsKey, loading: false, lines });
+      } catch (err) {
+        console.warn("[pdf-editor] đọc chữ gốc lỗi:", err);
+        showToast("Không đọc được lớp chữ của trang này.", "error");
+        return;
+      }
+    }
+    // Mỗi dòng chứa span bị bôi đen → một cặp "che + chữ sửa"; khoảng ký tự
+    // bôi đen được chọn sẵn trong ô sửa của dòng đầu tiên.
+    const picked = [];
+    for (const line of lines) {
+      const parts = (line.parts || []).filter((p) => spans.some((s) => s.index === p.i));
+      if (!parts.length) continue;
+      let start = Infinity;
+      let end = -1;
+      for (const p of parts) {
+        const s = spans.find((x) => x.index === p.i);
+        const spanLen = p.end - p.start;
+        start = Math.min(start, p.start + Math.max(0, Math.min(s.start, spanLen)));
+        end = Math.max(end, p.start + Math.max(0, Math.min(s.end, spanLen)));
+      }
+      picked.push({ line, start, end });
+    }
+    if (!picked.length) {
+      showToast("Vùng bôi đen không nằm trong dòng chữ gốc nào của trang.", "info");
+      return;
+    }
+    let acc = doc;
+    for (let i = 0; i < picked.length; i += 1) {
+      acc = await handleEditOriginal(
+        picked[i].line,
+        i === 0 ? { start: picked[i].start, end: picked[i].end } : null,
+        { edit: i === 0 },
+        acc,
+      );
+    }
+    if (picked.length > 1) {
+      showToast(`Đã chuyển ${picked.length} dòng chữ đã bôi đen thành chữ sửa được — giữ font gốc.`, "success");
+    }
   };
 
   /* ── Phím tắt: Ctrl+Z / Ctrl+Y, Delete, Esc ──────────────────────────── */
@@ -576,6 +656,7 @@ export default function PdfEditorPage({ showToast }) {
         setEditingId(null);
         setSelectedId(null);
         setTool("select");
+        window.getSelection()?.removeAllRanges();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -782,7 +863,8 @@ export default function PdfEditorPage({ showToast }) {
     setAnalysis({ pageId, loading: true });
     try {
       const page = await pdfRef.current.getPage(pageId + 1);
-      const items = await extractEditableText(page);
+      const map = await loadSrcFonts(page);
+      const items = await extractEditableText(page, map);
       setAnalysis({ pageId, loading: false, boxes: buildTextLines(items), count: items.length });
     } catch (err) {
       console.warn("[pdf-editor] phân tích chữ lỗi:", err);
@@ -807,7 +889,7 @@ export default function PdfEditorPage({ showToast }) {
     }
     setExporting(true);
     try {
-      const bytes = await buildPdf({ doc, originalBytes: bytesRef.current });
+      const bytes = await buildPdf({ doc, originalBytes: bytesRef.current, srcFonts });
       await verifyExport(bytes, order.length);
       const name = exportNameFor(fileName);
       downloadBytes(bytes, name);
@@ -907,9 +989,10 @@ export default function PdfEditorPage({ showToast }) {
         </div>
         <div className="edu-pdf-quickhelp">
           <p>
-            <Info /> Công cụ cho phép <b>sửa chữ gốc</b> (chọn “Sửa chữ” rồi nhấp vào dòng chữ
-            trong PDF), thêm văn bản, hình ảnh, khung, đường kẻ, vùng che; xoay / xoá / sắp xếp
-            trang; rồi xuất file PDF mới. File gốc trên máy bạn không bị thay đổi.
+            <Info /> Công cụ cho phép <b>bôi đen chữ gốc</b> ngay trên trang (như trình xem PDF
+            thường) rồi bấm “Sửa chữ đã chọn” để thay nội dung — chữ mới giữ đúng font, cỡ chữ,
+            màu và độ đậm của dòng gốc; thêm văn bản, hình ảnh, khung, đường kẻ, vùng che; xoay /
+            xoá / sắp xếp trang; rồi xuất file PDF mới. File gốc trên máy bạn không bị thay đổi.
           </p>
         </div>
       </>
@@ -1006,17 +1089,17 @@ export default function PdfEditorPage({ showToast }) {
                   tool={tool}
                   selectedId={selectedId}
                   editingId={editingId}
-                  textTargets={visibleTargets}
+                  editSelection={editSelection}
                   measureFor={measureFor}
-                  fontCssFor={fontCssFor}
+                  faceFor={faceFor}
                   stageApiRef={stageApiRef}
                   onSelect={handleSelect}
                   onCreate={handleCreate}
-                  onEditOriginal={handleEditOriginal}
+                  onConvertSelection={handleConvertSelection}
                   onLiveObject={(obj) => applyObject(obj, false)}
                   onSnapshot={snapshot}
                   onTextInput={handleTextInput}
-                  onTextEditEnd={() => { endTextInput(); setEditingId(null); }}
+                  onTextEditEnd={() => { endTextInput(); setEditingId(null); setEditSelection(null); }}
                 />
               ) : pageLoadFailed ? (
                 <div className="edu-pdf-center">
@@ -1041,10 +1124,8 @@ export default function PdfEditorPage({ showToast }) {
                   {editTargets?.key !== targetsKey || editTargets?.loading
                     ? "Đang đọc lớp chữ của trang..."
                     : editTargets?.error
-                      ? "Không đọc được lớp chữ của trang này."
-                      : visibleTargets.length === 0
-                        ? "Trang này không còn dòng chữ gốc để sửa (PDF scan/ảnh hoặc đã chuyển hết). Dùng Vùng che + Văn bản để thay nội dung."
-                        : "Nhấp vào dòng chữ có viền xanh để sửa nội dung."}
+                      ? "Không đọc được lớp chữ của trang này (PDF scan/ảnh?). Dùng Vùng che + Văn bản để thay nội dung."
+                      : "Kéo bôi đen chữ gốc trong trang rồi bấm “Sửa chữ đã chọn”. Ctrl+C để sao chép chữ."}
                 </div>
               )}
             </div>
@@ -1157,10 +1238,12 @@ export default function PdfEditorPage({ showToast }) {
             <li><b>Tải lên:</b> kéo-thả file PDF vào khung hoặc bấm “Chọn file PDF” (tối đa 30 MB).</li>
             <li><b>Xem tài liệu:</b> điều hướng trang trước/sau, nhập số trang, phóng to/thu nhỏ, “Vừa ngang” / “Vừa trang”.</li>
             <li>
-              <b>Sửa chữ gốc:</b> chọn công cụ <b>Sửa chữ</b> rồi nhấp vào dòng chữ trong trang
-              (hoặc bấm nút Sửa từng dòng trong tab <b>Chữ gốc</b>). Dòng chữ cũ được che tự động
-              và thay bằng chữ mới đúng vị trí, cỡ chữ, màu chữ — gõ nội dung mới ngay tại chỗ.
-              Xoá chữ sửa sẽ khôi phục dòng chữ gốc.
+              <b>Sửa chữ gốc:</b> kéo <b>bôi đen chữ ngay trên trang</b> (lớp chữ thật của PDF —
+              hover thấy cursor chữ, Ctrl+C sao chép được), rồi bấm <b>“Sửa chữ đã chọn”</b> hiện
+              phía trên vùng chọn; hoặc bấm nút Sửa từng dòng trong tab <b>Chữ gốc</b>. Dòng chữ
+              cũ được che tự động và thay bằng chữ mới đúng vị trí, cỡ chữ, màu chữ, font và độ
+              đậm — phần bôi đen được chọn sẵn trong ô sửa để gõ đè lên. Xoá chữ sửa sẽ khôi
+              phục dòng chữ gốc.
             </li>
             <li><b>Thêm đối tượng:</b> chọn công cụ rồi nhấp/kéo trên trang — Văn bản, Hình ảnh, Chữ nhật, Đường kẻ, Highlight, Vùng che.</li>
             <li><b>Sửa đối tượng:</b> nhấp để chọn, kéo để di chuyển, kéo tay nắm để đổi cỡ, nhấp đúp vào chữ để sửa tại chỗ, phím Delete để xoá.</li>
@@ -1173,9 +1256,10 @@ export default function PdfEditorPage({ showToast }) {
           <ul className="edu-pdf-help-list">
             <li>
               <b>Cách thay chữ gốc:</b> PDF không cho sửa trực tiếp nội dung đã “cứng” trong file —
-              công cụ che dòng chữ cũ rồi viết chữ mới lên đúng vị trí. Chữ mới dùng font DejaVu
-              nhúng kèm nên nét chữ có thể khác font gốc đôi chút; chữ cũ vẫn còn trong file dưới
-              lớp che (không nên dùng để giấu thông tin nhạy cảm).
+              công cụ che dòng chữ cũ rồi viết chữ mới lên đúng vị trí. Chữ mới ưu tiên dùng lại
+              <b> chính font nhúng trong PDF</b> (giữ nguyên nét chữ, độ đậm, nghiêng); chỉ khi font
+              gốc thiếu ký tự cho nội dung mới mới thay bằng font DejaVu gần nhất. Chữ cũ vẫn còn
+              trong file dưới lớp che (không nên dùng để giấu thông tin nhạy cảm).
             </li>
             <li>
               <b>PDF scan / ảnh:</b> không có lớp chữ để đọc. Nhận diện chữ bằng OCR chưa được
@@ -1190,7 +1274,7 @@ export default function PdfEditorPage({ showToast }) {
           <ul className="edu-pdf-help-list">
             <li>Mọi thao tác đều Undo được; bấm “Khôi phục gốc” để về trạng thái vừa mở file.</li>
             <li>Có thay đổi chưa xuất mà rời trang sẽ có hộp thoại nhắc bạn.</li>
-            <li>Font chữ (Sans / Serif / Monospace) được nhúng kèm web — hiển thị trên mọi máy giống hệt file xuất ra.</li>
+            <li>Chữ sửa giữ font gốc của PDF; chữ thêm mới dùng font DejaVu nhúng kèm web — hiển thị trên mọi máy giống hệt file xuất ra.</li>
           </ul>
 
           <div className="edu-pdf-help-foot">
@@ -1221,6 +1305,12 @@ export default function PdfEditorPage({ showToast }) {
     }
 
     const box = objectBBox(selected);
+    // Font gốc nhúng của dòng chữ (nếu đối tượng này thay cho chữ gốc trong PDF).
+    const srcEntry =
+      selected.type === "text" && selected.srcFontKey ? srcFonts?.[selected.srcFontKey] : null;
+    const srcIntent = selected.type === "text" && wantsSrcFont(selected, srcFonts);
+    const srcActive =
+      selected.type === "text" && Boolean(resolveTextFace(selected, srcFonts).embedded);
 
     return (
       <div className="edu-pdf-props">
@@ -1240,7 +1330,7 @@ export default function PdfEditorPage({ showToast }) {
         {selected.pairId && (
           <div className="edu-pdf-note">
             {selected.type === "text"
-              ? "Chữ này thay cho một dòng chữ gốc — dòng cũ đã được che bên dưới. Xoá đối tượng sẽ bỏ luôn vùng che và khôi phục chữ gốc."
+              ? "Chữ này thay cho một dòng chữ gốc — font, cỡ chữ, màu và độ đậm được giữ theo dòng gốc; dòng cũ đã được che bên dưới. Xoá đối tượng sẽ bỏ luôn vùng che và khôi phục chữ gốc."
               : "Vùng che đi kèm chữ sửa của một dòng chữ gốc. Xoá vùng che sẽ xoá luôn chữ mới và khôi phục chữ gốc."}
           </div>
         )}
@@ -1261,14 +1351,34 @@ export default function PdfEditorPage({ showToast }) {
 
             <PropRow label="Font chữ">
               <select
-                value={selected.fontFamily}
-                onChange={(e) => changeFontProp({ fontFamily: e.target.value })}
+                value={srcIntent ? "__src" : selected.fontFamily}
+                onChange={(e) =>
+                  e.target.value === "__src"
+                    ? changeFontProp({ useSrcFont: true })
+                    : changeFontProp({ fontFamily: e.target.value, useSrcFont: false })
+                }
               >
+                {srcEntry?.bytes && (
+                  <option value="__src">Font gốc PDF — {srcEntry.label}</option>
+                )}
                 {FONT_FAMILIES.map((f) => (
                   <option key={f.id} value={f.id}>{f.label}</option>
                 ))}
               </select>
             </PropRow>
+
+            {srcIntent && (
+              <div className="edu-pdf-note">
+                {srcActive ? (
+                  <>Đang dùng <b>chính font nhúng trong PDF</b> ({srcEntry.label}) — nét chữ,
+                  độ đậm giữ nguyên như bản gốc.</>
+                ) : (
+                  <>Font gốc của PDF là bộ font con, <b>thiếu ký tự</b> trong nội dung mới
+                  (hoặc kiểu chữ đã đổi) — đang tạm dùng font thay thế gần nhất. Sửa lại nội
+                  dung trong bộ ký tự của font gốc sẽ tự trở về font gốc.</>
+                )}
+              </div>
+            )}
 
             <div className="edu-pdf-prop-row">
               <PropRow label="Cỡ chữ">
@@ -1276,7 +1386,8 @@ export default function PdfEditorPage({ showToast }) {
                   type="number"
                   min={6}
                   max={200}
-                  value={Math.round(selected.fontSize)}
+                  step={0.1}
+                  value={Math.round(selected.fontSize * 10) / 10}
                   onFocus={() => beginCont(`fs:${selected.id}`)}
                   onChange={(e) =>
                     updateSelected(
@@ -1572,9 +1683,9 @@ export default function PdfEditorPage({ showToast }) {
     return (
       <div className="edu-pdf-textpanel">
         <div className="edu-pdf-note">
-          Muốn thay chữ cũ: bấm <b>Sửa chữ</b> rồi nhấp thẳng lên dòng chữ trong trang, hoặc
-          phân tích bên dưới rồi bấm <b>Sửa</b> từng dòng. Chữ cũ được che tự động, chữ mới sửa
-          được tại chỗ — các phần còn lại của trang không bị ảnh hưởng.
+          Muốn thay chữ cũ: <b>kéo bôi đen chữ ngay trên trang</b> rồi bấm “Sửa chữ đã chọn”,
+          hoặc phân tích bên dưới rồi bấm <b>Sửa</b> từng dòng. Chữ cũ được che tự động, chữ mới
+          giữ đúng font, cỡ chữ, màu và độ đậm của dòng gốc — các phần còn lại không bị ảnh hưởng.
         </div>
 
         <button
