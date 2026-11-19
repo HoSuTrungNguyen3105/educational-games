@@ -5,6 +5,7 @@ import { navigate } from '../../lib/router.js';
 import { CircleAlert, Clock, SquareCheck, Square, Search, ChevronDown } from 'lucide-react';
 import TemplatePicker from '../../components/exam/TemplatePicker.jsx';
 import { templateLabel } from '../../components/exam/templateLabel.js';
+import { rangeAll } from '../../lib/rangePagination.js';
 
 const TIME_OPTIONS = [
   { value: 30, label: '30 phút' },
@@ -58,7 +59,7 @@ export default function AssignmentCreate() {
     setQuestionsLoading(true);
     setQuestionsError('');
     try {
-      const qs = await questionBankService.list({ from: 1, to: 5000 });
+      const qs = await questionBankService.list(rangeAll());
       setAllQuestions(Array.isArray(qs) ? qs.filter(q => q && q.id) : []);
     } catch (err) {
       setAllQuestions([]);

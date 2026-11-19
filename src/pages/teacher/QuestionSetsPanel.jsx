@@ -5,6 +5,7 @@ import { ConfirmModal, GhostButton, Loader, Modal, PrimaryButton } from '../../c
 import { GRADES, bankQuestionMatches, subjKey, subjLabel } from '../../lib/questionBankMeta.js'
 import { AiGenerateQuestionsModal } from '../../components/ai/AiGenerateQuestionsModal.jsx'
 import { matchBankIds, toBankQuestion } from '../../lib/bankQuestionShape.js'
+import { rangeAll } from '../../lib/rangePagination.js'
 
 /*
  * Mục BỘ ĐỀ trong trang Ngân hàng câu hỏi: đóng gói câu hỏi của bank thành
@@ -131,7 +132,7 @@ export default function QuestionSetsPanel({ docs = [], subjects = [], showToast,
       .filter(Boolean)
     if (!payloads.length) throw new Error('Không có câu hỏi hợp lệ nào để thêm.')
     const r = await questionBankService.createMany(payloads, 'merge')
-    const fresh = await questionBankService.list({ from: 1, to: 5000 }).catch(() => null)
+    const fresh = await questionBankService.list(rangeAll()).catch(() => null)
     const ids = fresh ? matchBankIds(fresh, payloads) : payloads.map((p) => p.id)
     if (!ids.length) throw new Error('Không thêm được câu nào vào ngân hàng (câu AI trùng hoặc không hợp lệ).')
     const reused = ids.length - (r.created || 0)

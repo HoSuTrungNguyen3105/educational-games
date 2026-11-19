@@ -8,6 +8,7 @@ import { bulkInChunks, useBulkSelection } from '../../lib/hooks.js'
 import { GRADES, SK, SK_KEYS, bankQuestionMatches, subjKey, subjLabel } from '../../lib/questionBankMeta.js'
 import QuestionSetsPanel from './QuestionSetsPanel.jsx'
 import GameQuestionsPanel from './GameQuestionsPanel.jsx'
+import { rangeAll } from '../../lib/rangePagination.js'
 
 /*
  * Ngân hàng câu hỏi — bản React của mục "bank" trong src/games/_tools/admin.html.
@@ -221,7 +222,7 @@ export default function QuestionBankManagement({ showToast }) {
     setLoadErr(null)
     try {
       const [qs, gs, st] = await Promise.all([
-        questionBankService.list({ from: 1, to: 5000 }).catch(() => []),
+        questionBankService.list(rangeAll()).catch(() => []),
         // gameService.list().catch(() => []),
         questionBankService.stats().catch(() => null),
       ])
