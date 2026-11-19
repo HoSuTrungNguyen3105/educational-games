@@ -1125,7 +1125,9 @@ export default function PdfEditorPage({ showToast }) {
                     ? "Đang đọc lớp chữ của trang..."
                     : editTargets?.error
                       ? "Không đọc được lớp chữ của trang này (PDF scan/ảnh?). Dùng Vùng che + Văn bản để thay nội dung."
-                      : "Kéo bôi đen chữ gốc trong trang rồi bấm “Sửa chữ đã chọn”. Ctrl+C để sao chép chữ."}
+                      : editTargets.lines.length === 0
+                        ? "Trang này không có lớp chữ (có thể là bản scan/ảnh) nên không bôi đen hay sửa chữ gốc được. Dùng Vùng che + Văn bản để thay nội dung."
+                        : "Kéo bôi đen chữ gốc trong trang rồi bấm “Sửa chữ đã chọn”. Ctrl+C để sao chép chữ."}
                 </div>
               )}
             </div>
