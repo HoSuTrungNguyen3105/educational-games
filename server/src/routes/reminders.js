@@ -12,10 +12,41 @@ function auth(req, res, next) {
   try { req.user = verifyToken(h.slice(7)); next(); } catch { sendError(res, "Invalid token", 401); }
 }
 
+// Gập dấu tiếng Việt + thường hoá — CÙNG thuật toán với matchesQuery phía
+// client (src/lib/searchText.js) để ô tìm kiếm ở trang quản lý cho kết quả
+// giống hệt khi lọc được đẩy xuống server phục vụ phân trang.
+function foldText(s) {
+  return String(s ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d");
+}
+
 // List reminders
+// Lọc tuỳ chọn (chỉ áp khi client GỬI, không gửi → hành vi cũ nguyên vẹn):
+//   ?triggered=true|false — trang /dashboard/reminders phân trang RIÊNG hai
+//     mục "Sắp tới" (chưa triggered) và "Đã nhắc" (đã triggered) nên cần
+//     server lọc theo cờ này TRƯỚC khi cắt from/to, nếu không tổng số và
+//     đoạn cắt của từng mục sẽ sai.
+//   ?q=<từ khoá> — tìm theo tiêu đề/ghi chú, không phân biệt hoa thường và
+//     dấu (giữ nguyên ngữ nghĩa ô tìm kiếm vốn lọc ở client trước đây).
+// Cả hai lọc đều chạy trên danh sách của CHÍNH user (đã lọc theo userId ở
+// service) và chạy TRƯỚC respondWithRange → pagination.total là tổng của
+// tập ĐÃ lọc.
 r.get("/", auth, async (req, res) => {
   try {
-    const reminders = await reminderService.getReminders(req.user.sub);
+    let reminders = await reminderService.getReminders(req.user.sub);
+    if (req.query.triggered === "true" || req.query.triggered === "false") {
+      const want = req.query.triggered === "true";
+      reminders = reminders.filter((x) => Boolean(x.triggered) === want);
+    }
+    const q = foldText(req.query.q).trim();
+    if (q) {
+      reminders = reminders.filter(
+        (x) => foldText(x.title).includes(q) || foldText(x.message).includes(q)
+      );
+    }
     if (respondWithRange(req, res, reminders)) return;
     sendSuccess(res, reminders);
   } catch (e) { sendError(res, e.message, 500); }

@@ -288,6 +288,25 @@ check("phân trang A: trang 1 có 2 ảnh", page1.ids.length, 2);
 check("phân trang A: trang 2 có 1 ảnh", page2.ids.length, 1);
 check("phân trang A: gộp 2 trang = đủ 3 ảnh của A", [...page1.ids, ...page2.ids].sort(), aIds);
 
+// ── Phân đoạn from/to (hợp đồng rangeList của dashboard): server cắt SAU
+// khi lọc theo chủ → pagination.total là tổng của tập ĐÃ lọc, không phải
+// tổng toàn kho. Trang /dashboard/images dựa vào đây để vẽ phân trang.
+const rngA1 = await api(gvA, "GET", "/api/images?folder=edu-game&from=1&to=2");
+const rngA2 = await api(gvA, "GET", "/api/images?folder=edu-game&from=3&to=3");
+check("range A: from=1&to=2 → data là mảng 2 ảnh", (rngA1.body?.data || []).length, 2);
+check("range A: pagination.total = 3 (chỉ ảnh của A)", rngA1.body?.pagination?.total, 3);
+check("range A: pagination.from/to = 1/2", [rngA1.body?.pagination?.from, rngA1.body?.pagination?.to], [1, 2]);
+check("range A: from=3&to=3 → 1 ảnh", (rngA2.body?.data || []).length, 1);
+check("range A: gộp 2 khoảng = đủ 3 ảnh của A, không trùng/lặp",
+  [...(rngA1.body?.data || []), ...(rngA2.body?.data || [])].map(i => i.publicId).sort(), aIds);
+const rngAdmin = await api(admin, "GET", "/api/images?folder=edu-game&from=1&to=10");
+check("range admin: pagination.total = 2 (chỉ ảnh vô chủ, không đếm ảnh của GV)", rngAdmin.body?.pagination?.total, 2);
+check("range admin: trả 2 ảnh", (rngAdmin.body?.data || []).length, 2);
+const rngB = await api(gvB, "GET", "/api/images?folder=edu-game&from=1&to=10");
+check("range B: pagination.total = 1 (chỉ ảnh của B)", rngB.body?.pagination?.total, 1);
+check("range sai: from=0 → 400", (await api(gvA, "GET", "/api/images?folder=edu-game&from=0&to=2")).status, 400);
+check("range sai: to < from → 400", (await api(gvA, "GET", "/api/images?folder=edu-game&from=3&to=2")).status, 400);
+
 // ── Search cũng lọc theo chủ ──
 const searchB = await api(gvB, "GET", "/api/images/search?q=edu-game");
 check("search GV B: chỉ ảnh của B",

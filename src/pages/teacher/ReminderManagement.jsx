@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Bell, Smartphone } from "lucide-react";
 import { reminderService } from "../../services/api.js";
 import { ConfirmModal, EmptyState, GridCard, GridToolbar, IconAdd, IconBell, IconCheckCircle, IconEdit, IconTrash, Loader, ToggleSwitch, useViewMode } from '../../components/ui';
-import { matchesQuery } from "../../lib/searchText.js";
-import { rangeAll } from "../../lib/rangePagination.js";
+import RangePagination from "../../components/RangePagination.jsx";
+import { rangeForPage, rangeTotal } from "../../lib/rangePagination.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import DateTimePicker from "../../components/DateTimePicker.jsx";
 import VibratePatternPicker from "../../components/VibratePatternPicker.jsx";
@@ -52,8 +52,25 @@ function Toggle({ checked, onChange, label }) {
   );
 }
 
+// Số nhắc nhở mỗi trang trong từng mục — cùng cỡ trang 10 của các trang
+// quản trị dùng RangePagination (PermissionManagement, RoleListManagement).
+const PER_PAGE = 10;
+
 export default function ReminderManagement({ showToast }) {
-  const [reminders, setReminders] = useState([]);
+  // Phân trang from/to DÙNG CHUNG, áp RIÊNG cho từng mục như bố cục trang
+  // hiện tại: mục "Sắp tới" (triggered=false) và mục "Đã nhắc"
+  // (triggered=true) mỗi mục một trang/tổng riêng. Server lọc theo cờ
+  // triggered + từ khoá q TRƯỚC khi cắt đoạn nên pagination.total của mỗi
+  // mục là tổng ĐÃ lọc đúng — số đếm ở tiêu đề mục giữ nguyên ý nghĩa như
+  // khi trang còn lọc ở client.
+  const [activeItems, setActiveItems] = useState([]);
+  const [pastItems, setPastItems] = useState([]);
+  const [activeTotal, setActiveTotal] = useState(0);
+  const [pastTotal, setPastTotal] = useState(0);
+  const [activePage, setActivePage] = useState(1);
+  const [pastPage, setPastPage] = useState(1);
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -62,19 +79,53 @@ export default function ReminderManagement({ showToast }) {
   const [dueAlert, setDueAlert] = useState(null);
   const { askConfirm, confirmProps } = useConfirm();
 
+  const loadSection = useCallback(async (triggered, page) => {
+    const res = await reminderService.list({
+      triggered,
+      q: debouncedQuery || undefined,
+      ...rangeForPage(page, PER_PAGE),
+    });
+    return { items: res.items || [], total: rangeTotal(res) };
+  }, [debouncedQuery]);
+
+  const loadActive = useCallback(async () => {
+    const { items, total } = await loadSection(false, activePage);
+    // Trang đang xem vừa vơi hết (xoá/đánh dấu đã nhắc) mà vẫn còn dữ liệu
+    // ở trang trước → lùi một trang, effect sẽ nạp lại trang đó.
+    if (items.length === 0 && total > 0 && activePage > 1) { setActivePage(activePage - 1); return; }
+    setActiveItems(items);
+    setActiveTotal(total);
+  }, [loadSection, activePage]);
+
+  const loadPast = useCallback(async () => {
+    const { items, total } = await loadSection(true, pastPage);
+    if (items.length === 0 && total > 0 && pastPage > 1) { setPastPage(pastPage - 1); return; }
+    setPastItems(items);
+    setPastTotal(total);
+  }, [loadSection, pastPage]);
+
   const load = useCallback(async () => {
     try {
-      // Lọc/hiển thị toàn bộ nhắc nhở ở client → from/to "lấy tất cả".
-      const res = await reminderService.list(rangeAll());
-      setReminders(res.items || []);
+      await Promise.all([loadActive(), loadPast()]);
     } catch (e) {
       showToast?.("Lỗi tải danh sách nhắc nhở", "error");
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [loadActive, loadPast, showToast]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Ô tìm kiếm: debounce 350ms như PermissionManagement; đổi từ khoá thì
+  // cả hai mục về trang 1 rồi mới nạp theo từ khoá mới.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setActivePage(1);
+      setPastPage(1);
+      setDebouncedQuery(query.trim());
+    }, 350);
+    return () => clearTimeout(t);
+  }, [query]);
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -167,10 +218,14 @@ export default function ReminderManagement({ showToast }) {
 
   // Bật/tắt nhắc nhở: reminder đã tắt (isActive=false) chỉ bị luồng dispatch
   // tự động bỏ qua — vẫn sửa/xoá/trigger tay được. Lỗi thì giữ nguyên state.
+  // Cập nhật tại chỗ trong mục đang chứa reminder (bật/tắt không đổi cờ
+  // triggered nên reminder không nhảy mục).
   const handleToggleActive = async (r, next) => {
     try {
       await reminderService.update(r.id, { isActive: next });
-      setReminders((prev) => prev.map((x) => (x.id === r.id ? { ...x, isActive: next } : x)));
+      const patch = (prev) => prev.map((x) => (x.id === r.id ? { ...x, isActive: next } : x));
+      setActiveItems(patch);
+      setPastItems(patch);
       showToast?.(next ? "Đã bật nhắc nhở" : "Đã tắt nhắc nhở", "success");
     } catch {
       showToast?.("Lỗi cập nhật trạng thái nhắc nhở", "error");
@@ -194,17 +249,31 @@ export default function ReminderManagement({ showToast }) {
     load();
   };
 
-  const [query, setQuery] = useState("");
   const [mode, setMode] = useViewMode("reminders");
-  const activeReminders = useMemo(
-    () => reminders.filter((r) => !r.triggered && matchesQuery(query, r.title, r.message)),
-    [reminders, query]
-  );
-  const pastReminders = useMemo(
-    () => reminders.filter((r) => r.triggered && matchesQuery(query, r.title, r.message)),
-    [reminders, query]
-  );
-  const hasReminders = reminders.length > 0;
+  // Hai mục đã được server lọc sẵn theo triggered + từ khoá (xem loadSection).
+  const activeReminders = activeItems;
+  const pastReminders = pastItems;
+  const hasReminders = activeItems.length > 0 || pastItems.length > 0;
+
+  // Thanh phân trang dùng chung cho một mục — cùng công thức quy đổi
+  // khoảng → trang như PermissionManagement.
+  const renderSectionPagination = (page, total, setPage) => {
+    const totalPages = Math.ceil(total / PER_PAGE) || 1;
+    const r = rangeForPage(page, PER_PAGE);
+    return (
+      <div className="flex items-center justify-end gap-3 mt-3">
+        <RangePagination
+          fromRecord={total === 0 ? 1 : r.from}
+          toRecord={Math.min(r.to, total)}
+          totalItems={total}
+          onRangeChange={(from) => setPage(Math.max(1, Math.min(totalPages, Math.ceil((Number(from) || 1) / PER_PAGE))))}
+          onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
+          onNextPage={() => setPage((p) => Math.min(totalPages, p + 1))}
+          disabled={total === 0}
+        />
+      </div>
+    );
+  };
 
   const statusTone = (r) => {
     if (r.triggered) return "mint";
@@ -254,14 +323,14 @@ export default function ReminderManagement({ showToast }) {
         </button>
       </div>
 
-      {hasReminders && (
+      {(hasReminders || query) && (
         <GridToolbar
           search={{ value: query, onChange: setQuery, placeholder: "Tìm nhắc nhở" }}
           mode={mode}
           onModeChange={setMode}
         />
       )}
-      {hasReminders && query && activeReminders.length === 0 && pastReminders.length === 0 && (
+      {query && activeReminders.length === 0 && pastReminders.length === 0 && (
         <div className="note-card edu-empty">Không tìm thấy nhắc nhở nào khớp tìm kiếm.</div>
       )}
 
@@ -317,7 +386,7 @@ export default function ReminderManagement({ showToast }) {
         </div>
       )}
 
-      {!hasReminders && (
+      {!hasReminders && !query && (
         <EmptyState
           icon={<Bell />}
           title="Chưa có nhắc nhở nào"
@@ -327,7 +396,7 @@ export default function ReminderManagement({ showToast }) {
 
       {activeReminders.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase mb-3">Sắp tới ({activeReminders.length})</h2>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase mb-3">Sắp tới ({activeTotal})</h2>
           {mode === "grid" ? (
             <div className="edu-grid">
               {activeReminders.map((r) => {
@@ -394,12 +463,13 @@ export default function ReminderManagement({ showToast }) {
             })}
           </div>
           )}
+          {renderSectionPagination(activePage, activeTotal, setActivePage)}
         </div>
       )}
 
       {pastReminders.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase mb-3">Đã nhắc ({pastReminders.length})</h2>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase mb-3">Đã nhắc ({pastTotal})</h2>
           {mode === "grid" ? (
             <div className="edu-grid">
               {pastReminders.map((r) => (
@@ -435,6 +505,7 @@ export default function ReminderManagement({ showToast }) {
             ))}
           </div>
           )}
+          {renderSectionPagination(pastPage, pastTotal, setPastPage)}
         </div>
       )}
 

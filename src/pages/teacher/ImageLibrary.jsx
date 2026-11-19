@@ -3,7 +3,12 @@ import { imageService } from "../../services/api.js";
 import { ConfirmModal, EmptyState, IconTrash, IconUpload, Loader, ManagementHeader, Modal, SearchInput, ViewToggle, useViewMode } from '../../components/ui';
 import { Image, Copy, X, FolderOpen, RefreshCw } from "lucide-react";
 import { useConfirm } from "../../hooks/useConfirm.js";
-import { rangeAll } from "../../lib/rangePagination.js";
+import RangePagination from "../../components/RangePagination.jsx";
+import { rangeForPage, rangeTotal } from "../../lib/rangePagination.js";
+
+// Số ảnh mỗi trang — bằng perPage mặc định của chính endpoint GET /images
+// (đường page/perPage cũ) và khớp lưới 5 cột × 4 hàng.
+const PER_PAGE = 20;
 
 function formatBytes(bytes) {
   if (bytes < 1024) return bytes + " B";
@@ -29,6 +34,14 @@ export default function ImageLibrary({ user, showToast }) {
   const [viewMode, setViewMode] = useViewMode("image-library", "grid");
   const { askConfirm, confirmProps } = useConfirm();
   const [folder, setFolder] = useState("edu-game");
+  // Phân trang from/to dùng chung (như các trang quản trị khác): `total` là
+  // tổng số ảnh user ĐƯỢC XEM trong folder (server lọc theo chủ sở hữu
+  // trước khi cắt đoạn nên tổng này đã lọc đúng quyền).
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  // Đang xem kết quả của endpoint tìm kiếm riêng (không phân trang, tối đa
+  // 50 kết quả như cũ) — thanh phân trang ẩn, xoá tìm kiếm để quay lại.
+  const [searchMode, setSearchMode] = useState(false);
   const [syncing, setSyncing] = useState(false);
   // Kết quả đồng bộ hiện INLINE ngay trên trang (không qua Toast vì
   // TeacherLayout không render Toast — toast ở dashboard không hiện).
@@ -40,16 +53,45 @@ export default function ImageLibrary({ user, showToast }) {
     setLoading(true);
     setError(null);
     try {
-      const data = await imageService.list(rangeAll());
+      const data = await imageService.list({ folder, ...rangeForPage(page, PER_PAGE) });
       setImages(data.images || []);
+      setTotal(rangeTotal(data));
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
-  }, [folder]);
+  }, [folder, page]);
 
-  // Tải danh sách khi vào trang/đổi folder; load() tự bật loading rồi setState
-  // sau await — cùng ngoại lệ với ImagePicker/StudioLessons.
+  // Tải danh sách khi vào trang/đổi folder/đổi trang; load() tự bật loading
+  // rồi setState sau await — cùng ngoại lệ với ImagePicker/StudioLessons.
+  // Đang ở chế độ tìm kiếm thì KHÔNG nạp lại danh sách thường (kết quả tìm
+  // đang hiển thị), thoát tìm kiếm mới nạp.
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (!searchMode) load(); }, [load, searchMode]);
+
+  // Điều khiển phân trang — cùng mẫu PermissionManagement: RangePagination
+  // gọi onRangeChange(from) khi người dùng nhập khoảng bản ghi.
+  const totalPages = Math.ceil(total / PER_PAGE) || 1;
+  const pageRange = rangeForPage(page, PER_PAGE);
+  const fromRecord = total === 0 ? 1 : pageRange.from;
+  const toRecord = Math.min(pageRange.to, total);
+  const changeRange = (from) => setPage(Math.max(1, Math.min(totalPages, Math.ceil((Number(from) || 1) / PER_PAGE))));
+  const prevPage = () => setPage((p) => Math.max(1, p - 1));
+  const nextPage = () => setPage((p) => Math.min(totalPages, p + 1));
+
+  // Đổi folder: về trang 1 + thoát chế độ tìm kiếm (ba setState trong cùng
+  // một handler được React gộp → effect chỉ nạp lại đúng một lần).
+  const handleFolderChange = (value) => {
+    setFolder(value);
+    setPage(1);
+    setSearchMode(false);
+  };
+
+  // Sau khi xoá (tối ưu tại chỗ như cũ): trừ tổng cho khớp; nếu trang hiện
+  // tại vơi hết mà vẫn còn trang trước thì lùi một trang (effect nạp lại).
+  const afterLocalRemove = (nextImages) => {
+    setImages(nextImages);
+    setTotal((t) => Math.max(0, t - (images.length - nextImages.length)));
+    if (!searchMode && nextImages.length === 0 && page > 1) setPage(page - 1);
+  };
 
   const handleUpload = async (files) => {
     if (!files.length) return;
@@ -88,11 +130,15 @@ export default function ImageLibrary({ user, showToast }) {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) { load(); return; }
+    // Ô tìm trống → thoát chế độ tìm kiếm, về trang 1; effect tự nạp lại
+    // danh sách thường (không gọi load() trực tiếp ở đây để tránh nạp trang
+    // cũ đang lưu trong closure trước khi setPage(1) có hiệu lực).
+    if (!searchQuery.trim()) { setSearchMode(false); setPage(1); return; }
     setSearching(true);
     try {
       const data = await imageService.search(searchQuery.trim());
       setImages(data.images || []);
+      setSearchMode(true);
     } catch (e) { showToast(e.message || "Lỗi tìm kiếm", "error"); }
     finally { setSearching(false); }
   };
@@ -104,7 +150,7 @@ export default function ImageLibrary({ user, showToast }) {
       onConfirm: async () => {
         try {
           await imageService.remove(img.publicId);
-          setImages(prev => prev.filter(i => i.publicId !== img.publicId));
+          afterLocalRemove(images.filter(i => i.publicId !== img.publicId));
           setSelected(prev => prev.filter(id => id !== img.publicId));
           showToast("Đã xóa", "success");
         } catch (e) { showToast(e.message || "Lỗi xóa", "error"); }
@@ -121,7 +167,7 @@ export default function ImageLibrary({ user, showToast }) {
       onConfirm: async () => {
         try {
           await imageService.removeMany(selected);
-          setImages(prev => prev.filter(i => !selected.includes(i.publicId)));
+          afterLocalRemove(images.filter(i => !selected.includes(i.publicId)));
           setSelected([]);
           showToast(`Đã xóa ${selected.length} ảnh`, "success");
         } catch (e) { showToast(e.message || "Lỗi xóa", "error"); }
@@ -133,6 +179,9 @@ export default function ImageLibrary({ user, showToast }) {
     setSelected(prev => prev.includes(publicId) ? prev.filter(id => id !== publicId) : [...prev, publicId]);
   };
 
+  // "Chọn tất cả" áp cho các ảnh ĐANG HIỂN THỊ (trang hiện tại khi duyệt
+  // thường, toàn bộ kết quả khi đang tìm kiếm). Lựa chọn giữ theo publicId
+  // nên chọn ở nhiều trang rồi xoá một lần vẫn được như trước.
   const toggleSelectAll = () => {
     if (selected.length === images.length) { setSelected([]); }
     else { setSelected(images.map(i => i.publicId)); }
@@ -142,8 +191,11 @@ export default function ImageLibrary({ user, showToast }) {
     navigator.clipboard.writeText(url).then(() => showToast("Đã copy URL", "success")).catch(() => {});
   };
 
-  if (loading) return <Loader label="Đang tải thư viện ảnh..." />;
-  if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
+  // Loader/error toàn trang chỉ ở lần nạp ĐẦU (chưa có ảnh nào để hiện);
+  // các lần nạp sau (đổi trang/folder) giữ nguyên danh sách đang xem, thanh
+  // phân trang tạm khoá — tránh cả trang chớp tắt mỗi lần chuyển trang.
+  if (loading && images.length === 0) return <Loader label="Đang tải thư viện ảnh..." />;
+  if (error && images.length === 0) return <div className="p-8 text-center text-red-500">{error}</div>;
 
   return (
     <div className="space-y-4">
@@ -185,7 +237,7 @@ export default function ImageLibrary({ user, showToast }) {
         </button>
         <div className="flex items-center gap-1 ml-2">
           <FolderOpen className="w-4 h-4 text-ink/40" />
-          <input value={folder} onChange={e => setFolder(e.target.value)}
+          <input value={folder} onChange={e => handleFolderChange(e.target.value)}
             className="px-3 py-2 rounded-xl border border-ink/15 text-sm w-36 focus:border-blue-400 outline-none" placeholder="edu-game" />
         </div>
       </div>
@@ -323,6 +375,26 @@ export default function ImageLibrary({ user, showToast }) {
           </div>
         </>
       )}
+
+      {searchMode ? (
+        <div className="flex items-center gap-3 px-4 py-2 bg-ink/5 rounded-xl border border-ink/10 text-sm text-ink/60">
+          <span className="flex-1">Đang xem {images.length} kết quả tìm kiếm (tìm kiếm không phân trang).</span>
+          <button onClick={() => { setSearchQuery(""); setSearchMode(false); setPage(1); }}
+            className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition">Quay lại danh sách</button>
+        </div>
+      ) : images.length > 0 ? (
+        <div className="flex items-center justify-end gap-3 pt-1">
+          <RangePagination
+            fromRecord={fromRecord}
+            toRecord={toRecord}
+            totalItems={total}
+            onRangeChange={changeRange}
+            onPrevPage={prevPage}
+            onNextPage={nextPage}
+            disabled={loading || total === 0}
+          />
+        </div>
+      ) : null}
 
       {preview && (
         <Modal onClose={() => setPreview(null)} wide>
