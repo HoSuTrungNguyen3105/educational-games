@@ -3,6 +3,7 @@ import * as classService from "../services/classService.js";
 import { verifyToken } from "../services/authService.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 import { respondWithRange } from "../utils/rangeList.js";
+import { matchesFolded } from "../utils/textFold.js";
 
 const r = Router();
 
@@ -40,6 +41,13 @@ r.get("/", auth, async (req, res) => {
       // Student: return own class if any
       const cls = await classService.getStudentClass(req.user.sub);
       classes = cls ? [cls] : [];
+    }
+    // Lọc tuỳ chọn ?q= (chỉ áp khi client GỬI, không gửi → hành vi cũ nguyên
+    // vẹn): trang /dashboard/classes phân trang phía server — tìm theo
+    // tên lớp/mã lớp/năm học, gập dấu (utils/textFold.js), chạy trên danh
+    // sách ĐÃ phân quyền theo vai trò ở trên và TRƯỚC khi cắt from/to.
+    if (req.query.q !== undefined) {
+      classes = classes.filter((c) => matchesFolded(req.query.q, c.name, c.code, c.schoolYear));
     }
     // ?from=&to= (phân đoạn bản ghi cho dashboard) — không có thì giữ nguyên.
     if (respondWithRange(req, res, classes)) return;

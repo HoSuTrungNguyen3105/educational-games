@@ -26,6 +26,7 @@ export const MAX_SOURCE_BYTES = 1024 * 1024;
 export const MAX_NAME_LENGTH = 200;
 
 import { uid } from "../utils/id.js";
+import { matchesFolded } from "../utils/textFold.js";
 
 function fail(status, message) {
   const e = new Error(message);
@@ -117,13 +118,22 @@ export async function listMyDocuments(ownerId, { search, docType, page = 1, perP
   const coll = getCollection(DOCUMENTS_COLLECTION);
   const filter = { ownerId };
   if (docType) filter.docType = normDocType(docType, undefined);
-  const s = String(search || "").trim();
-  if (s) {
-    const rx = new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-    filter.name = rx;
-  }
   const p = Math.max(1, Number(page) || 1);
   const pp = Math.min(100, Math.max(1, Number(perPage) || 20));
+  const s = String(search || "").trim();
+  if (s) {
+    // Có từ khoá: lọc GẬP DẤU trong bộ nhớ trên tài liệu của chính chủ
+    // sở hữu (số lượng của một giáo viên nhỏ) — giữ đúng ngữ nghĩa ô tìm
+    // kiếm của trang /dashboard/documents vốn lọc bằng matchesQuery phía
+    // client trước khi trang chuyển phân trang xuống server. Regex cũ
+    // không gập dấu nên gõ không dấu sẽ hụt tài liệu có dấu.
+    const docs = await coll.find(filter).sort({ updatedAt: -1 }).toArray();
+    const matched = docs.filter((d) => matchesFolded(s, d.name));
+    return {
+      items: matched.slice((p - 1) * pp, p * pp).map(serializeMeta),
+      total: matched.length,
+    };
+  }
   const total = await coll.countDocuments(filter);
   const docs = await coll.find(filter)
     .sort({ updatedAt: -1 })

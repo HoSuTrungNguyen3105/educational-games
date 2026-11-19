@@ -23,6 +23,7 @@ export const LESSONS_COLLECTION = "lessons";
 export const LESSON_PROGRESS_COLLECTION = "lessonProgress";
 
 import { uid } from "../utils/id.js";
+import { matchesFolded } from "../utils/textFold.js";
 
 // ── Hệ toạ độ canvas + giới hạn ─────────────────────────────────────────
 // Canvas logic CỐ ĐỊNH 1280×720 (tỉ lệ 16:9). Client Studio (đợt 2) vẽ
@@ -431,10 +432,22 @@ export async function listMyLessons(ownerId, { search, status, page = 1, perPage
   const coll = getCollection(LESSONS_COLLECTION);
   const filter = { ownerId };
   if (status === "draft" || status === "published") filter.status = status;
-  const sf = searchFilter(search);
-  if (sf) Object.assign(filter, sf);
   const p = Math.max(1, Number(page) || 1);
   const pp = Math.min(100, Math.max(1, Number(perPage) || 20));
+  const s = String(search || "").trim();
+  if (s) {
+    // Có từ khoá: lọc GẬP DẤU trong bộ nhớ trên bài của chính chủ sở hữu
+    // (theo tiêu đề + môn học) — giữ đúng ngữ nghĩa ô tìm kiếm của trang
+    // /dashboard/ai-lesson-creator vốn lọc bằng matchesQuery phía client
+    // trước khi trang chuyển phân trang xuống server. Regex cũ
+    // (searchFilter) không gập dấu nên gõ không dấu sẽ hụt bài có dấu.
+    const docs = await coll.find(filter).sort({ updatedAt: -1 }).toArray();
+    const matched = docs.filter((d) => matchesFolded(s, d.title, d.subject));
+    return {
+      items: matched.slice((p - 1) * pp, p * pp).map(serializeMeta),
+      total: matched.length,
+    };
+  }
   const total = await coll.countDocuments(filter);
   const docs = await coll.find(filter)
     .sort({ updatedAt: -1 })

@@ -617,8 +617,13 @@ export const authService = {
 };
 
 export const userService = {
-  async list(range) {
-    if (hasRange(range)) return fetchRangedList("/users", range);
+  // filters.q (tuỳ chọn): từ khoá tìm kiếm — server lọc TRƯỚC khi cắt
+  // from/to (xem routes/users.js). Không truyền filters → như cũ.
+  async list(range, filters = {}) {
+    if (hasRange(range)) {
+      const q = filters.q ? `?q=${encodeURIComponent(filters.q)}` : "";
+      return fetchRangedList(`/users${q}`, range);
+    }
     return apiFetch("/users") || [];
   },
   async create(data) {
@@ -677,8 +682,17 @@ export const statsService = {
 };
 
 export const templateService = {
-  async list(range) {
-    if (hasRange(range)) return fetchRangedList("/templates", range);
+  // filters (tuỳ chọn): { q, status, sort } — server lọc/sắp xếp TRƯỚC
+  // khi cắt from/to (xem routes/setup.js). Không truyền → như cũ.
+  async list(range, filters = {}) {
+    if (hasRange(range)) {
+      const p = new URLSearchParams();
+      if (filters.q) p.set("q", filters.q);
+      if (filters.status && filters.status !== "all") p.set("status", filters.status);
+      if (filters.sort) p.set("sort", filters.sort);
+      const qs = p.toString();
+      return fetchRangedList(`/templates${qs ? `?${qs}` : ""}`, range);
+    }
     return apiFetch("/templates") || [];
   },
   async get(id) {
@@ -984,8 +998,14 @@ export const notificationService = {
 };
 
 export const classService = {
-  async list(range) {
-    if (hasRange(range)) return fetchRangedList("/classes", range);
+  // filters.q (tuỳ chọn): từ khoá tìm kiếm — server lọc TRƯỚC khi cắt
+  // from/to (xem routes/classes.js). Không truyền filters → như cũ
+  // (mọi caller không-range, vd Công cụ lớp học, giữ nguyên hành vi).
+  async list(range, filters = {}) {
+    if (hasRange(range)) {
+      const q = filters.q ? `?q=${encodeURIComponent(filters.q)}` : "";
+      return fetchRangedList(`/classes${q}`, range);
+    }
     return apiFetch("/classes") || [];
   },
   async get(id) { return apiFetch(`/classes/${id}`); },

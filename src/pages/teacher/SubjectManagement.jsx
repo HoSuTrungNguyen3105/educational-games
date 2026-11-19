@@ -1,21 +1,35 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { setupService } from '../../services/setupService.js'
 import { GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal } from '../../components/ui'
 import { useCrudList } from '../../hooks/useCrudList.js'
-import { matchesQuery } from '../../lib/searchText.js'
-import { rangeAll } from '../../lib/rangePagination.js'
+import { rangeForPage } from '../../lib/rangePagination.js'
+import { useRangePager } from '../../hooks/useRangePager.js'
 
 const FIELDS = [{ name: "name", label: "Tên môn học", placeholder: "VD: Toán, Văn, Anh..." }];
 
+// Phân trang PHÍA SERVER theo mẫu trang /dashboard/permissions: danh
+// sách nạp theo ?from=&to= kèm ?q= (server lọc trước khi cắt — xem
+// routes/setup.js), cụm RangePagination dùng chung hiện qua prop
+// serverPager của ManagementTable.
+const PER_PAGE = 10;
+
 export default function SubjectManagement({ showToast }) {
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  // page/từ khoá mới nhất cho fetchList của useCrudList đọc (xem ghi chú
+  // tương tự ở CategoryManagement).
+  const pagerRef = useRef({ page: 1, q: "" });
   const {
-    items: subjects, error, load,
+    items: subjects, total, error, load,
     form, setField, editingId, saving, modalOpen,
     openCreate, openEdit, closeModal, submit,
     confirmProps, askRemove,
   } = useCrudList({
-    fetchList: () => setupService.listSubjects(rangeAll()),
+    fetchList: () => setupService.listSubjectsPaged(
+      rangeForPage(pagerRef.current.page, PER_PAGE),
+      { q: pagerRef.current.q },
+    ),
     onSave: (form, editingId) => editingId
       ? setupService.updateSubject(editingId, form.name.trim())
       : setupService.addSubject(form.name.trim()),
@@ -30,11 +44,30 @@ export default function SubjectManagement({ showToast }) {
     showToast,
   });
 
-  const [query, setQuery] = useState("");
-  const filtered = useMemo(
-    () => (subjects ?? []).filter((item) => matchesQuery(query, item.name)),
-    [subjects, query]
-  );
+  const pager = useRangePager(total ?? 0, PER_PAGE);
+  // Đồng bộ page/từ khoá mới nhất vào ref cho fetchList đọc (effect này
+  // khai trước effect nạp lại bên dưới nên ref luôn kịp cập nhật).
+  useEffect(() => {
+    pagerRef.current = { page: pager.page, q: debouncedQuery };
+  }, [pager.page, debouncedQuery]);
+
+  // Gõ tìm kiếm: chờ 350ms rồi về trang 1 với từ khoá mới (mẫu Permissions).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      pager.setPage(1);
+      setDebouncedQuery(query.trim());
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  // Đổi trang/từ khoá → nạp lại đoạn tương ứng (lần mount đầu do
+  // useCrudList tự nạp nên bỏ qua).
+  const firstLoadRef = useRef(true);
+  useEffect(() => {
+    if (firstLoadRef.current) { firstLoadRef.current = false; return; }
+    load();
+  }, [pager.page, debouncedQuery, load]);
 
   return (
     <div>
@@ -42,7 +75,8 @@ export default function SubjectManagement({ showToast }) {
 
       <ManagementTable
         viewKey="subjects"
-        data={subjects ? filtered : subjects}
+        data={subjects}
+        serverPager={pager.props}
         error={error && !subjects ? error : null}
         onRetry={load}
         emptyLabel={query ? "Không tìm thấy môn học nào khớp tìm kiếm." : "Chưa có môn học nào."}

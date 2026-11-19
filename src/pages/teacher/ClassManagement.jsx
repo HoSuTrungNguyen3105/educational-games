@@ -1,13 +1,19 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { classService } from '../../services/api.js';
 import { navigate } from '../../lib/router.js';
 import { Copy, School } from 'lucide-react';
 import { ConfirmModal, EmptyState, FormModal, GridCard, GridToolbar, IconAdd, IconCheck, IconClose, IconEdit, IconTrash, IconUsers, Loader, Modal, PrimaryButton, useViewMode } from '../../components/ui';
 import { useConfirm } from '../../hooks/useConfirm.js';
 import { useCopy } from '../../hooks/useCopy.js';
-import { usePagedList } from '../../hooks/usePagedList.js';
-import { matchesQuery } from '../../lib/searchText.js';
-import { rangeAll } from '../../lib/rangePagination.js';
+import { rangeForPage } from '../../lib/rangePagination.js';
+import { useRangePager } from '../../hooks/useRangePager.js';
+
+// Phân trang PHÍA SERVER theo mẫu trang /dashboard/permissions: danh
+// sách nạp theo ?from=&to= kèm ?q= (server lọc trước khi cắt — xem
+// routes/classes.js), cụm RangePagination dùng chung hiện qua prop
+// rangePager của GridToolbar. Các caller khác của classService.list()
+// (không truyền range/bộ lọc) giữ nguyên hành vi.
+const PER_PAGE = 10;
 
 // Form sửa lớp: KHÔNG cho sửa `code` — mã lớp là khoá để học sinh tham gia
 // lớp (route /join tra lớp theo code), sửa mã sẽ làm mã cũ đang phát cho học
@@ -29,6 +35,7 @@ const EDIT_FIELDS = [
 
 export default function ClassManagement({ showToast } = {}) {
   const [classes, setClasses] = useState(null);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: '', code: '', schoolYear: '' });
@@ -41,21 +48,36 @@ export default function ClassManagement({ showToast } = {}) {
   const { askConfirm, confirmProps } = useConfirm();
   const [copiedKey, copy] = useCopy();
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [mode, setMode] = useViewMode('classes');
-  const filtered = useMemo(
-    () => (classes ?? []).filter((cls) => matchesQuery(query, cls.name, cls.code, cls.schoolYear)),
-    [classes, query]
-  );
-  const pager = usePagedList(filtered, 12, query);
+  const pager = useRangePager(total, PER_PAGE);
 
-  useEffect(() => { loadClasses(); }, []);
+  useEffect(() => { loadClasses(); }, [pager.page, debouncedQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function loadClasses() {
-    setClasses(null);
+  // Gõ tìm kiếm: chờ 350ms rồi về trang 1 với từ khoá mới (mẫu Permissions).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      pager.setPage(1);
+      setDebouncedQuery(query.trim());
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  // Xoá làm tổng co lại: trang vượt quá trang cuối thì lùi về.
+  useEffect(() => {
+    if (total > 0 && pager.page > pager.totalPages) pager.setPage(pager.totalPages);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total]);
+
+  async function loadClasses(pageOverride) {
     setError(null);
-    // Lọc + phân trang phía client trên toàn bộ danh sách → from/to "lấy tất cả".
-    try { const res = await classService.list(rangeAll()); setClasses(res.items); }
-    catch (e) { setError(e.message || 'Lỗi tải danh sách lớp'); }
+    try {
+      const range = pageOverride ? rangeForPage(pageOverride, PER_PAGE) : pager.range;
+      const res = await classService.list(range, { q: debouncedQuery });
+      setClasses(res.items);
+      setTotal(res.total);
+    } catch (e) { setError(e.message || 'Lỗi tải danh sách lớp'); }
   }
 
   async function handleCreate(e) {
@@ -63,10 +85,12 @@ export default function ClassManagement({ showToast } = {}) {
     setFormError('');
     setSaving(true);
     try {
-      const cls = await classService.create(form);
-      setClasses(prev => [cls, ...(prev || [])]);
+      await classService.create(form);
       setForm({ name: '', code: '', schoolYear: '' });
       setShowCreate(false);
+      // Lớp mới nằm ở đầu danh sách: về trang 1 và nạp lại đoạn đầu.
+      pager.setPage(1);
+      await loadClasses(1);
     } catch (err) { setFormError(err.message); }
     finally { setSaving(false); }
   }
@@ -110,7 +134,7 @@ export default function ClassManagement({ showToast } = {}) {
       onConfirm: async () => {
         try {
           await classService.delete_(cls.id);
-          setClasses(prev => (prev || []).filter(c => c.id !== cls.id));
+          await loadClasses();
         } catch { /* ignore */ }
       },
     });
@@ -172,24 +196,24 @@ export default function ClassManagement({ showToast } = {}) {
         </div>
       )}
       {!error && !classes && <Loader label="Đang tải danh sách lớp..." />}
-      {!error && classes && classes.length === 0 && (
+      {!error && classes && total === 0 && !debouncedQuery && (
         <EmptyState icon={<School />} title="Chưa có lớp nào"
           subtitle="Tạo lớp đầu tiên để bắt đầu quản lý học sinh."
           action={<PrimaryButton onClick={() => setShowCreate(true)} className="!bg-gold hover:!bg-gold/80 !px-4 !py-2 !text-sm">+ Tạo lớp</PrimaryButton>} />
       )}
-      {!error && classes && classes.length > 0 && (
+      {!error && classes && (total > 0 || debouncedQuery) && (
         <div className="space-y-4">
           <GridToolbar
             search={{ value: query, onChange: setQuery, placeholder: "Tìm kiếm" }}
             mode={mode}
             onModeChange={setMode}
-            pager={pager}
+            rangePager={pager.props}
           />
-          {filtered.length === 0 ? (
+          {classes.length === 0 ? (
             <div className="note-card edu-empty">Không tìm thấy lớp nào khớp tìm kiếm.</div>
           ) : mode === "grid" ? (
             <div className="edu-grid">
-              {pager.pageItems.map(cls => (
+              {classes.map(cls => (
                 <GridCard
                   key={cls.id}
                   title={cls.name}
@@ -230,7 +254,7 @@ export default function ClassManagement({ showToast } = {}) {
                   </tr>
                 </thead>
                 <tbody>
-                  {pager.pageItems.map(cls => (
+                  {classes.map(cls => (
                     <tr key={cls.id}>
                       <td className="font-semibold">{cls.name}</td>
                       <td>

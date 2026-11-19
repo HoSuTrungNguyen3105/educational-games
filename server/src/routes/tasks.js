@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { authenticate, requireRoles } from "../middleware/auth.js";
-import { sendSuccess, sendError } from "../utils/response.js";
+import { sendSuccess, sendError, buildPagination } from "../utils/response.js";
+import { parseRange, sliceRange } from "../utils/rangeList.js";
+import { matchesFolded } from "../utils/textFold.js";
 import { parseBulkIds, runBulkDelete, bulkResultPayload } from "../utils/bulkDelete.js";
 import {
   getUserTaskProgress,
@@ -61,8 +63,49 @@ router.post("/:taskId/claim", authenticate, async (req, res, next) => {
 });
 
 // ── GET /admin/stats ──
-router.get("/admin/stats", authenticate, requireRoles("admin"), async (_req, res, next) => {
-  try { sendSuccess(res, await getTaskStats()); } catch (e) { next(e); }
+// Phân đoạn tuỳ chọn cho PHẦN tasks của payload (chỉ áp khi client GỬI
+// from/to và/hoặc q — không gửi → payload cũ nguyên vẹn, không thêm field):
+// trang /dashboard/daily-tasks phân trang phía server nên danh sách nhiệm
+// vụ trong stats được lọc theo ?q= (tên/mã/mô tả + nhãn loại/phạm vi —
+// đúng các trường ô tìm kiếm phía client vẫn lọc, gập dấu qua
+// utils/textFold.js) rồi cắt theo ?from=&to=; payload đính kèm
+// `pagination` (tổng SAU lọc) để trang vẽ cụm phân trang dùng chung.
+// Các số tổng (totalTasks/totalParticipants/…) luôn là tổng TOÀN BỘ,
+// không đổi theo bộ lọc/trang.
+const TASK_TYPE_LABELS = {
+  GAME_PLAYED: "Chơi game",
+  QUESTION_ANSWERED: "Trả lời câu hỏi",
+  ANSWER_CORRECT: "Trả lời đúng",
+  XP_EARNED: "Kiếm XP",
+  GAME_WON: "Thắng game",
+  LOGIN: "Đăng nhập",
+};
+const TASK_SCOPE_LABELS = { DAILY: "Hàng ngày", WEEKLY: "Hàng tuần", TOTAL: "Tổng cộng" };
+
+router.get("/admin/stats", authenticate, requireRoles("admin"), async (req, res, next) => {
+  try {
+    const stats = await getTaskStats();
+    const range = parseRange(req.query);
+    if (range.error) return sendError(res, range.error, 400);
+    if (!range.present && req.query.q === undefined) {
+      return sendSuccess(res, stats);
+    }
+    let tasks = stats.tasks || [];
+    if (req.query.q !== undefined) {
+      tasks = tasks.filter((t) => matchesFolded(req.query.q,
+        t.name, t.code, t.description, TASK_TYPE_LABELS[t.type], TASK_SCOPE_LABELS[t.scope]));
+    }
+    const total = tasks.length;
+    if (range.present) tasks = sliceRange(tasks, range);
+    const size = range.present ? Math.max(1, range.to - range.from + 1) : Math.max(1, total);
+    const pagination = buildPagination({
+      page: range.present ? Math.floor((range.from - 1) / size) + 1 : 1,
+      perPage: size,
+      total,
+    });
+    if (range.present) { pagination.from = range.from; pagination.to = range.to; }
+    sendSuccess(res, { ...stats, tasks, pagination });
+  } catch (e) { next(e); }
 });
 
 // ── POST /admin/seed — nạp bộ nhiệm vụ mẫu còn thiếu (admin) ──

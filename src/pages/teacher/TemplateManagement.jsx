@@ -1,11 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Eye, Pencil, Trash2 } from 'lucide-react'
 import { navigate } from '../../lib/router.js'
 import { gameService, templateService } from '../../services/api.js'
 import { BulkDeleteBar, Checkbox, GhostButton, GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, Modal, StatusBadge, TemplateThumb } from '../../components/ui'
 import { useBulkSelection, bulkInChunks } from '../../lib/hooks.js'
-import { matchesQuery } from '../../lib/searchText.js'
-import { rangeAll } from '../../lib/rangePagination.js'
+import { useRangePager } from '../../hooks/useRangePager.js'
+
+// Phân trang PHÍA SERVER theo mẫu trang /dashboard/permissions: danh
+// sách nạp theo ?from=&to= kèm ?q=&status=&sort= (server lọc/sắp xếp
+// trước khi cắt — xem routes/setup.js), cụm RangePagination dùng chung
+// hiện qua prop serverPager của ManagementTable. Hệ quả: ô "chọn tất
+// cả" của xóa hàng loạt áp cho TRANG ĐANG HIỂN THỊ (giống trang Ảnh ở
+// PR #149); nút "Xóa tất cả" của BulkDeleteBar vẫn xóa toàn bộ qua
+// endpoint riêng như trước.
+const PER_PAGE = 10
 
 const STATUS_BADGE = {
   published: { label: "Hoạt động", tone: "mint" },
@@ -15,33 +23,42 @@ const STATUS_BADGE = {
 
 export default function TemplateManagement({ showToast }) {
   const [templates, setTemplates] = useState(null);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
   const [confirm, setConfirm] = useState({ open: false, item: null });
-
-  const load = useCallback(() => {
-    setTemplates(null); setError(null);
-    // Trang lọc/sắp xếp/chọn-tất-cả trên TOÀN BỘ danh sách ở client (server
-    // chưa có params lọc tương ứng) → xin khoảng "lấy tất cả" qua from/to,
-    // hành vi hiển thị giữ nguyên.
-    templateService.list(rangeAll()).then((res) => setTemplates(res.items)).catch(e => setError(e.message));
-  }, []);
-  useEffect(() => { load(); }, [load]);
-
-  const confirmRemove = (t) => setConfirm({ open: true, item: t });
-
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("name");
-  const filtered = useMemo(() => {
-    const list = (templates ?? [])
-      .filter((t) => matchesQuery(query, t.name, t.category, t.type, t.status))
-      .filter((t) => statusFilter === "all" || t.status === statusFilter);
-    const sorted = [...list];
-    if (sortBy === "games") sorted.sort((a, b) => (b.gamesCount || 0) - (a.gamesCount || 0));
-    else if (sortBy === "updated") sorted.sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
-    else sorted.sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "vi"));
-    return sorted;
-  }, [templates, query, statusFilter, sortBy]);
+  const pager = useRangePager(total, PER_PAGE);
+
+  const load = useCallback(() => {
+    setError(null);
+    templateService.list(pager.range, { q: debouncedQuery, status: statusFilter, sort: sortBy })
+      .then((res) => { setTemplates(res.items); setTotal(res.total); })
+      .catch(e => setError(e.message));
+    // pager.range suy ra từ page hiện tại — load chạy lại khi trang đổi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pager.range.from, pager.range.to, debouncedQuery, statusFilter, sortBy]);
+  useEffect(() => { load(); }, [load]);
+
+  // Gõ tìm kiếm: chờ 350ms rồi về trang 1 với từ khoá mới (mẫu Permissions).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      pager.setPage(1);
+      setDebouncedQuery(query.trim());
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  // Xoá làm tổng co lại: trang vượt quá trang cuối thì lùi về.
+  useEffect(() => {
+    if (total > 0 && pager.page > pager.totalPages) pager.setPage(pager.totalPages);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total]);
+
+  const confirmRemove = (t) => setConfirm({ open: true, item: t });
 
   // ── Xem danh sách game đang dùng 1 template ─────────────────────────
   const [gamesTpl, setGamesTpl] = useState(null);
@@ -114,13 +131,13 @@ export default function TemplateManagement({ showToast }) {
       </div>
 
       <div className="flex flex-wrap gap-3 mb-4">
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="note-card px-4 py-2.5 text-sm">
+        <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); pager.setPage(1); }} className="note-card px-4 py-2.5 text-sm">
           <option value="all">Tất cả trạng thái</option>
           <option value="published">Hoạt động</option>
           <option value="draft">Bản nháp</option>
           <option value="inactive">Đã tắt</option>
         </select>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="note-card px-4 py-2.5 text-sm">
+        <select value={sortBy} onChange={e => { setSortBy(e.target.value); pager.setPage(1); }} className="note-card px-4 py-2.5 text-sm">
           <option value="name">Tên A–Z</option>
           <option value="games">Nhiều game nhất</option>
           <option value="updated">Mới cập nhật</option>
@@ -129,14 +146,15 @@ export default function TemplateManagement({ showToast }) {
 
       <ManagementTable
         viewKey="templates"
-        count={templates ? filtered.length : 0}
-        data={templates ? filtered : templates}
+        count={total}
+        data={templates}
+        serverPager={pager.props}
         error={!templates ? error : null}
         onRetry={load}
         emptyLabel={query ? "Không tìm thấy template nào khớp tìm kiếm." : "Chưa có template nào."}
         onCreate={() => navigate("/dashboard/templates/new")}
         search={{ value: query, onChange: setQuery, placeholder: "Tìm kiếm" }}
-        headers={[<Checkbox key="sel-all" checked={sel.allSelected(filtered.map((t) => t._id))} onChange={() => sel.toggleAll(filtered.map((t) => t._id))} />, "Ảnh", "Tên", "Loại", "Thể loại", "Trạng thái", "Game dùng", "Cập nhật", ""]}
+        headers={[<Checkbox key="sel-all" checked={sel.allSelected((templates ?? []).map((t) => t._id))} onChange={() => sel.toggleAll((templates ?? []).map((t) => t._id))} />, "Ảnh", "Tên", "Loại", "Thể loại", "Trạng thái", "Game dùng", "Cập nhật", ""]}
         renderGridCard={(t) => (
           <GridCard
             key={t._id}
