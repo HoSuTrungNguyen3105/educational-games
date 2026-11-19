@@ -25,6 +25,17 @@
  *
  * Single-flight: nhiều request cùng hết hạn → chỉ MỘT lần gọi /auth/refresh,
  * các request khác chờ chung promise đó (§7.6).
+ *
+ * Đồng bộ LIÊN TAB (vá lỗi "refresh token không còn hiệu lực" khi mở nhiều
+ * tab/PWA): localStorage là nguồn sự thật về THẾ HỆ token mới nhất — tab nào
+ * refresh xong cũng ghi bản mới xuống đó, còn `memory` là bản riêng từng tab
+ * nên tab chậm sẽ lệch thế hệ. Ba cơ chế giữ mọi tab cùng một thế hệ:
+ *   (1) sự kiện `storage`: tab khác ghi/xoá phiên → memory nhận theo ngay;
+ *   (2) đường refresh luôn đọc lại localStorage trước khi trình token;
+ *   (3) Web Locks API: chỉ MỘT tab được refresh tại một thời điểm.
+ * Thiếu các cơ chế này, tab chậm trình refresh token đã xoay quá cửa sổ
+ * grace → server coi là reuse → thu hồi CẢ family → mọi tab bị đá về đăng
+ * nhập dù token mới nhất vẫn hợp lệ.
  */
 const AUTH_KEY = "edu_games_auth";
 
@@ -54,6 +65,74 @@ function writeStorage(auth) {
     if (auth) window.localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
     else window.localStorage.removeItem(AUTH_KEY);
   } catch { /* Safari private mode: bộ nhớ vẫn đủ dùng */ }
+}
+
+/**
+ * Nhận bản ghi trong localStorage làm bản ghi của tab này — KHÔNG ghi lại
+ * (nó đã nằm trong storage rồi). Trả true nếu memory thật sự thay đổi.
+ * Cơ sở của đồng bộ liên tab: localStorage luôn giữ thế hệ token MỚI NHẤT
+ * vì mọi lần xoay token, ở bất kỳ tab nào, đều ghi xuống đó ngay; `memory`
+ * của một tab chậm/ít mở có thể còn giữ thế hệ cũ.
+ */
+function adoptStored(stored) {
+  if (!stored?.token) return false;
+  const next = {
+    token: stored.token ?? null,
+    user: stored.user ?? null,
+    refreshToken: stored.refreshToken ?? null,
+  };
+  const changed =
+    !memory ||
+    memory.token !== next.token ||
+    memory.refreshToken !== next.refreshToken ||
+    JSON.stringify(memory.user ?? null) !== JSON.stringify(next.user ?? null);
+  if (!changed) return false;
+  memory = next;
+  emit();
+  return true;
+}
+
+/**
+ * Đồng bộ memory từ localStorage. Đường refresh PHẢI đi qua hàm này trước
+ * khi trình refresh token (xem refreshOnce): trình bản cũ trong memory —
+ * token đã rotated quá cửa sổ grace — là tự tay kích reuse-detection của
+ * server và làm chết cả family.
+ * Storage TRỐNG thì không tự xoá memory ở đây: trình duyệt chặn ghi storage
+ * (private mode) cũng cho kết quả trống tương tự dù phiên còn sống. Tín
+ * hiệu "tab khác đã đăng xuất" đi qua sự kiện `storage` bên dưới.
+ */
+function syncFromStorage() {
+  const stored = readStorage();
+  if (stored?.token) adoptStored(stored);
+  return memory;
+}
+
+/**
+ * Sự kiện `storage` chỉ bắn ở các tab KHÁC tab vừa ghi — đúng tín hiệu cần:
+ *   - Tab khác xoay token / đăng nhập / sửa hồ sơ → nhận bản mới vào memory
+ *     ngay, từ đây tab này không bao giờ trình refresh token cũ nữa.
+ *   - Tab khác ĐĂNG XUẤT (xoá key) → dọn memory lặng lẽ + bắn
+ *     `edu-auth-expired` để store/UI về trạng thái chưa đăng nhập, thay vì
+ *     để vòng refresh 20 giây trình token đã bị thu hồi rồi mới chết.
+ * Sự kiện key=null là localStorage.clear() ở tab khác — đọc lại storage là
+ * bắt được cả hai trường hợp.
+ */
+function onStorageEvent(event) {
+  if (event && event.key != null && event.key !== AUTH_KEY) return;
+  const stored = readStorage();
+  if (!stored?.token) {
+    if (!memory) return;
+    memory = null;
+    inflight = null;
+    emit();
+    try { window.dispatchEvent(new Event("edu-auth-expired")); } catch { /* môi trường lạ — store còn đường dọn phiên khác */ }
+    return;
+  }
+  adoptStored(stored);
+}
+
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+  window.addEventListener("storage", onStorageEvent);
 }
 
 /** Giải mã payload JWT (không verify — client chỉ cần `exp` để canh thời gian). */
@@ -172,9 +251,40 @@ export function subscribeAuth(cb) {
   return () => listeners.delete(cb);
 }
 
+const REFRESH_LOCK_NAME = "edu-games-auth-refresh";
+
+/**
+ * Khoá LIÊN TAB cho thao tác refresh (Web Locks API): tại một thời điểm chỉ
+ * MỘT tab được gọi endpoint refresh; tab khác chờ khoá, rồi đọc lại bản
+ * token tab kia vừa ghi vào localStorage thay vì trình token của mình.
+ * Trình duyệt không có Web Locks → chạy thẳng như trước (single-flight
+ * trong tab vẫn giữ, và syncFromStorage vẫn cứu phần lớn trường hợp).
+ * Khoá lỗi TRƯỚC khi fn chạy → chạy thẳng; fn đã chạy mà lỗi thì ném tiếp —
+ * TUYỆT ĐỐI không chạy lại, chạy hai lần là tự thêm một vòng xoay token.
+ */
+async function withRefreshLock(fn) {
+  const locks = typeof navigator !== "undefined" ? navigator.locks : null;
+  if (!locks || typeof locks.request !== "function") return fn();
+  let started = false;
+  try {
+    return await locks.request(REFRESH_LOCK_NAME, async () => {
+      started = true;
+      return fn();
+    });
+  } catch (err) {
+    if (started) throw err;
+    return fn();
+  }
+}
+
 /**
  * Đổi access token qua refresh token (cookie HttpOnly, hoặc bản localStorage
  * gửi qua header `x-refresh-token` trên iOS).
+ *
+ * Toàn bộ thao tác nằm trong khoá liên tab + đồng bộ từ localStorage trước
+ * khi gọi server (xem ghi chú đồng bộ liên tab ở đầu file): nếu trong lúc
+ * chờ khoá, tab khác đã refresh xong và access token mới còn hạn thì dùng
+ * luôn bản đó — không gọi server thêm một vòng xoay không cần thiết.
  *
  * @param {(req: {path: string, init: RequestInit}) => Promise<Response>} transport
  *   hàm gọi fetch thật — tiêm vào để module này không phụ thuộc api.js (tránh
@@ -184,18 +294,25 @@ export async function refreshOnce(transport) {
   if (inflight) return inflight;
   inflight = (async () => {
     try {
-      const json = await transport();
-      const token = json?.Authorization
-        ? String(json.Authorization).replace(/^Bearer\s+/i, "")
-        : json?.data?.token || null;
-      if (!token) return null;
-      // Refresh token XOAY VÒNG mỗi lần: response luôn kèm token mới (v1 ở
-      // gốc JSON, endpoint cũ trong data) — PHẢI cập nhật bản lưu, không thì
-      // lần refresh sau trình token đã rotated và chỉ còn grace cứu được.
-      const nextRefresh = json?.refreshToken || json?.data?.refreshToken || null;
-      const user = memory?.user ?? readStorage()?.user ?? null;
-      setAuth({ token, user, ...(nextRefresh ? { refreshToken: nextRefresh } : {}) });
-      return token;
+      return await withRefreshLock(async () => {
+        const beforeToken = memory?.token ?? null;
+        syncFromStorage();
+        if (memory?.token && memory.token !== beforeToken && isUsable(memory.token)) {
+          return memory.token;
+        }
+        const json = await transport();
+        const token = json?.Authorization
+          ? String(json.Authorization).replace(/^Bearer\s+/i, "")
+          : json?.data?.token || null;
+        if (!token) return null;
+        // Refresh token XOAY VÒNG mỗi lần: response luôn kèm token mới (v1 ở
+        // gốc JSON, endpoint cũ trong data) — PHẢI cập nhật bản lưu, không thì
+        // lần refresh sau trình token đã rotated và chỉ còn grace cứu được.
+        const nextRefresh = json?.refreshToken || json?.data?.refreshToken || null;
+        const user = memory?.user ?? readStorage()?.user ?? null;
+        setAuth({ token, user, ...(nextRefresh ? { refreshToken: nextRefresh } : {}) });
+        return token;
+      });
     } finally {
       inflight = null;
     }
