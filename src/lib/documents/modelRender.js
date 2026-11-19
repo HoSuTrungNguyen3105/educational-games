@@ -34,6 +34,7 @@ function blockStyleAttr(block) {
   if (block.color) parts.push(`color: ${block.color}`);
   if (block.align) parts.push(`text-align: ${block.align}`);
   if (block.font) parts.push(`font-family: '${String(block.font).replace(/'/g, "")}'`);
+  if (block.fontSize) parts.push(`font-size: ${Number(block.fontSize)}pt`);
   return parts.length ? ` style="${escapeHtml(parts.join("; "))}"` : "";
 }
 

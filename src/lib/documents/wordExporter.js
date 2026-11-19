@@ -82,6 +82,8 @@ function runsOf(D, block, fallbackFont = "Arial") {
     : [{ text: block.text || "", bold: false, italic: false, underline: false }];
   const blockColor = cssColorToHex(block.color);
   const font = block.font || fallbackFont;
+  // fontSize cấp khối (đơn vị pt → docx dùng half-point: nhân 2)
+  const blockSizeHp = block.fontSize ? Math.round(Number(block.fontSize) * 2) : undefined;
   return runs.map((r) => new D.TextRun({
     text: r.text,
     font,
@@ -91,6 +93,7 @@ function runsOf(D, block, fallbackFont = "Arial") {
     ...(r.strike ? { strike: true } : {}),
     ...((cssColorToHex(r.color) || blockColor) ? { color: cssColorToHex(r.color) || blockColor } : {}),
     ...highlightPropsOf(D, r.highlight),
+    ...(blockSizeHp ? { size: blockSizeHp } : {}),
   }));
 }
 

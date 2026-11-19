@@ -941,8 +941,8 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   const toggleFullscreen = () => {
     const el = previewRef.current;
     if (!el) return;
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    else el.requestFullscreen?.().catch(() => {});
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
+    else el.requestFullscreen?.().catch(() => { });
   };
 
   // Đóng/mở pane Xem trước (§5): nút X ở đầu pane — trên mobile X quay
@@ -1280,10 +1280,10 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
             title={saveFailed ? "Lần lưu gần nhất thất bại — kiểm tra kết nối mạng rồi bấm Lưu lại" : undefined}>
             {saving ? "Đang lưu…"
               : saveFailed && isDirty ? "⚠ Chưa lưu được"
-              : isDirty ? "● Chưa lưu"
-              : lastSaved?.auto
-                ? `✓ Đã lưu tự động ${lastSaved.at.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
-                : "✓ Đã lưu"}
+                : isDirty ? "● Chưa lưu"
+                  : lastSaved?.auto
+                    ? `✓ Đã lưu tự động ${lastSaved.at.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+                    : "✓ Đã lưu"}
           </span>
           <button type="button" className="docstudio-ai-btn" onClick={() => setAiOpen(true)}>
             <Sparkles className="w-4 h-4" /> <span className="hidden sm:inline">Trợ lý AI</span>
@@ -1302,7 +1302,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
         </div>
       </header>
 
-      <div className="docstudio-body">      
+      <div className="docstudio-body">
         {/* ── Workspace: rail | công cụ | soạn thảo | xem trước ──────── */}
         <div className="docstudio-workspace">
           <aside className="docstudio-rail" aria-label="Công cụ soạn thảo">

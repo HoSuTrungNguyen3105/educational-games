@@ -5,7 +5,7 @@ import {
   Strikethrough, Underline, X,
 } from "lucide-react";
 import {
-  FONT_OPTIONS, HIGHLIGHT_PRESETS, TEXT_COLOR_PRESETS,
+  FONT_OPTIONS, FONT_SIZE_OPTIONS, HIGHLIGHT_PRESETS, TEXT_COLOR_PRESETS,
 } from "../../../lib/documents/textFormat.js";
 
 // FormatToolbar — THANH ĐỊNH DẠNG CHỮ dùng chung của Teacher Document
@@ -125,7 +125,7 @@ function ColorPopoverButton({ kind, state, onFormat, htmlMode }) {
   return (
     <div className={`ds-fmt-pop-wrap ${open ? "is-open" : ""}`}>
       <FmtButton title={isColor ? "Màu chữ" : "Màu tô sáng"} disabled={disabled}
-        active={Boolean(value)} onClick={() => setOpen((o) => !o)}>
+        active={Boolean(value)} onClick={() => !disabled && setOpen((o) => !o)}>
         {isColor
           ? <span className="ds-fmt-a" aria-hidden="true">A<i style={{ background: value || "#111827" }} /></span>
           : <Highlighter className="w-4 h-4" />}
@@ -157,6 +157,18 @@ function FontSelect({ state, onFormat, htmlMode }) {
   );
 }
 
+function FontSizeSelect({ state, onFormat }) {
+  return (
+    <select className="ds-fmt-fontsize" aria-label="Cỡ chữ"
+      disabled={!state?.canText}
+      value={state?.fontSize || ""}
+      onChange={(e) => onFormat({ type: "fontSize", value: e.target.value ? Number(e.target.value) : null })}>
+      <option value="">Cỡ…</option>
+      {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+    </select>
+  );
+}
+
 /**
  * Bộ điều khiển định dạng — MỘT component cho cả desktop (layout="bar",
  * một hàng ngang gọn) và panel mobile (layout="panel", chia nhóm có
@@ -169,7 +181,10 @@ export function FormatControls({ state, onFormat, layout = "bar", htmlMode = fal
       <div className="ds-fmt-panel">
         <div className="ds-fmt-group">
           <span className="ds-fmt-group-label">Phông chữ</span>
-          <FontSelect state={state} onFormat={onFormat} htmlMode={htmlMode} />
+          <div className="ds-fmt-row" style={{ gap: 6 }}>
+            <FontSelect state={state} onFormat={onFormat} htmlMode={htmlMode} />
+            <FontSizeSelect state={state} onFormat={onFormat} />
+          </div>
         </div>
         <div className="ds-fmt-group">
           <span className="ds-fmt-group-label">Kiểu chữ</span>
@@ -215,6 +230,7 @@ export function FormatControls({ state, onFormat, layout = "bar", htmlMode = fal
   return (
     <div className="docstudio-formatbar" role="toolbar" aria-label="Định dạng chữ">
       <FontSelect state={state} onFormat={onFormat} htmlMode={htmlMode} />
+      <FontSizeSelect state={state} onFormat={onFormat} />
       <span className="ds-fmt-sep" aria-hidden="true" />
       <MarkButtons state={state} onFormat={onFormat} />
       <ColorPopoverButton kind="color" state={state} onFormat={onFormat} htmlMode={htmlMode} />

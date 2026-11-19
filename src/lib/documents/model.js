@@ -88,6 +88,8 @@ function styledBlock(block, base) {
   if (["left", "center", "right", "justify"].includes(block.align)) out.align = block.align;
   const font = fontOf(block.font);
   if (font) out.font = font;
+  const fs = Number(block.fontSize);
+  if (Number.isFinite(fs) && fs > 0 && fs <= 200) out.fontSize = fs;
   const runs = runsOf(block.runs);
   if (runs) {
     out.runs = runs;

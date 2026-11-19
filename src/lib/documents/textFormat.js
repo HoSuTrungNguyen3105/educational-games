@@ -20,6 +20,10 @@ export const FONT_OPTIONS = [
   "Arial", "Times New Roman", "Georgia", "Verdana", "Tahoma", "Courier New",
 ];
 
+export const FONT_SIZE_OPTIONS = [
+  8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 48, 60, 72,
+];
+
 export const TEXT_COLOR_PRESETS = [
   "#111827", "#dc2626", "#2563eb", "#16a34a", "#ea580c", "#7c3aed", "#b45309", "#db2777",
 ];
@@ -77,7 +81,8 @@ export function blockFormatState(block) {
   const none = {
     canText: false, canBlock: false,
     marks: { bold: false, italic: false, underline: false, strike: false },
-    color: null, highlight: null, font: null, align: "left", listType: null,
+    color: null, highlight: null, font: null, fontSize: null,
+    align: "left", listType: null,
   };
   if (!block || typeof block !== "object") return none;
   if (block.type === "list") {
@@ -103,6 +108,7 @@ export function blockFormatState(block) {
     color: uniform("color", block.color || null),
     highlight: uniform("highlight", null),
     font: block.font || null,
+    fontSize: block.fontSize || null,
     align: block.align || "left",
     listType: null,
   };
@@ -161,10 +167,17 @@ export function applyBlockFormat(block, op) {
     else delete out.font;
     return out;
   }
+  if (op.type === "fontSize") {
+    const out = { ...block };
+    if (op.value) out.fontSize = Number(op.value);
+    else delete out.fontSize;
+    return out;
+  }
   if (op.type === "clear") {
     const out = { ...block };
     delete out.runs;
     delete out.font;
+    delete out.fontSize;
     return out;
   }
   if (op.type === "mark" && MARKS.includes(op.mark)) {
@@ -223,6 +236,9 @@ export function wrapHtmlSelection(source, from, to, op) {
   }
   if (op.type === "font" && op.value) {
     return `<span style="font-family: '${op.value}'">${selected}</span>`;
+  }
+  if (op.type === "fontSize" && op.value) {
+    return `<span style="font-size: ${op.value}pt">${selected}</span>`;
   }
   return null;
 }

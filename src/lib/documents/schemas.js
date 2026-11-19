@@ -69,6 +69,12 @@ function checkBlockStyle(b, p, errors) {
   if (b.font !== undefined && !isStr(b.font)) {
     errors.push({ path: `${p}.font`, message: "'font' phải là tên phông chữ dạng chuỗi" });
   }
+  if (b.fontSize !== undefined) {
+    const n = Number(b.fontSize);
+    if (!Number.isFinite(n) || n <= 0 || n > 200) {
+      errors.push({ path: `${p}.fontSize`, message: "'fontSize' phải là số từ 1 đến 200 (đơn vị pt)" });
+    }
+  }
   checkRuns(b, p, errors);
 }
 

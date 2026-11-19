@@ -302,7 +302,7 @@
 }
 
 .docstudio-flyout {
-  flex: 0 0 252px;
+  flex: 0 0 272px;
   padding: 10px;
   overflow-y: auto;
   background: #fff;
@@ -511,20 +511,21 @@
 .docstudio-comp-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  margin: 10px 0 4px;
+  gap: 4px;
+  margin: 8px 0 6px;
 }
 .docstudio-comp-chip {
-  padding: 4px 10px;
+  padding: 3px 9px;
   border: 1.5px solid #e2e8f0;
   border-radius: 999px;
   background: #fff;
   color: #64748b;
   font-family: "Be Vietnam Pro", sans-serif;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
 }
 .docstudio-comp-chip:hover { border-color: var(--doc-accent-line); color: var(--doc-accent-dark); }
 .docstudio-comp-chip.is-active {
@@ -540,6 +541,12 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #64748b;
+}
+.docstudio-comp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
 }
 .docstudio-comp-grid {
   display: grid;
@@ -893,6 +900,8 @@
   padding: 5px 8px;
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
+  position: relative;
+  overflow: visible;
 }
 .ds-fmt-btn {
   width: 30px;
@@ -931,6 +940,21 @@
 }
 .ds-fmt-font:focus { border-color: var(--doc-accent); }
 .ds-fmt-font:disabled { opacity: 0.45; }
+.ds-fmt-fontsize {
+  width: 68px;
+  height: 30px;
+  padding: 3px 4px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #1d2e4a;
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+}
+.ds-fmt-fontsize:focus { border-color: var(--doc-accent); }
+.ds-fmt-fontsize:disabled { opacity: 0.45; }
 .ds-fmt-a {
   position: relative;
   display: inline-flex;
@@ -967,7 +991,7 @@
   top: calc(100% + 6px);
   left: 0;
   z-index: 31;
-  width: 228px;
+  width: 234px;
   padding: 10px;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -1034,6 +1058,7 @@
 .ds-fmt-panel .ds-fmt-btn-wide { width: auto; padding: 0 12px; }
 .ds-fmt-panel .ds-fmt-swatch { width: 30px; height: 30px; border-radius: 9px; }
 .ds-fmt-panel .ds-fmt-font { width: 100%; max-width: none; height: 38px; font-size: 13px; }
+.ds-fmt-panel .ds-fmt-fontsize { width: 80px; height: 38px; font-size: 13px; }
 .ds-fmt-hint {
   font-family: "Be Vietnam Pro", sans-serif;
   font-size: 11.5px;
@@ -1504,6 +1529,11 @@
 [data-theme="dark"] .ds-fmt-btn:hover:not(:disabled) { background: #262d33; color: #e9eef2; }
 [data-theme="dark"] .ds-fmt-sep { background: #3c434a; }
 [data-theme="dark"] .ds-fmt-font {
+  background: #14181d;
+  border-color: #3c434a;
+  color: #e9eef2;
+}
+[data-theme="dark"] .ds-fmt-fontsize {
   background: #14181d;
   border-color: #3c434a;
   color: #e9eef2;

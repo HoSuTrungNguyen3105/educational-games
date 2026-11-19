@@ -11,6 +11,9 @@ export function ToggleSwitch({ checked, onChange, className = "", disabled = fal
         } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${className}`}
       >
         <span
+          style={{
+            marginLeft:"-20px"
+          }}
           className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
             checked ? "translate-x-5" : "translate-x-1"
           }`}
