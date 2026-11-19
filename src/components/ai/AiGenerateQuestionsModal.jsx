@@ -12,9 +12,13 @@
 //   · `subjectField`    — trường Môn là ô nhập tự do (game) hay ô chọn
 //                         theo danh mục (ngân hàng: { kind: "select",
 //                         options: [{ value, label }] }).
-//   · `onAdd(chosen, meta)` — ghi các câu đã chọn; lỗi ném ra được hiện
-//                         ngay trong modal, thành công thì modal tự
-//                         gọi `onAdded` rồi đóng.
+//   · `onAdd(chosen, meta)` — ghi các câu đã chọn; meta gồm
+//                         { subject, grade, difficulty, prompt }. Lỗi ném
+//                         ra được hiện ngay trong modal, thành công thì
+//                         modal tự gọi `onAdded` rồi đóng.
+//   · `onPromptChange`  — (tuỳ chọn) nhận prompt mỗi lần người dùng gõ,
+//                         để nơi gọi gợi ý theo ngữ cảnh (vd tên bộ đề
+//                         mới ở tab Bộ đề).
 // `children` là vùng tuỳ biến đặt ngay trên hàng nút hành động (vd ô
 // chọn bộ đề đích ở tab Bộ đề) — state của nó do nơi gọi giữ và đọc
 // lại trong onAdd.
@@ -22,7 +26,7 @@
 // Trạng thái AI chưa sẵn sàng hiện bằng AiNotReadyNotice dùng chung —
 // không có câu hỏi mẫu hay dữ liệu giả lập ở bất kỳ đường nào.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Sparkles, TriangleAlert } from "lucide-react";
 import { GhostButton, Modal, PrimaryButton } from "../ui";
 import { DIFFICULTIES } from "../../services/aiApi.js";
@@ -44,6 +48,10 @@ export function AiGenerateQuestionsModal({
   onAdd,
   onAdded,
   onClose,
+  // Tuỳ chọn: báo prompt hiện tại ra ngoài mỗi khi người dùng gõ — nơi
+  // gọi dùng để gợi ý theo ngữ cảnh (vd tab Bộ đề gợi ý TÊN BỘ MỚI từ
+  // chính yêu cầu đã nhập). Không truyền thì không có gì thay đổi.
+  onPromptChange,
   children = null,
 }) {
   const gen = useAiQuestionGenerator({
@@ -54,11 +62,15 @@ export function AiGenerateQuestionsModal({
   const [adding, setAdding] = useState(false);
   const [addErr, setAddErr] = useState("");
 
+  const promptCbRef = useRef(onPromptChange);
+  useEffect(() => { promptCbRef.current = onPromptChange; }, [onPromptChange]);
+  useEffect(() => { promptCbRef.current?.(gen.prompt); }, [gen.prompt]);
+
   async function addChosen() {
     if (!chosen.length || adding || !onAdd) return;
     setAdding(true); setAddErr("");
     try {
-      await onAdd(chosen, { subject: gen.subject, grade: gen.grade, difficulty: gen.difficulty });
+      await onAdd(chosen, { subject: gen.subject, grade: gen.grade, difficulty: gen.difficulty, prompt: gen.prompt });
       onAdded?.();
       onClose?.();
     } catch (e) {
@@ -69,7 +81,7 @@ export function AiGenerateQuestionsModal({
   }
 
   return (
-    <Modal open onClose={onClose} wide align="bottom" contentClassName="max-w-2xl !max-h-[92vh]">
+    <Modal open onClose={onClose} wide contentClassName="max-w-2xl !max-h-[92vh]">
       <div className="p-4 sm:p-5 space-y-3">
         <div>
           <h2 className="font-display text-lg text-ink inline-flex items-center gap-2">

@@ -46,6 +46,46 @@ export function toBankQuestion(q, { subject = "", grade = null, difficulty = "me
   };
 }
 
+/**
+ * Gợi ý TÊN BỘ ĐỀ từ prompt người dùng đã nhập cho AI (tab Bộ đề —
+ * "Tạo bộ đề mới…" từ các câu vừa sinh): bỏ các tiền tố câu lệnh quen
+ * thuộc ("Tạo câu hỏi về…", "Hãy tạo…", "về…") ở đầu, bỏ dấu câu cuối,
+ * viết hoa chữ đầu, cắt tối đa 60 ký tự ở biên từ. Ví dụ:
+ * "Tạo câu hỏi về phép trừ 2 chữ số lớp 3" → "Phép trừ 2 chữ số lớp 3".
+ * Trả "" khi prompt không còn nội dung dùng được — nơi gọi tự fallback.
+ */
+export function suggestSetNameFromPrompt(prompt) {
+  let s = String(prompt || "").replace(/\s+/g, " ").trim();
+  const prefixes = [
+    /^hãy\s+/i, /^xin\s+/i, /^vui lòng\s+/i,
+    /^tạo\s+(các\s+)?(câu\s+hỏi|bộ\s+câu\s+hỏi|bộ\s+đề)\s*/i,
+    /^tạo\s+/i, /^viết\s+/i, /^soạn\s+/i, /^làm\s+/i,
+    // Số lượng đứng trước danh từ câu hỏi: "10 câu hỏi về…", "5 bộ đề về…"
+    /^\d+\s*(câu\s+hỏi|bộ\s+câu\s+hỏi|bộ\s+đề|câu)\s*/i,
+    /^hay\s+/i, /^tao\s+(cac\s+)?(cau\s+hoi|bo\s+cau\s+hoi|bo\s+de)\s*/i,
+    /^\d+\s*(cau\s+hoi|bo\s+cau\s+hoi|bo\s+de|cau)\s*/i,
+    /^tao\s+/i, /^viet\s+/i, /^soan\s+/i,
+    /^cho\s+(tôi|mình|em)\s+/i, /^giúp\s+(tôi|mình|em)\s+/i,
+    /^về\s+/i, /^ve\s+/i, /^chủ\s+đề\s+/i, /^chu\s+de\s+/i,
+    /^liên\s+quan\s+(đến|tới)\s+/i,
+  ];
+  let prev = null;
+  while (prev !== s) {
+    prev = s;
+    for (const re of prefixes) s = s.replace(re, "");
+    s = s.trim();
+  }
+  s = s.replace(/[\s.!?…,;:]+$/u, "").trim();
+  if (!s) return "";
+  s = s.charAt(0).toUpperCase() + s.slice(1);
+  if (s.length > 60) {
+    const cut = s.slice(0, 60);
+    const sp = cut.lastIndexOf(" ");
+    s = (sp > 20 ? cut.slice(0, sp) : cut).trim();
+  }
+  return s;
+}
+
 /** Nội dung đáp án đúng của một câu bank (rỗng nếu không xác định được). */
 export function bankCorrectText(doc) {
   return String(doc?.options?.find((o) => o.id === doc.correctAnswer)?.content || "").trim();

@@ -30,21 +30,67 @@ function normLang(v) {
   return LANGS.includes(v) ? v : "vi-VN";
 }
 
-export async function listAll({ search, subject, category, grade, limit = 500 } = {}) {
+// Nhãn môn chuẩn của ngân hàng — BẢN SAO của SK trong
+// src/lib/questionBankMeta.js (nguồn sự thật phía client). Subject lưu trong
+// DB có thể là key ("viet") hoặc nhãn ("Tiếng Việt"), hoặc chuỗi tự do của
+// thầy cô; lọc theo môn phải quy về key như subjKey() phía client thì tổng
+// sau lọc mới khớp danh sách trang Ngân hàng vẫn hiển thị.
+const SUBJECT_LABELS = { viet: "Tiếng Việt", eng: "Tiếng Anh", sci: "Khoa học", geo: "Địa lí – Lịch sử", custom: "Thầy cô ra đề" };
+
+/** Quy một giá trị subject thô (key / nhãn / rỗng / chuỗi tự do) về key như subjKey(). */
+function subjectKeyOf(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return "custom";
+  if (Object.prototype.hasOwnProperty.call(SUBJECT_LABELS, s)) return s;
+  const hit = Object.keys(SUBJECT_LABELS).find((k) => SUBJECT_LABELS[k] === s);
+  return hit || s;
+}
+
+/**
+ * Câu có "lỗi" theo ĐÚNG luật qIssues của trang Ngân hàng (bản client):
+ * thiếu nội dung, đáp án không đủ 2–4 / có đáp án trống / trùng nhau
+ * (không tính hoa thường), đáp án đúng không trỏ vào đáp án nào, lớp
+ * ngoài 1–5. checkQuestion() bên dưới là bản ném-lỗi của cùng luật này
+ * dùng khi ghi; bản boolean ở đây dùng cho bộ lọc ?bad=1 của danh sách.
+ */
+function questionHasIssues(doc) {
+  if (!String(doc?.content || "").trim()) return true;
+  const rawOpts = Array.isArray(doc?.options) ? doc.options : [];
+  const opts = rawOpts.map((o) => String(o?.content || "").trim());
+  if (opts.length < 2 || opts.length > 4 || opts.some((t) => !t)) return true;
+  if (!rawOpts.some((o) => o?.id === doc.correctAnswer)) return true;
+  if (new Set(opts.map((t) => t.toLowerCase())).size < opts.length) return true;
+  if (doc?.grade != null && !GRADES.includes(Number(doc.grade))) return true;
+  return false;
+}
+
+export async function listAll({ search, subject, category, grade, bad, limit = 500 } = {}) {
   const coll = getCollection(COLLECTION);
   const filter = {};
-  if (subject && subject !== "all") filter.subject = subject;
+  // `category` là tham số cũ, khác trục với `subject` của trang Ngân hàng —
+  // giữ nguyên cách lọc exact như trước. subject/grade/search/bad lọc ở
+  // JS bên dưới theo ĐÚNG semantics trang Ngân hàng (bankQuestionMatches +
+  // qIssues phía client) để pagination.total sau lọc là tổng thật.
   if (category && category !== "all") filter.category = category;
-  if (grade && grade !== "all" && GRADES.includes(Number(grade))) filter.grade = Number(grade);
-  let cursor = coll.find(filter).sort({ updatedAt: -1 }).limit(limit);
-  let docs = await cursor.toArray();
+  let docs = await coll.find(filter).sort({ updatedAt: -1 }).limit(limit).toArray();
+  if (subject && subject !== "all") {
+    const want = subjectKeyOf(subject);
+    docs = docs.filter((d) => subjectKeyOf(d.subject) === want);
+  }
+  if (grade && grade !== "all" && GRADES.includes(Number(grade))) {
+    const g = Number(grade);
+    // Câu chưa phân lớp được tính là lớp 1 như cách trang Ngân hàng hiển thị.
+    docs = docs.filter((d) => (d.grade || 1) === g);
+  }
   if (search?.trim()) {
-    const s = search.toLowerCase();
-    docs = docs.filter(d =>
-      d.content?.toLowerCase().includes(s) ||
-      d.options?.some(o => o.content?.toLowerCase().includes(s)) ||
-      d.subject?.toLowerCase().includes(s)
+    const s = search.trim().toLowerCase();
+    docs = docs.filter((d) =>
+      String(d.content || "").toLowerCase().includes(s) ||
+      (d.options || []).some((o) => String(o?.content || "").toLowerCase().includes(s))
     );
+  }
+  if (bad === true || bad === "1" || bad === "true") {
+    docs = docs.filter(questionHasIssues);
   }
   return docs;
 }

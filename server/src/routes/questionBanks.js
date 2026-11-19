@@ -12,9 +12,12 @@ router.get("/", async (req, res, next) => {
   try {
     // limit mặc định 500 như cũ; trang Ngân hàng câu hỏi cần lấy toàn bộ để dựng
     // ma trận môn × lớp nên cho phép nâng trần tới 5000.
-    const { search, subject, category, grade, limit } = req.query;
+    // `bad` (tuỳ chọn, đợt phân trang trang Ngân hàng): chỉ lấy câu có lỗi
+    // theo luật qIssues — lọc trong listAll TRƯỚC khi respondWithRange cắt
+    // đoạn nên pagination.total là tổng đã lọc.
+    const { search, subject, category, grade, bad, limit } = req.query;
     const cap = Math.min(5000, Math.max(1, Number(limit) || 500));
-    const questions = await bankService.listAll({ search, subject, category, grade, limit: cap });
+    const questions = await bankService.listAll({ search, subject, category, grade, bad, limit: cap });
     if (respondWithRange(req, res, questions)) return;
     const pagination = buildPagination({ total: questions.length });
     sendSuccess(res, questions, "success", pagination);
@@ -32,6 +35,10 @@ router.get("/sets", authenticate, async (req, res, next) => {
   try {
     const { subject, grade } = req.query;
     const sets = await setService.listSets({ subject, grade });
+    // Phân trang from/to dùng chung (tab Bộ đề): lọc xong mới cắt đoạn;
+    // không có from/to → giữ nguyên shape cũ cho các caller khác
+    // (trang học sinh /question-sets gọi listSets không tham số).
+    if (respondWithRange(req, res, sets)) return;
     const pagination = buildPagination({ total: sets.length });
     sendSuccess(res, sets, "success", pagination);
   } catch (e) { next(e); }
