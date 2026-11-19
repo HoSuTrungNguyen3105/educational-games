@@ -35,6 +35,9 @@ const ROUTES = [
   { name: "admin-documents", pattern: "/dashboard/documents" },
   { name: "admin-document-templates", pattern: "/dashboard/documents/templates" },
   { name: "admin-document-edit", pattern: "/dashboard/documents/:documentId" },
+  // Công cụ Chỉnh sửa PDF (xử lý 100% phía client): xem theo trang, thêm đối
+  // tượng, rồi xuất file mới hậu tố -edited (file gốc không bị ghi đè).
+  { name: "admin-pdf-editor", pattern: "/dashboard/pdf-editor" },
   { name: "admin-game-config", pattern: "/dashboard/game-config" },
   // Cấu hình JSON riêng của game offline Vườn Thủ Hộ (plantvsanimal.html)
   { name: "admin-vth-config", pattern: "/dashboard/vth-config" },

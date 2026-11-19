@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { navigate } from '../../lib/router.js'
 import { hasPermission, getRoleLabel } from '../../config/roles.js'
 import {
@@ -28,6 +28,7 @@ import {
   Settings2,
   LifeBuoy,
   FileText,
+  FilePenLine,
   LayoutTemplate,
   KeyRound,
 } from 'lucide-react'
@@ -89,6 +90,7 @@ const SECTIONS = [
       { id: "admin-birthday", label: "Trang sinh nhật", icon: Cake, route: "/dashboard/birthday", permission: "templates.edit" },
       { id: "admin-lesson-creator", label: "Tạo bài học", icon: PenLine, route: "/dashboard/ai-lesson-creator", permission: null },
       { id: "admin-documents", label: "Soạn tài liệu", icon: FileText, route: "/dashboard/documents", permission: null },
+      { id: "admin-pdf-editor", label: "Chỉnh sửa PDF", icon: FilePenLine, route: "/dashboard/pdf-editor", permission: null },
       { id: "admin-document-templates", label: "Thư viện mẫu", icon: LayoutTemplate, route: "/dashboard/documents/templates", permission: null },
       { id: "admin-game-config", label: "Cấu hình game", icon: IconSettings, route: "/dashboard/game-config", permission: "games.manage" },
       { id: "admin-vth-config", label: "Cấu hình Vườn Thủ Hộ", icon: Sprout, route: "/dashboard/vth-config", permission: "games.manage" },
@@ -140,6 +142,16 @@ export default function DashboardSidebar({ screen, user, onLogout }) {
   const allVisible = visibleSections.flatMap(s => s.items);
   const activeId = allVisible.some(i => i.id === screen) ? screen : null;
 
+  const navRef = useRef(null);
+
+  useEffect(() => {
+    if (!activeId || !navRef.current) return;
+    const activeEl = navRef.current.querySelector(`[data-menu-id="${activeId}"]`);
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }
+  }, [activeId]);
+
   const userCard = user ? (
     <div className="edu-side-user">
       <div className="edu-side-avatar">{initialsOf(user.name)}</div>
@@ -152,7 +164,7 @@ export default function DashboardSidebar({ screen, user, onLogout }) {
 
   const renderNav = () => (
     <div className="flex flex-col h-full min-h-0">
-      <nav className="edu-menu flex-1 min-h-0 overflow-y-auto">
+      <nav className="edu-menu flex-1 min-h-0 overflow-y-auto" ref={navRef}>
         {visibleSections.map(s => (
           <div key={s.id} className="edu-menu-section">
             {s.label && <p className="edu-menu-label">{s.label}</p>}
@@ -161,7 +173,8 @@ export default function DashboardSidebar({ screen, user, onLogout }) {
               const active = activeId === t.id;
               return (
                 <button key={t.id} onClick={() => navigate(t.route)}
-                  className={`edu-menu-item ${active ? "is-active" : ""}`}>
+                  className={`edu-menu-item ${active ? "is-active" : ""}`}
+                  data-menu-id={t.id}>
                   <Icon />
                   <span>{t.label}</span>
                 </button>

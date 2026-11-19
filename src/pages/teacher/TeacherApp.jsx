@@ -20,6 +20,8 @@ const AiStudioPage = lazy(() => import('./AiStudioPage.jsx'));
 const DocumentStudio = lazy(() => import('./DocumentStudio.jsx'));
 const DocumentTemplates = lazy(() => import('./DocumentTemplates.jsx'));
 const DocumentStudioEditor = lazy(() => import('./DocumentStudioEditor.jsx'));
+
+const PdfEditorPage = lazy(() => import('./pdf-editor/PdfEditorPage.jsx'));
 const GameConfigEditor = lazy(() => import('./GameConfigEditor.jsx'));
 const CategoryManagement = lazy(() => import('./CategoryManagement.jsx'));
 const SubjectManagement = lazy(() => import('./SubjectManagement.jsx'));
@@ -122,6 +124,7 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
         {page === "admin-documents" && <DocumentStudio showToast={showToast} />}
         {page === "admin-document-templates" && <DocumentTemplates showToast={showToast} />}
         {page === "admin-document-edit" && <DocumentStudioEditor key={route.params.documentId} documentId={route.params.documentId} showToast={showToast} />}
+        {page === "admin-pdf-editor" && <PdfEditorPage showToast={showToast} />}
         {page === "admin-game-config" && <GameConfigEditor key={refreshFlag} showToast={showToast} />}
         {page === "admin-vth-config" && <VthConfigManagement showToast={showToast} />}
         {page === "admin-settings" && <AdminSettings user={user} showToast={showToast} />}
