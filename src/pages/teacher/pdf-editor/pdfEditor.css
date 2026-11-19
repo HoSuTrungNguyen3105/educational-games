@@ -262,7 +262,11 @@
   border-radius: 4px;
 }
 
-.edu-pdf-overlay { position: absolute; left: 0; top: 0; }
+/* Lớp phủ PHẢI trong suốt với sự kiện chuột: nó phủ kín cả trang, nếu nó
+   hứng sự kiện thì chuột không bao giờ chạm được lớp chữ thật bên dưới →
+   không bôi đen / sao chép được chữ (đúng lỗi đã gặp). Chỉ từng đối tượng
+   bên trong mới bắt sự kiện trở lại. */
+.edu-pdf-overlay { position: absolute; left: 0; top: 0; pointer-events: none; }
 
 /* ── Đối tượng ────────────────────────────────────────────────────────── */
 .edu-pdf-obj {
@@ -270,6 +274,7 @@
   box-sizing: border-box;
   user-select: none;
   touch-action: none;
+  pointer-events: auto;
 }
 .edu-pdf-obj.is-selected { outline: 1.5px solid var(--edu-blue); outline-offset: 1px; }
 .edu-pdf-obj.is-editing { outline: 1.5px dashed var(--edu-blue); outline-offset: 1px; }
