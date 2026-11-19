@@ -32,9 +32,15 @@ function supportsTTS() {
  * @param {number} [props.rate]        tốc độ ban đầu
  * @param {(rate:number)=>void} [props.onRateChange]
  * @param {boolean} [props.autoHideStatus]  ẩn chip trạng thái (khi trang tự hiện)
+ * @param {() => void} [props.onPlay]    gọi khi BẮT ĐẦU một lượt phát mới
+ *        (trang thi dùng để đếm lượt nghe — phát lại sau tạm dừng không tính)
+ * @param {() => void} [props.onEnded]   gọi khi một lượt phát kết thúc
+ * @param {boolean} [props.playDisabled] cấm bắt đầu lượt phát mới (đã hết
+ *        lượt nghe ở chế độ thi) — tạm dừng/tiếp tục lượt đang phát vẫn được
  */
 export default function AudioPlayer({
   text, audioUrl = null, audioStatus = "missing", label, rate = 1, onRateChange, autoHideStatus = false,
+  onPlay, onEnded, playDisabled = false,
 }) {
   const [tts, setTts] = useState({ key: null, playing: false, paused: false });
   const [audioPlaying, setAudioPlaying] = useState(false);
@@ -65,7 +71,7 @@ export default function AudioPlayer({
     try { window.speechSynthesis?.cancel(); } catch { /* ignore */ }
   }, [text, audioUrl]);
 
-  const speak = (v) => {
+  const speak = (v, silent = false) => {
     if (!text || !canTTS) return;
     try {
       window.speechSynthesis.cancel();
@@ -73,15 +79,17 @@ export default function AudioPlayer({
       u.lang = "en-US";
       u.rate = v;
       u.volume = volume;
-      u.onend = () => setTts((p) => ({ ...p, playing: false, paused: false }));
+      u.onend = () => { setTts((p) => ({ ...p, playing: false, paused: false })); onEnded?.(); };
       u.onerror = () => {
         setTts((p) => ({ ...p, playing: false, paused: false }));
         setTtsError("Không đọc được giọng máy trên trình duyệt này.");
+        onEnded?.();
       };
       utterRef.current = u;
       window.speechSynthesis.speak(u);
       setTts({ key: text, playing: true, paused: false });
       setTtsError("");
+      if (!silent) onPlay?.();
     } catch {
       setTtsError("Trình duyệt không hỗ trợ đọc giọng máy.");
     }
@@ -111,7 +119,8 @@ export default function AudioPlayer({
     setRateState(v);
     onRateChange?.(v);
     // Đang phát thì đọc lại với tốc độ mới (TTS không đổi rate giữa chừng).
-    if (playing && !hasRealAudio) speak(v);
+    // Đọc lại vì đổi tốc độ KHÔNG tính là một lượt nghe mới (silent).
+    if (playing && !hasRealAudio) speak(v, true);
   };
 
   const missingStatus = !hasRealAudio && audioStatus === "missing";
@@ -130,8 +139,9 @@ export default function AudioPlayer({
             src={audioUrl}
             controls
             className="w-full max-w-full"
-            onPlay={() => setAudioPlaying(true)}
+            onPlay={() => { setAudioPlaying(true); onPlay?.(); }}
             onPause={() => setAudioPlaying(false)}
+            onEnded={() => { setAudioPlaying(false); onEnded?.(); }}
           />
         )}
 
@@ -141,9 +151,9 @@ export default function AudioPlayer({
             <button
               type="button"
               onClick={toggleTTS}
-              disabled={!canTTS}
+              disabled={!canTTS || (!playing && playDisabled)}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink text-paper text-sm font-body font-semibold disabled:opacity-50"
-              title={canTTS ? "Đọc bằng giọng máy (TTS)" : "Trình duyệt không hỗ trợ"}
+              title={playDisabled && !playing ? "Đã hết lượt nghe" : canTTS ? "Đọc bằng giọng máy (TTS)" : "Trình duyệt không hỗ trợ"}
             >
               {playing && !paused ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               {playing && !paused ? "Tạm dừng" : paused ? "Tiếp tục" : "Phát"}

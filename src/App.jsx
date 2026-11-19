@@ -101,6 +101,18 @@ const LessonListPage = lazy(() => import("./pages/user/LessonListPage.jsx"));
 const LessonPlayPage = lazy(() => import("./pages/user/LessonPlayPage.jsx"));
 const QuestionSetListPage = lazy(() => import("./pages/user/QuestionSetListPage.jsx"));
 const QuestionSetPracticePage = lazy(() => import("./pages/user/QuestionSetPracticePage.jsx"));
+// English B1 (src/englishB1) — phân hệ tự chứa, tiến độ lưu local
+const EnglishB1Dashboard = lazy(() => import("./englishB1/pages/EnglishB1Dashboard.jsx"));
+const EnglishB1VocabularyPage = lazy(() => import("./englishB1/pages/VocabularyPage.jsx"));
+const EnglishB1GrammarPage = lazy(() => import("./englishB1/pages/GrammarPage.jsx"));
+const EnglishB1ListeningPage = lazy(() => import("./englishB1/pages/ListeningPage.jsx"));
+const EnglishB1ReadingPage = lazy(() => import("./englishB1/pages/ReadingPage.jsx"));
+const EnglishB1WritingPage = lazy(() => import("./englishB1/pages/WritingPage.jsx"));
+const EnglishB1SpeakingPage = lazy(() => import("./englishB1/pages/SpeakingPage.jsx"));
+const EnglishB1ExamListPage = lazy(() => import("./englishB1/pages/ExamListPage.jsx"));
+const EnglishB1ExamTakingPage = lazy(() => import("./englishB1/pages/ExamTakingPage.jsx"));
+const EnglishB1ExamResultPage = lazy(() => import("./englishB1/pages/ExamResultPage.jsx"));
+const EnglishB1ProgressPage = lazy(() => import("./englishB1/pages/ProgressPage.jsx"));
 const MathAdventurePage = lazy(() => import("./pages/MathAdventurePage.jsx"));
 const SchoolMissionPage = lazy(() => import("./pages/SchoolMissionPage.jsx"));
 const OfflineGamePage = lazy(() => import("./pages/OfflineGamePage.jsx"));
@@ -341,6 +353,64 @@ function App() {
     ),
     "question-set-practice": () => (
       <QuestionSetPracticePage setId={route.params?.setId} userAuth={userAuth} />
+    ),
+    // English B1: mọi trang tự render EnglishB1Shell (có header + tab riêng)
+    // nên bọc RouteShell showBack={false} như Bài học/Danh mục; làm bài thi
+    // và kết quả nhận examId từ route params (README englishB1 §2).
+    "english-b1": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <EnglishB1Dashboard userAuth={userAuth} showToast={showToast} />
+      </RouteShell>
+    ),
+    "english-b1-vocabulary": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <EnglishB1VocabularyPage userAuth={userAuth} showToast={showToast} />
+      </RouteShell>
+    ),
+    "english-b1-grammar": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <EnglishB1GrammarPage userAuth={userAuth} showToast={showToast} />
+      </RouteShell>
+    ),
+    "english-b1-listening": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <EnglishB1ListeningPage userAuth={userAuth} showToast={showToast} />
+      </RouteShell>
+    ),
+    "english-b1-reading": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <EnglishB1ReadingPage userAuth={userAuth} showToast={showToast} />
+      </RouteShell>
+    ),
+    "english-b1-writing": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <EnglishB1WritingPage userAuth={userAuth} showToast={showToast} />
+      </RouteShell>
+    ),
+    "english-b1-speaking": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <EnglishB1SpeakingPage userAuth={userAuth} showToast={showToast} />
+      </RouteShell>
+    ),
+    "english-b1-exams": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <EnglishB1ExamListPage userAuth={userAuth} showToast={showToast} />
+      </RouteShell>
+    ),
+    "english-b1-exam": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <EnglishB1ExamTakingPage examId={route.params?.examId} userAuth={userAuth} showToast={showToast} />
+      </RouteShell>
+    ),
+    "english-b1-exam-result": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <EnglishB1ExamResultPage examId={route.params?.examId} userAuth={userAuth} showToast={showToast} />
+      </RouteShell>
+    ),
+    "english-b1-progress": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <EnglishB1ProgressPage userAuth={userAuth} showToast={showToast} />
+      </RouteShell>
     ),
     "math-adventure": () => <MathAdventurePage />,
     "school-mission": () => <SchoolMissionPage />,

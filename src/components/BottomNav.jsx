@@ -1,4 +1,4 @@
-import { ClipboardList, Gamepad2, House, LayoutGrid, MessageCircle } from "lucide-react";
+import { ClipboardList, Gamepad2, House, Languages, LayoutGrid, MessageCircle } from "lucide-react";
 import { IconUser } from "./ui";
 import { navigate } from "../lib/router.js";
 
@@ -26,6 +26,8 @@ export const BOTTOM_NAV_ITEMS = (userAuth) => [
   { key: "home", icon: House, label: "Trang chủ", type: "path", path: "/", show: true },
   { key: "categories", icon: LayoutGrid, label: "Danh mục", type: "path", path: "/categories", show: true },
   { key: "games", icon: Gamepad2, label: "Game", type: "scroll", target: "games-section", show: true },
+  // English B1: tiến độ học lưu local trên máy nên không cần đăng nhập vẫn vào được
+  { key: "english-b1", icon: Languages, label: "Tiếng Anh B1", type: "path", path: "/english-b1", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
   { key: "profile", icon: IconUser, label: "Cá nhân", type: "path", path: "/profile", show: !!userAuth?.user },

@@ -114,6 +114,19 @@ const ROUTES = [
   // thẻ combo + trang tự luyện cả bộ (API /question-banks/sets).
   { name: "question-sets", pattern: "/question-sets" },
   { name: "question-set-practice", pattern: "/question-sets/:setId" },
+  // English B1 (src/englishB1) — phân hệ học tiếng Anh tự chứa, tiến độ lưu
+  // local. Route tĩnh PHẢI đứng trước :examId (router khớp theo thứ tự).
+  { name: "english-b1", pattern: "/english-b1" },
+  { name: "english-b1-vocabulary", pattern: "/english-b1/vocabulary" },
+  { name: "english-b1-grammar", pattern: "/english-b1/grammar" },
+  { name: "english-b1-listening", pattern: "/english-b1/listening" },
+  { name: "english-b1-reading", pattern: "/english-b1/reading" },
+  { name: "english-b1-writing", pattern: "/english-b1/writing" },
+  { name: "english-b1-speaking", pattern: "/english-b1/speaking" },
+  { name: "english-b1-exams", pattern: "/english-b1/exams" },
+  { name: "english-b1-progress", pattern: "/english-b1/progress" },
+  { name: "english-b1-exam-result", pattern: "/english-b1/exams/:examId/result" },
+  { name: "english-b1-exam", pattern: "/english-b1/exams/:examId" },
   { name: "math-adventure", pattern: "/math-adventure" },
   // Game nhập vai trường học (src/games/school_mission/School_mission.html)
   { name: "school-mission", pattern: "/school-mission" },
