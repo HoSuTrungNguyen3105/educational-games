@@ -1068,8 +1068,19 @@ export const gardenService = {
 };
 
 export const reminderService = {
-  async list(range) {
-    if (hasRange(range)) return fetchRangedList("/reminders", range);
+  // params: { from, to } để phân trang from/to như mọi list quản trị; kèm
+  // tuỳ chọn { triggered, q } — server lọc TRƯỚC khi cắt đoạn nên
+  // pagination.total là tổng của tập đã lọc (trang /dashboard/reminders
+  // phân trang riêng mục chưa/đã triggered + ô tìm kiếm). Không truyền
+  // range → giữ nguyên hành vi cũ (mảng toàn bộ) cho các caller phía user.
+  async list(params) {
+    if (hasRange(params)) {
+      const qs = new URLSearchParams();
+      if (params.triggered != null) qs.set("triggered", String(params.triggered));
+      if (params.q) qs.set("q", params.q);
+      const s = qs.toString();
+      return fetchRangedList(`/reminders${s ? `?${s}` : ""}`, params);
+    }
     return apiFetch("/reminders") || [];
   },
   async getDue() { return apiFetch("/reminders/due") || []; },
