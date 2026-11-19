@@ -3,6 +3,7 @@ import * as reminderService from "../services/reminderService.js";
 import { verifyToken } from "../services/authService.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 import { respondWithRange } from "../utils/rangeList.js";
+import { foldText } from "../utils/textFold.js";
 
 const r = Router();
 
@@ -12,16 +13,8 @@ function auth(req, res, next) {
   try { req.user = verifyToken(h.slice(7)); next(); } catch { sendError(res, "Invalid token", 401); }
 }
 
-// Gập dấu tiếng Việt + thường hoá — CÙNG thuật toán với matchesQuery phía
-// client (src/lib/searchText.js) để ô tìm kiếm ở trang quản lý cho kết quả
-// giống hệt khi lọc được đẩy xuống server phục vụ phân trang.
-function foldText(s) {
-  return String(s ?? "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d");
-}
+// Gập dấu dùng helper dùng chung server/src/utils/textFold.js (cùng thuật
+// toán với matchesQuery phía client) — xem ghi chú ở đó.
 
 // List reminders
 // Lọc tuỳ chọn (chỉ áp khi client GỬI, không gửi → hành vi cũ nguyên vẹn):

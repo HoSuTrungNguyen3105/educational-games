@@ -1,21 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Copy, FileText, LayoutTemplate, Pencil, Presentation, Trash2, Upload } from "lucide-react";
 import { navigate } from "../../lib/router.js";
 import { documentService } from "../../services/documentService.js";
 import { templateSourceFor } from "../../lib/documents/templates.js";
-import { matchesQuery } from "../../lib/searchText.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import {
   ConfirmModal, FormModal, GridCard, IconButton, ManagementHeader, ManagementTable,
 } from "../../components/ui";
 import DocumentUploadModal from "./documents/DocumentUploadModal.jsx";
-import { rangeAll } from "../../lib/rangePagination.js";
+import { useRangePager } from "../../hooks/useRangePager.js";
 
 // DocumentStudio — danh sách tài liệu của Teacher Document Studio tại
 // /dashboard/documents, dùng đúng kit lưới dùng chung (ManagementTable +
 // GridCard) như các trang quản lý khác. Tạo mới: chọn loại Word /
 // PowerPoint và chế độ soạn (HTML/CSS hoặc JSON), tài liệu được nạp sẵn
 // MẪU tương ứng để giáo viên sửa ngay. Nhân bản = GET bản đầy đủ + POST.
+//
+// Phân trang PHÍA SERVER theo mẫu trang /dashboard/permissions: trang gọi
+// listMine kèm ?from=&to= + search/docType (server đã hỗ trợ sẵn các tham
+// số này) và hiện cụm RangePagination dùng chung qua prop serverPager của
+// ManagementTable — tìm kiếm/lọc chạy trên toàn bộ tài liệu của giáo viên,
+// không chỉ trong trang đang xem.
+
+const PER_PAGE = 10;
 
 const CREATE_FIELDS = [
   { name: "name", label: "Tên tài liệu", placeholder: "VD: Phiếu bài tập Toán — Tuần 5" },
@@ -54,8 +61,10 @@ const modeLabel = (m) => (m === "json" ? "JSON" : "HTML/CSS");
 
 export default function DocumentStudio({ showToast }) {
   const [docs, setDocs] = useState(null);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({ name: "", docType: "word", mode: "html" });
@@ -64,26 +73,45 @@ export default function DocumentStudio({ showToast }) {
   const [busyId, setBusyId] = useState(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const { askConfirm, confirmProps } = useConfirm();
+  const pager = useRangePager(total, PER_PAGE);
 
   const load = useCallback(async () => {
     try {
-      const res = await documentService.listMine(rangeAll());
+      const res = await documentService.listMine({
+        ...pager.range,
+        search: debouncedQuery || undefined,
+        docType: typeFilter !== "all" ? typeFilter : undefined,
+      });
       setDocs(res?.data || []);
+      setTotal(res?.pagination?.total ?? (res?.data || []).length);
       setError("");
     } catch (e) {
       setError(e?.message || "Không tải được danh sách tài liệu");
     }
-  }, []);
+    // pager.range suy ra từ page hiện tại — load chạy lại khi trang đổi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pager.range.from, pager.range.to, debouncedQuery, typeFilter]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
-  const filtered = useMemo(() => {
-    if (!docs) return docs;
-    return docs.filter((d) =>
-      (typeFilter === "all" || d.docType === typeFilter) &&
-      matchesQuery(query, d.name));
-  }, [docs, query, typeFilter]);
+  // Gõ tìm kiếm: chờ 350ms rồi về trang 1 với từ khoá mới (mẫu Permissions).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      pager.setPage(1);
+      setDebouncedQuery(query.trim());
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  // Xoá/nhân bản làm tổng co lại: nếu trang hiện tại vượt quá trang cuối
+  // thì lùi về trang cuối (pager tự kẹp khi tính khoảng, đây là đồng bộ
+  // state để lần nạp sau dùng đúng trang).
+  useEffect(() => {
+    if (total > 0 && pager.page > pager.totalPages) pager.setPage(pager.totalPages);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total]);
 
   const submitCreate = async () => {
     if (!form.name.trim()) { setCreateError("Vui lòng nhập tên tài liệu"); return; }
@@ -171,7 +199,7 @@ export default function DocumentStudio({ showToast }) {
           className="note-card inline-flex items-center gap-1.5 px-3 py-2 text-sm font-body font-semibold border-ink/10 bg-white hover:bg-paper2 transition">
           <Upload className="w-4 h-4" /> Tải file lên
         </button>
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
+        <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); pager.setPage(1); }}
           className="note-card px-3 py-2 text-sm border-ink/10 bg-paper2">
           <option value="all">Tất cả loại</option>
           <option value="word">Word</option>
@@ -181,7 +209,8 @@ export default function DocumentStudio({ showToast }) {
 
       <ManagementTable
         viewKey="teacher-documents"
-        data={docs ? filtered : docs}
+        data={docs}
+        serverPager={pager.props}
         error={error && !docs ? error : null}
         onRetry={load}
         emptyLabel={query || typeFilter !== "all"

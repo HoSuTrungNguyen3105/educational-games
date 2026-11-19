@@ -6,11 +6,16 @@ import * as petService from "../services/petService.js";
 import * as petCatalog from "../services/petCatalog.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
 import { respondWithRange } from "../utils/rangeList.js";
+import { matchesFolded } from "../utils/textFold.js";
 import { record as audit, AUDIT } from "../services/auditService.js";
 
 const router = Router();
 
 router.use(authenticate);
+
+// Nhãn vai trò tiếng Việt — khớp ROLES/getRoleLabel phía client
+// (src/config/roles.js) để ô tìm kiếm trang Người dùng khớp cả theo nhãn.
+const ROLE_LABELS = { admin: "Quản trị", teacher: "Giáo viên", student: "Học sinh", parent: "Phụ huynh" };
 
 // ── Điểm danh mỗi ngày (check-in nhận xu + chuỗi ngày liên tiếp) ────────
 // Mọi tài khoản đã đăng nhập đều gọi được; giao diện chỉ hiện thẻ cho học
@@ -173,7 +178,17 @@ router.delete("/admin/pet-catalog/:kind/:id", ...petCatalogAdmin, async (req, re
 
 router.get("/", requireRoles("teacher", "admin"), async (req, res, next) => {
   try {
-    const data = await listUsers();
+    let data = await listUsers();
+    // Lọc tuỳ chọn ?q= (chỉ áp khi client GỬI, không gửi → hành vi cũ nguyên
+    // vẹn): trang /dashboard/users đã chuyển phân trang xuống server nên ô
+    // tìm kiếm cũng phải lọc ở server TRƯỚC khi cắt from/to, nếu không kết
+    // quả chỉ đúng trong trang hiện tại. Trường khớp = đúng các trường ô
+    // tìm kiếm phía client vẫn lọc (họ tên, tên đăng nhập, email, tên lớp,
+    // nhãn vai trò) với cùng thuật toán gập dấu (utils/textFold.js).
+    if (req.query.q !== undefined) {
+      data = data.filter((u) => matchesFolded(req.query.q,
+        u.name, u.username, u.email, u.className, ROLE_LABELS[u.role] || u.role));
+    }
     // ?from=&to= (phân đoạn bản ghi cho dashboard) — không có thì giữ nguyên.
     if (respondWithRange(req, res, data)) return;
     const pagination = buildPagination({ total: data.length });

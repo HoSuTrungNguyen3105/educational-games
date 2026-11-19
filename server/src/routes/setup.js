@@ -4,6 +4,7 @@ import * as gameService from "../services/gameService.js";
 import { authenticate, requireRoles } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
 import { respondWithRange } from "../utils/rangeList.js";
+import { matchesFolded } from "../utils/textFold.js";
 import { parseBulkIds, runBulkDelete, bulkResultPayload } from "../utils/bulkDelete.js";
 import { record as audit, AUDIT } from "../services/auditService.js";
 
@@ -11,7 +12,27 @@ const router = Router();
 
 router.get("/templates", async (req, res, next) => {
   try {
-    const data = await setupService.listTemplates();
+    let data = await setupService.listTemplates();
+    // Lọc/sắp xếp tuỳ chọn (chỉ áp khi client GỬI, không gửi → hành vi cũ
+    // nguyên vẹn): trang /dashboard/templates đã chuyển phân trang xuống
+    // server nên tìm kiếm + lọc trạng thái + sắp xếp cũng phải chạy ở
+    // server TRƯỚC khi cắt from/to — đúng các tiêu chí trang vẫn áp ở
+    // client trước đây (tìm theo tên/thể loại/loại/trạng thái, gập dấu
+    // qua utils/textFold.js; sắp xếp name|games|updated, mặc định giữ
+    // thứ tự name A–Z của service).
+    if (req.query.q !== undefined) {
+      data = data.filter((t) => matchesFolded(req.query.q, t.name, t.category, t.type, t.status));
+    }
+    if (req.query.status) {
+      data = data.filter((t) => t.status === req.query.status);
+    }
+    if (req.query.sort === "games") {
+      data = [...data].sort((a, b) => (b.gamesCount || 0) - (a.gamesCount || 0));
+    } else if (req.query.sort === "updated") {
+      data = [...data].sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    } else if (req.query.sort === "name") {
+      data = [...data].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "vi"));
+    }
     if (respondWithRange(req, res, data)) return;
     const pagination = buildPagination({ total: data.length, keyword: req.query.keyword || "" });
     sendSuccess(res, data, "success", pagination);
@@ -118,7 +139,13 @@ router.delete("/templates/:id", authenticate, requireRoles("teacher", "admin"), 
 
 router.get("/categories", async (req, res, next) => {
   try {
-    const data = await setupService.listCategories();
+    let data = await setupService.listCategories();
+    // Lọc tuỳ chọn ?q= (chỉ áp khi client GỬI): trang /dashboard/categories
+    // phân trang phía server — tìm theo tên hiển thị/ID, gập dấu, chạy
+    // TRƯỚC khi cắt from/to (mẫu routes/reminders.js).
+    if (req.query.q !== undefined) {
+      data = data.filter((c) => matchesFolded(req.query.q, c.label, c.id));
+    }
     if (respondWithRange(req, res, data)) return;
     const pagination = buildPagination({ total: data.length, keyword: req.query.keyword || "" });
     sendSuccess(res, data, "success", pagination);
@@ -191,7 +218,13 @@ router.get("/games/:gameId/players", async (req, res, next) => {
 
 router.get("/subjects", async (req, res, next) => {
   try {
-    const data = await setupService.listSubjects();
+    let data = await setupService.listSubjects();
+    // Lọc tuỳ chọn ?q= (chỉ áp khi client GỬI): trang /dashboard/subjects
+    // phân trang phía server — tìm theo tên môn, gập dấu, chạy TRƯỚC khi
+    // cắt from/to (mẫu routes/reminders.js).
+    if (req.query.q !== undefined) {
+      data = data.filter((s) => matchesFolded(req.query.q, s.name));
+    }
     if (respondWithRange(req, res, data)) return;
     sendSuccess(res, data);
   } catch (e) {

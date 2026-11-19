@@ -1,11 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { taskService } from "../../services/taskService.js";
 import { BulkDeleteBar, Checkbox, GridCard, ManagementHeader, ManagementTable, Modal, GhostButton, PrimaryButton, ConfirmModal, StatGrid, ErrorState } from "../../components/ui";
 import { TaskIcon } from "../../components/tasks/index.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import { useBulkSelection, bulkInChunks } from "../../lib/hooks.js";
-import { matchesQuery } from "../../lib/searchText.js";
+import { useRangePager } from "../../hooks/useRangePager.js";
 import { CheckCircle2, ClipboardList, Coins, TriangleAlert, Users } from "lucide-react";
+
+// Phân trang PHÍA SERVER theo mẫu trang /dashboard/permissions: phần
+// tasks của payload /tasks/admin/stats được server lọc theo ?q= và cắt
+// theo ?from=&to= (kèm pagination — xem routes/tasks.js), cụm
+// RangePagination dùng chung hiện qua prop serverPager của
+// ManagementTable. Các số tổng ở StatGrid vẫn là tổng toàn bộ hệ thống.
+// Hệ quả: ô "chọn tất cả" áp cho TRANG ĐANG HIỂN THỊ; riêng "Xóa tất
+// cả" vẫn xóa toàn bộ — trang tự nạp lại toàn bộ id khi bấm (xem
+// doRemoveAllTasks).
+const PER_PAGE = 10;
 
 const TASK_TYPES = [
   { value: "GAME_PLAYED", label: "Chơi game" },
@@ -27,6 +37,7 @@ const emptyForm = { code: "", name: "", description: "", type: "GAME_PLAYED", ta
 
 export default function DailyTaskManagement({ showToast }) {
   const [stats, setStats] = useState(null);
+  const [listTotal, setListTotal] = useState(0);
   const [error, setError] = useState(null);
   const [tab, setTab] = useState("tasks");
   const [showForm, setShowForm] = useState(false);
@@ -47,14 +58,38 @@ export default function DailyTaskManagement({ showToast }) {
     finally { setSeeding(false); }
   };
 
+  const pager = useRangePager(listTotal, PER_PAGE);
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
   const load = useCallback(() => {
-    setStats(null);
     setError(null);
-    taskService.adminStats()
-      .then((s) => setStats(s))
+    taskService.adminStats({ ...pager.range, q: debouncedQuery || undefined })
+      .then((s) => {
+        setStats(s);
+        setListTotal(s?.pagination?.total ?? s?.tasks?.length ?? 0);
+      })
       .catch((e) => setError(e.message || "Lỗi tải dữ liệu"));
-  }, []);
+    // pager.range suy ra từ page hiện tại — load chạy lại khi trang đổi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pager.range.from, pager.range.to, debouncedQuery]);
   useEffect(() => { load(); }, [load]);
+
+  // Gõ tìm kiếm: chờ 350ms rồi về trang 1 với từ khoá mới (mẫu Permissions).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      pager.setPage(1);
+      setDebouncedQuery(query.trim());
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  // Xoá làm tổng co lại: trang vượt quá trang cuối thì lùi về.
+  useEffect(() => {
+    if (listTotal > 0 && pager.page > pager.totalPages) pager.setPage(pager.totalPages);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listTotal]);
 
   const openCreate = () => {
     setEditId(null);
@@ -125,10 +160,13 @@ export default function DailyTaskManagement({ showToast }) {
   };
 
   const doRemoveAllTasks = async () => {
-    const ids = (stats?.tasks || []).map((t) => t.id);
-    if (!ids.length) return;
     setBulkDeleting(true);
     try {
+      // stats.tasks giờ chỉ là ĐOẠN đang hiển thị — "Xóa tất cả" phải nạp
+      // lại toàn bộ id bằng lời gọi KHÔNG tham số (payload đầy đủ như cũ).
+      const full = await taskService.adminStats();
+      const ids = (full?.tasks || []).map((t) => t.id);
+      if (!ids.length) return;
       const r = await bulkInChunks(ids, (chunk) => taskService.bulkRemoveAdmin(chunk));
       reportBulkTasks(r);
       sel.clear(); load();
@@ -138,16 +176,8 @@ export default function DailyTaskManagement({ showToast }) {
 
   const taskHeaders = ["Nhiệm vụ", "Loại", "Phạm vi", "Mục tiêu", "Thưởng", "Hoàn thành", "Đã nhận", "Thao tác"];
 
-  const [query, setQuery] = useState("");
-  const allTasks = stats?.tasks || [];
-  const filteredTasks = useMemo(
-    () => allTasks.filter((t) => matchesQuery(query,
-      t.name, t.code, t.description,
-      TASK_TYPES.find((x) => x.value === t.type)?.label,
-      TASK_SCOPES.find((x) => x.value === t.scope)?.label)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [stats, query]
-  );
+  // Đoạn nhiệm vụ của trang hiện tại (đã lọc + cắt ở server).
+  const pageTasks = stats?.tasks || [];
   const renderTaskRow = (task) => (
     <tr key={task.id} className="border-t border-ink/5 hover:bg-ink/[0.02] transition">
       <td className="py-2.5 px-3">
@@ -207,7 +237,7 @@ export default function DailyTaskManagement({ showToast }) {
 
       {tab === "tasks" && (
         <>
-        {stats && !error && allTasks.length === 0 && (
+        {stats && !error && (stats.totalTasks ?? 0) === 0 && (
           <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center gap-3">
             <TriangleAlert className="w-6 h-6 text-amber-500 shrink-0" />
             <div className="flex-1 min-w-0">
@@ -223,12 +253,13 @@ export default function DailyTaskManagement({ showToast }) {
           onDeleteSelected={doBulkRemoveTasks} onDeleteAll={doRemoveAllTasks} onClear={sel.clear} />
         <ManagementTable
           title="Danh sách nhiệm vụ"
-          count={filteredTasks.length}
-          data={filteredTasks}
+          count={listTotal}
+          data={pageTasks}
+          serverPager={pager.props}
           error={error}
           onRetry={load}
           emptyLabel={query ? "Không tìm thấy nhiệm vụ nào khớp tìm kiếm." : "Chưa có dữ liệu"}
-          headers={[<Checkbox key="sel-all" checked={sel.allSelected(filteredTasks.map((t) => t.id))} onChange={() => sel.toggleAll(filteredTasks.map((t) => t.id))} />, ...taskHeaders]}
+          headers={[<Checkbox key="sel-all" checked={sel.allSelected(pageTasks.map((t) => t.id))} onChange={() => sel.toggleAll(pageTasks.map((t) => t.id))} />, ...taskHeaders]}
           search={{ value: query, onChange: setQuery, placeholder: "Tìm kiếm" }}
           renderRow={renderTaskRow}
           renderGridCard={(task) => (

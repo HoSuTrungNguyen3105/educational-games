@@ -1,11 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Dices, KeyRound, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 import { userService } from '../../services/api.js'
 import { hasPermission, getRoleLabel, ROLES } from '../../config/roles.js'
-import { matchesQuery } from '../../lib/searchText.js'
 import { BulkDeleteBar, Checkbox, GridCard, IconButton, ManagementHeader, ManagementTable, ConfirmModal, FormModal, Modal } from '../../components/ui'
 import { useBulkSelection, bulkInChunks } from '../../lib/hooks.js'
-import { rangeAll } from '../../lib/rangePagination.js'
+import { useRangePager } from '../../hooks/useRangePager.js'
+
+// Phân trang PHÍA SERVER theo mẫu trang /dashboard/permissions: danh
+// sách nạp theo ?from=&to= kèm ?q= (server lọc trước khi cắt — xem
+// routes/users.js), cụm RangePagination dùng chung hiện qua prop
+// serverPager của ManagementTable. Hệ quả: ô "chọn tất cả" của xóa hàng
+// loạt áp cho TRANG ĐANG HIỂN THỊ (giống trang Ảnh ở PR #149); chọn ở
+// nhiều trang rồi xóa một lần vẫn cộng dồn theo id như trước.
+const PER_PAGE = 10
 
 const RANDOM_FIRST_NAMES = ["An", "Bình", "Cúc", "Dũng", "Em", "Giang", "Hà", "Hiếu", "Iris", "Khanh", "Lan", "Minh", "Nga", "Oanh", "Phúc", "Quân", "Rạng", "Sơn", "Tâm", "Uyên", "Vân", "Xuân", "Yên", "Zoe"];
 const RANDOM_LAST_NAMES = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý"];
@@ -26,6 +33,7 @@ const rolePillCls = (role) =>
 
 export default function UserManagement({ user, showToast }) {
   const [users, setUsers] = useState(null);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
   const [form, setForm] = useState({ username: "", password: "", name: "", email: "", role: "student" });
   const [saving, setSaving] = useState(false);
@@ -63,19 +71,35 @@ export default function UserManagement({ user, showToast }) {
     },
   ];
 
+  const pager = useRangePager(total, PER_PAGE);
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
   const load = useCallback(() => {
-    setUsers(null); setError(null);
-    // Tìm kiếm + chọn/xoá hàng loạt chạy trên toàn bộ danh sách ở client →
-    // xin khoảng "lấy tất cả" qua from/to (xem lib/rangePagination.js).
-    userService.list(rangeAll()).then((res) => setUsers(res.items)).catch(e => setError(e.message));
-  }, []);
+    setError(null);
+    userService.list(pager.range, { q: debouncedQuery })
+      .then((res) => { setUsers(res.items); setTotal(res.total); })
+      .catch(e => setError(e.message));
+    // pager.range suy ra từ page hiện tại — load chạy lại khi trang đổi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pager.range.from, pager.range.to, debouncedQuery]);
   useEffect(() => { load(); }, [load]);
 
-  const [query, setQuery] = useState("");
-  const filtered = useMemo(
-    () => (users ?? []).filter((u) => matchesQuery(query, u.name, u.username, u.email, u.className, getRoleLabel(u.role))),
-    [users, query]
-  );
+  // Gõ tìm kiếm: chờ 350ms rồi về trang 1 với từ khoá mới (mẫu Permissions).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      pager.setPage(1);
+      setDebouncedQuery(query.trim());
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  // Xoá làm tổng co lại: trang vượt quá trang cuối thì lùi về.
+  useEffect(() => {
+    if (total > 0 && pager.page > pager.totalPages) pager.setPage(pager.totalPages);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total]);
 
   const openCreate = () => { setForm({ username: "", password: "", name: "", email: "", role: "student" }); setError(null); setModalOpen(true); };
   const closeModal = () => { setModalOpen(false); setError(null); };
@@ -205,13 +229,14 @@ export default function UserManagement({ user, showToast }) {
 
       <ManagementTable
         viewKey="users"
-        data={users ? filtered : users}
+        data={users}
+        serverPager={pager.props}
         error={error && !users ? error : null}
         onRetry={load}
         emptyLabel={query ? "Không tìm thấy tài khoản nào khớp tìm kiếm." : "Chưa có tài khoản nào."}
         onCreate={openCreate}
         search={{ value: query, onChange: setQuery, placeholder: "Tìm người dùng" }}
-        headers={[...(canBulk ? [<Checkbox key="sel-all" checked={sel.allSelected(filtered.map((u) => u.id))} onChange={() => sel.toggleAll(filtered.map((u) => u.id))} />] : []), "Họ tên", "Mật khẩu", "Tên đăng nhập", "Email", "Lớp", "Vai trò", "Ngày tạo", ""]}
+        headers={[...(canBulk ? [<Checkbox key="sel-all" checked={sel.allSelected((users ?? []).map((u) => u.id))} onChange={() => sel.toggleAll((users ?? []).map((u) => u.id))} />] : []), "Họ tên", "Mật khẩu", "Tên đăng nhập", "Email", "Lớp", "Vai trò", "Ngày tạo", ""]}
         renderGridCard={(u) => {
           const isSelf = u.username === (user && user.username);
           const tone = u.role === "admin" ? "gold" : u.role === "teacher" ? "blue" : "mint";

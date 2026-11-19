@@ -1,22 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BarChart3, Copy, Link2, Pencil, Sparkles, Trash2 } from "lucide-react";
 import { navigate } from "../../lib/router.js";
 import { lessonService } from "../../services/lessonService.js";
-import { matchesQuery } from "../../lib/searchText.js";
 import { useConfirm } from "../../hooks/useConfirm.js";
 import {
   ConfirmModal, FormModal, GridCard, IconButton, ManagementHeader, ManagementTable, PrimaryButton,
 } from "../../components/ui";
 import LessonProgressModal from "./studio/LessonProgressModal.jsx";
 import "./studio/studio.css";
-import { rangeAll } from "../../lib/rangePagination.js";
+import { useRangePager } from "../../hooks/useRangePager.js";
 
 // StudioLessons — danh sách bài học của giáo viên tại
 // /dashboard/ai-lesson-creator (menu "Tạo bài học AI", tách khỏi AI Studio
 // cũ theo REFACTOR_AI_STUDIO.md), dùng đúng kit lưới dùng chung
-// (ManagementTable + GridCard + usePagedList bên trong ManagementTable)
-// như các trang quản lý khác. Tạo mới xong vào thẳng editor; nhân bản ghép
-// từ GET (bản đầy đủ) + POST tạo mới vì API không có endpoint clone riêng.
+// (ManagementTable + GridCard) như các trang quản lý khác. Tạo mới xong
+// vào thẳng editor; nhân bản ghép từ GET (bản đầy đủ) + POST tạo mới vì
+// API không có endpoint clone riêng.
+//
+// Phân trang PHÍA SERVER theo mẫu trang /dashboard/permissions: trang
+// gọi listMine kèm ?from=&to= + search/status (server đã hỗ trợ sẵn) và
+// hiện cụm RangePagination dùng chung qua prop serverPager của
+// ManagementTable — tìm kiếm/lọc chạy trên toàn bộ bài của giáo viên.
+
+const PER_PAGE = 10;
 
 const CREATE_FIELDS = [
   { name: "title", label: "Tên bài học", placeholder: "VD: Bảng nhân 4 — Toán lớp 3" },
@@ -47,8 +53,10 @@ function StatusBadge({ status }) {
 
 export default function StudioLessons({ showToast }) {
   const [lessons, setLessons] = useState(null);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({ title: "", subject: "", grade: "" });
@@ -57,6 +65,7 @@ export default function StudioLessons({ showToast }) {
   const [busyId, setBusyId] = useState(null);
   const [progressLesson, setProgressLesson] = useState(null);
   const { askConfirm, confirmProps } = useConfirm();
+  const pager = useRangePager(total, PER_PAGE);
 
   // Link học sinh vào thẳng bài (#/lessons/:id) — chỉ có ý nghĩa khi bài
   // đã xuất bản (học sinh phải đăng nhập, xem LessonListPage/LessonPlayPage).
@@ -72,13 +81,20 @@ export default function StudioLessons({ showToast }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await lessonService.listMine(rangeAll());
+      const res = await lessonService.listMine({
+        ...pager.range,
+        search: debouncedQuery || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      });
       setLessons(res?.data || []);
+      setTotal(res?.pagination?.total ?? (res?.data || []).length);
       setError("");
     } catch (e) {
       setError(e?.message || "Không tải được danh sách bài học");
     }
-  }, []);
+    // pager.range suy ra từ page hiện tại — load chạy lại khi trang đổi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pager.range.from, pager.range.to, debouncedQuery, statusFilter]);
 
   // Nạp dữ liệu khi mở trang — pattern chuẩn của khu dashboard (như
   // ImageLibrary/useCrudList); rule set-state-in-effect của bộ lint hiện
@@ -86,12 +102,21 @@ export default function StudioLessons({ showToast }) {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
-  const filtered = useMemo(() => {
-    if (!lessons) return lessons;
-    return lessons.filter((l) =>
-      (statusFilter === "all" || l.status === statusFilter) &&
-      matchesQuery(query, l.title, l.subject));
-  }, [lessons, query, statusFilter]);
+  // Gõ tìm kiếm: chờ 350ms rồi về trang 1 với từ khoá mới (mẫu Permissions).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      pager.setPage(1);
+      setDebouncedQuery(query.trim());
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  // Xoá/nhân bản làm tổng co lại: trang vượt quá trang cuối thì lùi về.
+  useEffect(() => {
+    if (total > 0 && pager.page > pager.totalPages) pager.setPage(pager.totalPages);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total]);
 
   const submitCreate = async () => {
     if (!form.title.trim()) { setCreateError("Vui lòng nhập tên bài học"); return; }
@@ -155,7 +180,7 @@ export default function StudioLessons({ showToast }) {
         <PrimaryButton className="inline-flex items-center gap-2" onClick={() => navigate("/dashboard/ai-lesson-creator/generate")}>
           <Sparkles className="w-4 h-4" /> Tạo bài học với AI
         </PrimaryButton>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); pager.setPage(1); }}
           className="note-card px-3 py-2 text-sm border-ink/10 bg-paper2">
           <option value="all">Tất cả trạng thái</option>
           <option value="draft">Bản nháp</option>
@@ -165,7 +190,8 @@ export default function StudioLessons({ showToast }) {
 
       <ManagementTable
         viewKey="studio-lessons"
-        data={lessons ? filtered : lessons}
+        data={lessons}
+        serverPager={pager.props}
         error={error && !lessons ? error : null}
         onRetry={load}
         emptyLabel={query || statusFilter !== "all"

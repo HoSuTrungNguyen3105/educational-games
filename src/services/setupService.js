@@ -1,4 +1,4 @@
-import { apiFetch, hasRange } from "./api.js";
+import { apiFetch, hasRange, fetchRangedList } from "./api.js";
 
 const cache = {};
 
@@ -40,6 +40,13 @@ export const setupService = {
   async listCategories(range) {
     return rangedGet("/categories", range, "categories", () => apiFetch("/categories"));
   },
+  // Bản phân trang cho trang quản lý Categories: trả { items, total,
+  // pagination } (rangedGet phía trên chỉ trả mảng đã cắt, mất tổng) và
+  // nhận filters.q — server lọc trước khi cắt (xem routes/setup.js).
+  async listCategoriesPaged(range, filters = {}) {
+    const q = filters.q ? `?q=${encodeURIComponent(filters.q)}` : "";
+    return fetchRangedList(`/categories${q}`, range);
+  },
   async createCategory(data) {
     const result = await apiFetch("/categories", { method: "POST", body: data });
     clearCache("categories");
@@ -61,6 +68,11 @@ export const setupService = {
   },
   async listSubjects(range) {
     return rangedGet("/subjects", range, "subjects", () => apiFetch("/subjects"));
+  },
+  // Bản phân trang cho trang quản lý Môn học — như listCategoriesPaged.
+  async listSubjectsPaged(range, filters = {}) {
+    const q = filters.q ? `?q=${encodeURIComponent(filters.q)}` : "";
+    return fetchRangedList(`/subjects${q}`, range);
   },
   async addSubject(name) {
     const result = await apiFetch("/subjects", { method: "POST", body: { name } });

@@ -13,8 +13,16 @@ export const taskService = {
     return apiFetch(`/tasks/${encodeURIComponent(taskId)}/claim`, { method: "POST" });
   },
 
-  async adminStats() {
-    return apiFetch("/tasks/admin/stats");
+  // params (tuỳ chọn): { from, to, q } — server lọc + cắt PHẦN tasks của
+  // payload và đính kèm pagination (xem routes/tasks.js). Không truyền →
+  // payload đầy đủ như cũ.
+  async adminStats(params = {}) {
+    const p = new URLSearchParams();
+    if (params.from != null) p.set("from", params.from);
+    if (params.to != null) p.set("to", params.to);
+    if (params.q) p.set("q", params.q);
+    const qs = p.toString();
+    return apiFetch(`/tasks/admin/stats${qs ? `?${qs}` : ""}`);
   },
 
   // Nạp bộ nhiệm vụ mẫu còn thiếu (admin) → { inserted, skipped, total }

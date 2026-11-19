@@ -8,8 +8,10 @@ import { useConfirm } from "./useConfirm.js";
  * Gom lại: tải danh sách (loading = data null, error), state form thêm/sửa,
  * lưu có validate, và xóa / xóa tất cả có hộp xác nhận.
  *
+ * // fetchList có thể trả mảng thuần, hoặc { items, total } khi trang
+ * // phân trang phía server — hook expose thêm `total` cho cụm phân trang.
  * const {
- *   items, error, load,
+ *   items, total, error, load,
  *   form, setField, editingId, saving, modalOpen,
  *   openCreate, openEdit, closeModal, submit,
  *   confirmProps, askRemove, askRemoveAll,
@@ -38,6 +40,10 @@ export function useCrudList(options) {
   optsRef.current = options;
 
   const [items, setItems] = useState(null);
+  // Tổng số bản ghi phía server khi fetchList chạy ở chế độ phân trang
+  // phía server (trả { items, total }); fetchList trả mảng thuần (chế độ
+  // cũ) → total = null và trang tự dùng items.length như trước.
+  const [total, setTotal] = useState(null);
   const [error, setError] = useState(null);
   const [form, setForm] = useState({ ...options.emptyForm });
   const [editingId, setEditingId] = useState(null);
@@ -55,7 +61,16 @@ export function useCrudList(options) {
     setItems(null);
     setError(null);
     try {
-      setItems(await optsRef.current.fetchList());
+      const res = await optsRef.current.fetchList();
+      // Chuẩn hoá hai shape: mảng thuần (cũ) hoặc { items, total } khi
+      // trang phân trang phía server (xem CategoryManagement/SubjectManagement).
+      if (Array.isArray(res)) {
+        setItems(res);
+        setTotal(null);
+      } else {
+        setItems(res?.items ?? []);
+        setTotal(typeof res?.total === "number" ? res.total : null);
+      }
     } catch (e) {
       setError(e.message || "Lỗi tải dữ liệu");
     }
@@ -159,7 +174,7 @@ export function useCrudList(options) {
   }, [askConfirm, load]);
 
   return {
-    items, error, load,
+    items, total, error, load,
     form, setField, editingId, saving, modalOpen,
     openCreate, openEdit, closeModal, submit,
     confirmProps, askRemove, askRemoveAll,

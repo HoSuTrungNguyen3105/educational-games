@@ -6,6 +6,7 @@ import { PrimaryButton } from "../buttons/PrimaryButton.jsx";
 import { SearchInput } from "../forms/SearchInput.jsx";
 import { useViewMode, ViewToggle, cardGridClass, tableWrapClass } from "./ViewToggle.jsx";
 import { GridPager } from "./GridPager.jsx";
+import RangePagination from "../../RangePagination.jsx";
 import { usePagedList } from "../../../hooks/usePagedList.js";
 
 /**
@@ -23,15 +24,22 @@ import { usePagedList } from "../../../hooks/usePagedList.js";
  *   chế độ còn lại hiện bảng; nút Thêm đổi sang nút xanh lá kiểu dashboard.
  * - `extraActions`: ReactNode tuỳ chọn hiện trong hàng nút của header (trước
  *   Import/Thêm) — cho trang gắn thêm hành động riêng, vd "Tạo bằng AI".
+ * - `serverPager`: { fromRecord, toRecord, totalItems, onRangeChange,
+ *   onPrevPage, onNextPage, disabled } — chế độ PHÂN TRANG PHÍA SERVER
+ *   (mẫu trang /dashboard/permissions): `data` truyền vào đã là đúng một
+ *   đoạn do server cắt theo ?from=&to=, bảng KHÔNG cắt trang ở client nữa
+ *   mà hiện cụm RangePagination dùng chung (có ô nhập khoảng) thay cho
+ *   GridPager. Không truyền → hành vi phân trang client như cũ, nguyên vẹn
+ *   cho mọi trang đang dùng component này.
  */
-export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, renderCard, renderGridCard, viewKey, onRemoveAll, removeAllLabel, onCreate, createLabel, addLabel, onImport, importLabel, search, pageSize, extraActions }) {
+export function ManagementTable({ title, count, data, error, onRetry, emptyLabel, headers, renderRow, renderCard, renderGridCard, viewKey, onRemoveAll, removeAllLabel, onCreate, createLabel, addLabel, onImport, importLabel, search, pageSize, extraActions, serverPager }) {
   const [mode, setMode] = useViewMode(viewKey || title || "admin-table");
   const gridMode = typeof renderGridCard === "function";
   const hasCards = gridMode || typeof renderCard === "function";
-  const pager = usePagedList(data ?? [], gridMode || pageSize ? (pageSize ?? 12) : 0, search?.value);
+  const pager = usePagedList(data ?? [], serverPager ? 0 : (gridMode || pageSize ? (pageSize ?? 12) : 0), search?.value);
 
-  const pageItems = pager.pageItems;
-  const startIndex = pager.startIndex;
+  const pageItems = serverPager ? (data ?? []) : pager.pageItems;
+  const startIndex = serverPager ? Math.max(0, (serverPager.fromRecord || 1) - 1) : pager.startIndex;
 
   const handleSearch = search ? (v) => { search.onChange(v); pager.reset(); } : null;
 
@@ -60,7 +68,18 @@ export function ManagementTable({ title, count, data, error, onRetry, emptyLabel
           ) : (
             <PrimaryButton onClick={onCreate}>{createLabel || "+ Thêm mới"}</PrimaryButton>
           ))}
-          {(gridMode || pageSize) && data && data.length > 0 && (
+          {serverPager && data != null && (
+            <RangePagination
+              fromRecord={serverPager.fromRecord}
+              toRecord={serverPager.toRecord}
+              totalItems={serverPager.totalItems}
+              onRangeChange={serverPager.onRangeChange}
+              onPrevPage={serverPager.onPrevPage}
+              onNextPage={serverPager.onNextPage}
+              disabled={serverPager.disabled}
+            />
+          )}
+          {!serverPager && (gridMode || pageSize) && data && data.length > 0 && (
             <GridPager
               from={pager.from} to={pager.to} total={pager.total}
               canPrev={pager.canPrev} canNext={pager.canNext}
