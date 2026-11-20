@@ -35,10 +35,27 @@ function blockStyleAttr(block) {
   if (block.align) parts.push(`text-align: ${block.align}`);
   if (block.font) parts.push(`font-family: '${String(block.font).replace(/'/g, "")}'`);
   if (block.fontSize) parts.push(`font-size: ${Number(block.fontSize)}pt`);
+  if (block.lineHeight) parts.push(`line-height: ${Number(block.lineHeight)}`);
+  if (block.spacingAfter !== undefined && block.spacingAfter !== null) parts.push(`margin-bottom: ${Number(block.spacingAfter)}pt`);
   return parts.length ? ` style="${escapeHtml(parts.join("; "))}"` : "";
 }
 
-export function wordBlockToHtml(block) {
+/** Chuẩn hoá bề rộng cột (%) về tổng 100 để colgroup/DOCX dùng chung. */
+export function normalizedColPercents(colWidths, colCount) {
+  if (!colCount) return [];
+  const raw = Array.isArray(colWidths) ? colWidths.map(Number) : [];
+  const valid = raw.length === colCount && raw.every((n) => Number.isFinite(n) && n > 0);
+  const base = valid ? raw : Array(colCount).fill(1);
+  const sum = base.reduce((a, b) => a + b, 0) || 1;
+  return base.map((n) => Math.round((n / sum) * 1000) / 10);
+}
+
+/**
+ * Render một khối Word. `opts.highlightRows` (mảng index hàng) đánh dấu
+ * các hàng bảng khớp tìm kiếm bằng class ds-row-hl — chỉ là hiển thị
+ * trong preview, KHÔNG ghi vào dữ liệu tài liệu.
+ */
+export function wordBlockToHtml(block, opts = {}) {
   switch (block.type) {
     case "heading": {
       const lv = [1, 2, 3].includes(block.level) ? block.level : 1;
@@ -49,29 +66,64 @@ export function wordBlockToHtml(block) {
     case "list": {
       const tag = block.ordered ? "ol" : "ul";
       const items = (block.items || []).map((it) => `<li>${escapeHtml(it)}</li>`).join("\n");
-      const style = block.align ? ` style="text-align: ${escapeHtml(block.align)}"` : "";
+      const styleParts = [];
+      if (block.align) styleParts.push(`text-align: ${block.align}`);
+      if (block.lineHeight) styleParts.push(`line-height: ${Number(block.lineHeight)}`);
+      if (block.spacingAfter !== undefined && block.spacingAfter !== null) styleParts.push(`margin-bottom: ${Number(block.spacingAfter)}pt`);
+      const style = styleParts.length ? ` style="${escapeHtml(styleParts.join("; "))}"` : "";
       return `<${tag}${style}>\n${items}\n</${tag}>`;
     }
     case "table": {
-      const rows = (block.rows || []).map((row, ri) => {
+      const allRows = block.rows || [];
+      const colCount = Math.max(0, ...allRows.map((r) => r.length));
+      const percents = normalizedColPercents(block.colWidths, colCount);
+      const colgroup = colCount
+        ? `<colgroup>${percents.map((p) => `<col style="width:${p}%">`).join("")}</colgroup>`
+        : "";
+      const hl = new Set(opts.highlightRows || []);
+      const rowHtml = (row, ri) => {
         const cells = row.map((c) => ri === 0
           ? `<th>${escapeHtml(c)}</th>`
           : `<td>${escapeHtml(c)}</td>`).join("");
-        return `<tr>${cells}</tr>`;
-      }).join("\n");
-      return `<table>\n${rows}\n</table>`;
+        return `<tr${hl.has(ri) ? ' class="ds-row-hl"' : ""}>${cells}</tr>`;
+      };
+      // Hàng đầu bọc <thead> để khi in, tiêu đề bảng lặp lại ở mỗi trang.
+      const head = allRows.length ? `<thead>${rowHtml(allRows[0], 0)}</thead>` : "";
+      const body = allRows.slice(1).map((row, i) => rowHtml(row, i + 1)).join("\n");
+      return `<table>\n${colgroup}\n${head}\n<tbody>\n${body}\n</tbody>\n</table>`;
     }
     case "image":
       return `<p><img src="${escapeHtml(block.src || "")}" alt="${escapeHtml(block.alt || "")}" style="max-width: 100%"></p>`;
+    case "pageBreak":
+      return `<hr class="page-break">`;
+    case "signature": {
+      const role = escapeHtml(block.role || "");
+      const name = escapeHtml(block.name || "");
+      return `<div class="doc-signature">${role ? `<p class="doc-signature-role">${role}</p>` : ""}<p class="doc-signature-note">(Ký và ghi rõ họ tên)</p><p class="doc-signature-space"></p>${name ? `<p class="doc-signature-name">${name}</p>` : ""}</div>`;
+    }
     default:
       return `<p>${escapeHtml(block.text || "")}</p>`;
   }
 }
 
-/** Toàn bộ thân HTML của tài liệu Word từ model. */
-export function renderWordBodyHtml(model) {
-  return (model.blocks || []).map(wordBlockToHtml).join("\n");
+/**
+ * Toàn bộ thân HTML của tài liệu Word từ model.
+ * `opts.highlight` = { blockIndex, rows } — highlight hàng bảng khớp
+ * tìm kiếm ở đúng một khối bảng (xem wordFindReplace/tableOps).
+ */
+export function renderWordBodyHtml(model, opts = {}) {
+  return (model.blocks || []).map((b, i) => wordBlockToHtml(b, {
+    highlightRows: opts.highlight && opts.highlight.blockIndex === i ? opts.highlight.rows : null,
+  })).join("\n");
 }
+
+/**
+ * Dòng chân "Số trang" cho preview khi cấu hình trang bật đánh số trang.
+ * Preview vẫn là MỘT tờ giấy dài chưa chia trang A4 nên dòng này chỉ
+ * đánh dấu vị trí chân trang tương đối — số trang THẬT (field PAGE)
+ * chỉ có trong file DOCX xuất ra. Không giả đánh số từng tờ.
+ */
+export const PAGE_NUMBER_FOOTER_HTML = `<div class="doc-page-number" title="Bản xem trước là một tờ giấy dài, chưa chia thành từng trang A4 — số trang thật sẽ tự đánh trong file DOCX khi xuất.">Số trang</div>`;
 
 export function slideToHtmlSection(slide) {
   const title = slide.title ? `<h2>${escapeHtml(slide.title)}</h2>` : "";
@@ -135,6 +187,14 @@ export const WORD_PREVIEW_CSS = `
   .doc-page li { margin: 3px 0; }
   .doc-page mark { color: inherit; padding: 0 1px; border-radius: 2px; }
   .doc-page hr.page-break { border: 0; border-top: 1px solid #b9b9b9; margin: 24px 0; }
+  .doc-page tr.ds-row-hl td, .doc-page tr.ds-row-hl th { background: #fef9c3; }
+  .doc-page .doc-signature { text-align: right; margin: 20px 0 10px; }
+  .doc-page .doc-signature p { margin: 0; }
+  .doc-page .doc-signature .doc-signature-note { font-style: italic; font-size: 0.92em; color: #4b5563; }
+  .doc-page .doc-signature .doc-signature-space { height: 56px; }
+  .doc-page .doc-signature .doc-signature-name { font-weight: 700; }
+  .doc-page .doc-page-number { margin-top: 28px; padding-top: 8px; border-top: 1px solid #d1d5db;
+    text-align: center; color: #6b7280; font-size: 11px; }
   /* In / lưu PDF qua hộp thoại in của trình duyệt (trang cha gọi
      contentWindow.print() lên iframe này): bỏ nền xám + bóng đổ để bản
      in là trang giấy sạch; khổ giấy lấy theo @page A4 ở trên (lề 18mm
@@ -152,6 +212,8 @@ export const WORD_PREVIEW_CSS = `
     .doc-page thead { display: table-header-group; }
     .doc-page tfoot { display: table-footer-group; }
     .doc-page tr { break-inside: avoid; }
+    .doc-page hr.page-break { break-after: page; border: 0; margin: 0; }
+    .doc-page .doc-page-number { display: none; }
     .doc-page h1, .doc-page h2, .doc-page h3 { break-after: avoid; }
     .doc-page img, .doc-page blockquote, .doc-page figure { break-inside: avoid; }
     .doc-page p, .doc-page li { orphans: 3; widows: 3; }

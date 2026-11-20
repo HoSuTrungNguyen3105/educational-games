@@ -19,13 +19,31 @@ import PowerPointPreview from "./documents/PowerPointPreview.jsx";
 import PowerPointEditor from "./documents/PowerPointEditor.jsx";
 import DocumentUploadModal from "./documents/DocumentUploadModal.jsx";
 import { applySource, convertSource } from "../../lib/documents/convert.js";
-import { applyBlockFormat, blockFormatState, wrapHtmlSelection } from "../../lib/documents/textFormat.js";
+import {
+  applyBlockFormat, blockFormatState, retitleHtmlBlock, wrapHtmlSelection,
+} from "../../lib/documents/textFormat.js";
 import { useMediaQuery } from "../../lib/hooks.js";
-import { renderModelBodyHtml } from "../../lib/documents/modelRender.js";
+import {
+  PAGE_NUMBER_FOOTER_HTML, renderModelBodyHtml, renderWordBodyHtml, wordBlockToHtml,
+} from "../../lib/documents/modelRender.js";
+import {
+  applyPageToHtmlSource, loadWordPageDefaults, normalizePageConfig,
+  pageCssText, saveWordPageDefaults,
+} from "../../lib/documents/pageConfig.js";
+import { countWordMatches, replaceWordMatches } from "../../lib/documents/wordFindReplace.js";
+import {
+  addSttColumn, addTableColumn, addTableRow, appendStatsRow,
+  duplicateTableBlock, equalizeTableWidths, findTableRows,
+  loadTableTemplates, removeTableColumn, removeTableRow, removeTableTemplate,
+  saveTableTemplate, sortTableByColumn,
+} from "../../lib/documents/tableOps.js";
+import { TableTemplateList, TableTools, TableToolsDisabled } from "./documents/TableTools.jsx";
+import PageSettings from "./documents/PageSettings.jsx";
+import FindReplaceDialog from "./documents/FindReplaceDialog.jsx";
 import { jsonItemIndexAt, htmlAnchorAt } from "../../lib/documents/sourceMap.js";
 import { templatesFor } from "../../lib/documents/templates.js";
 import {
-  COMPONENT_GROUPS, COMPONENTS, CUSTOM_FORM_KINDS, componentAvailable,
+  COMPONENT_GROUPS, COMPONENTS, CUSTOM_FORM_KINDS, componentAvailable, tableHtmlFromRows,
 } from "../../lib/documents/componentLibrary.js";
 import { exportWordDocx } from "../../lib/documents/wordExporter.js";
 import { exportPresentationPptx } from "../../lib/documents/pptxExporter.js";
@@ -131,7 +149,16 @@ function buildApplied(mode, docType, res) {
   if (mode === "html") {
     return { mode, docType, model: res.model, warnings: res.warnings || [], bodyHtml: res.bodyHtml, cssText: res.cssText, source: "" };
   }
-  return { mode, docType, model: res.model, warnings: [], bodyHtml: renderModelBodyHtml(res.model), cssText: "", source: "" };
+  return {
+    mode, docType, model: res.model, warnings: [],
+    bodyHtml: renderModelBodyHtml(res.model),
+    // Cấu hình trang (Word) đi vào preview qua kênh cssText sẵn có của
+    // WordPreview — không có `page` thì pageCssText trả "" như cũ.
+    cssText: docType === "word"
+      ? pageCssText(res.model?.page, { hasTheme: Boolean(res.model?.theme) })
+      : "",
+    source: "",
+  };
 }
 
 export default function DocumentStudioEditor({ documentId, showToast }) {
@@ -180,6 +207,14 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   // hết hiệu lực khi suy ra, không cần effect reset state.
   const [cursorPick, setCursorPick] = useState(null); // { key, index }
   const [picked, setPicked] = useState(null); // { key, index }
+  // Giai đoạn 1 Word: lịch sử Hoàn tác/Làm lại của CodeMirror (để bật/
+  // tắt nút trên thanh công cụ), hộp Tìm & thay thế nội dung, tìm trong
+  // bảng (highlight ở preview), mẫu bảng cá nhân + mặc định trang.
+  const [historyState, setHistoryState] = useState({ canUndo: false, canRedo: false });
+  const [findOpen, setFindOpen] = useState(false);
+  const [tableQuery, setTableQuery] = useState("");
+  const [tableTemplates, setTableTemplates] = useState(() => loadTableTemplates());
+  const [savedPageDefault, setSavedPageDefault] = useState(() => loadWordPageDefaults() || null);
   const [reveal, setReveal] = useState(null); // đích cuộn/bôi xanh trong preview
   const revealToken = useRef(0);
   const cursorTimer = useRef(null);
@@ -240,7 +275,8 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
       return {
         canText: true, canBlock: false,
         marks: { bold: false, italic: false, underline: false, strike: false },
-        color: null, highlight: null, font: null, align: "left", listType: null,
+        color: null, highlight: null, font: null, fontSize: null, align: "left", listType: null,
+        headingLevel: 0, lineHeight: null, spacingAfter: null,
       };
     }
     const model = validApplied?.model;
@@ -253,6 +289,44 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   // độ) hoặc PowerPoint ở chế độ Beautiful (bọc thẻ trong mã HTML).
   // PowerPoint chỉ dùng JSON mode - không còn HTML mode
   const showFormatTools = docType === "word";
+
+  // ── Giai đoạn 1 Word: khối đích + bảng đích + preview suy ra ──────
+  const targetBlock = validApplied?.model?.kind === "word" && targetBlockIndex != null
+    ? (validApplied.model.blocks || [])[targetBlockIndex]
+    : null;
+  const targetTableBlock = targetBlock?.type === "table" ? targetBlock : null;
+  const tableMatchRows = useMemo(
+    () => (targetTableBlock && tableQuery.trim() ? findTableRows(targetTableBlock, tableQuery) : []),
+    [targetTableBlock, tableQuery]);
+  const tableHighlight = useMemo(() => (
+    mode === "json" && targetTableBlock && tableMatchRows.length
+      ? { blockIndex: targetBlockIndex, rows: tableMatchRows }
+      : null
+  ), [mode, targetTableBlock, tableMatchRows, targetBlockIndex]);
+  // Thân HTML cho preview iframe: render lại từ model khi có highlight
+  // bảng; kèm dòng chân "Số trang" khi cấu hình trang bật đánh số trang
+  // (chỉ ở Normal — Beautiful giữ nguyên HTML của giáo viên).
+  const previewBodyHtml = useMemo(() => {
+    if (!validApplied) return "";
+    if (mode !== "json") return validApplied.bodyHtml;
+    let html = renderWordBodyHtml(validApplied.model, { highlight: tableHighlight });
+    if (validApplied.model?.page?.pageNumber) html += `\n${PAGE_NUMBER_FOOTER_HTML}`;
+    return html;
+  }, [validApplied, mode, tableHighlight]);
+  const draftHasTable = mode === "html" && /<table[\s>]/i.test(draft);
+  const pageNumberOn = Boolean(validApplied?.model?.page?.pageNumber);
+
+  const handleHistoryChange = useCallback((h) => {
+    setHistoryState((prev) => (
+      prev.canUndo === h.canUndo && prev.canRedo === h.canRedo ? prev : h
+    ));
+  }, []);
+  const toolbarHistory = useMemo(() => ({
+    canUndo: historyState.canUndo,
+    canRedo: historyState.canRedo,
+    onUndo: () => editorRef.current?.undo(),
+    onRedo: () => editorRef.current?.redo(),
+  }), [historyState]);
 
   const goList = () => navigate("/dashboard/documents");
 
@@ -826,7 +900,23 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   const applyFormat = (op) => {
     if (mode === "html") {
       const sel = editorRef.current?.getSelection();
-      if (!sel || sel.from === sel.to) {
+      if (!sel) {
+        showToast?.("Khung soạn chưa sẵn sàng — bấm vào khung soạn rồi thử lại.", "error");
+        return;
+      }
+      // Kiểu tiêu đề ở Beautiful: đổi THẺ của khối chứa vùng chọn (cần
+      // sửa cả thẻ mở/đóng ngoài vùng chọn) — chỉ áp được khi vùng chọn
+      // nằm trọn trong một thẻ khối hoặc bao trọn cả phần tử.
+      if (op.type === "heading") {
+        const res = retitleHtmlBlock(draft, sel.from, sel.to, op.value);
+        if (!res) {
+          showToast?.("Hãy bôi đen trọn một đoạn văn hoặc một tiêu đề (toàn bộ chữ trong một thẻ) rồi chọn kiểu tiêu đề.", "error");
+          return;
+        }
+        editorRef.current?.replaceRange(res.from, res.to, res.text);
+        return;
+      }
+      if (sel.from === sel.to) {
         showToast?.("Hãy bôi đen đoạn chữ trong khung soạn trước khi áp định dạng.", "error");
         return;
       }
@@ -872,6 +962,214 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     const src = JSON.stringify(obj, null, 2);
     setDrafts((d) => ({ ...d, json: src }));
     doApply(src, "json", docType);
+  };
+
+  // ── Giai đoạn 1 Word: các thao tác mới trên bản nháp JSON ─────────
+  // Một cổng parse + validate DÙNG CHUNG cho mọi thao tác sửa bản nháp
+  // JSON theo khối (chèn khối, thao tác bảng, tìm/thay, cấu hình
+  // trang): mã đang lỗi thì từ chối thao tác, không đụng vào bản nháp.
+  const parseWordDraft = () => {
+    let obj;
+    try {
+      obj = JSON.parse(draft);
+    } catch {
+      showToast?.("Mã JSON đang sai cú pháp — sửa xong mới dùng được thao tác này.", "error");
+      return null;
+    }
+    const schemaErrors = validateDocumentJson(obj, "word");
+    if (schemaErrors.length) {
+      setApplyErrors(schemaErrors.map((e) => ({
+        message: e.path ? `${e.path}: ${e.message}` : e.message, path: e.path,
+      })));
+      showToast?.("Mã JSON đang có lỗi — sửa xong mới dùng được thao tác này.", "error");
+      return null;
+    }
+    return obj;
+  };
+  const commitWordDraft = (obj) => {
+    const src = JSON.stringify(obj, null, 2);
+    setDrafts((d) => ({ ...d, json: src }));
+    doApply(src, "json", docType);
+    return src;
+  };
+
+  // Chèn các khối Word mới NGAY SAU khối đích (chưa có khối đích thì
+  // thêm vào cuối tài liệu) — đường chèn của menu Chèn trên thanh công
+  // cụ, nhân bản bảng và mẫu bảng cá nhân.
+  const insertWordBlocks = (newBlocks, label) => {
+    const obj = parseWordDraft();
+    if (!obj) return false;
+    const blocks = Array.isArray(obj.blocks) ? obj.blocks : [];
+    const at = targetBlockIndex != null && blocks[targetBlockIndex]
+      ? targetBlockIndex + 1
+      : blocks.length;
+    blocks.splice(at, 0, ...newBlocks);
+    obj.blocks = blocks;
+    commitWordDraft(obj);
+    showToast?.(`Đã chèn ${label} — bấm Lưu để ghi lại.`, "success");
+    return true;
+  };
+
+  // ── Tìm & thay thế nội dung (Normal) ──────────────────────────────
+  const handleFindReplace = () => {
+    if (mode === "html") editorRef.current?.openSearch();
+    else setFindOpen(true);
+  };
+  const findReplaceCount = (q) => {
+    try { return countWordMatches(JSON.parse(draft), q); } catch { return 0; }
+  };
+  const doFindReplace = (q, replacement, all) => {
+    let obj;
+    try {
+      obj = JSON.parse(draft);
+    } catch {
+      showToast?.("Mã JSON đang sai cú pháp — sửa xong mới tìm/thay được.", "error");
+      return 0;
+    }
+    const { json, count } = replaceWordMatches(obj, q, replacement, { all });
+    if (count > 0) commitWordDraft(json);
+    return count;
+  };
+
+  // ── Menu Chèn trên thanh công cụ Word ─────────────────────────────
+  const handleInsertItem = (action) => {
+    if (action === "image") {
+      setTool("image");
+      if (isMobileLayout) setMobileSheet("tools");
+      return;
+    }
+    if (action === "pageNumber") {
+      const current = validApplied?.model?.page || null;
+      const turningOn = !current?.pageNumber;
+      if (!current && !turningOn) return;
+      applyPageConfig({ ...(current || {}), pageNumber: turningOn });
+      showToast?.(turningOn
+        ? "Đã bật đánh số trang — số trang thật sẽ có trong file DOCX; bản xem trước chỉ hiện dòng chân “Số trang”."
+        : "Đã tắt đánh số trang.", "success");
+      return;
+    }
+    const today = new Date();
+    const dateText = `Ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
+    if (mode === "html") {
+      const snippets = {
+        table3: () => tableHtmlFromRows([["", "", ""], ["", "", ""], ["", "", ""]]),
+        signature: () => wordBlockToHtml({ type: "signature", role: "Chức danh", name: "Họ và tên" }),
+        date: () => `<p>${dateText}</p>`,
+        pageBreak: () => wordBlockToHtml({ type: "pageBreak" }),
+      };
+      const make = snippets[action];
+      if (make) insertSnippet(make(), { stay: true });
+      return;
+    }
+    const blocksByAction = {
+      table3: [{ type: "table", rows: [["", "", ""], ["", "", ""], ["", "", ""]] }],
+      signature: [{ type: "signature", role: "Chức danh", name: "Họ và tên" }],
+      date: [{ type: "paragraph", text: dateText }],
+      pageBreak: [{ type: "pageBreak" }],
+    };
+    const labels = { table3: "bảng 3×3", signature: "khối chữ ký", date: "đoạn ngày tháng", pageBreak: "ngắt trang" };
+    if (blocksByAction[action]) insertWordBlocks(blocksByAction[action], labels[action]);
+  };
+
+  // ── Cấu hình trang (tab Cài đặt + nút Số trang) ───────────────────
+  // Ghi vào ĐÚNG nguồn của chế độ đang soạn: field `page` trong JSON
+  // (Normal) hoặc khối <style id="docstudio-page"> (Beautiful) — đều
+  // qua pipeline áp dụng + autosave như mọi thay đổi khác.
+  const applyPageConfig = (cfg) => {
+    const clean = cfg ? normalizePageConfig(cfg) : undefined;
+    if (mode === "json") {
+      const obj = parseWordDraft();
+      if (!obj) return;
+      if (clean) obj.page = clean;
+      else delete obj.page;
+      commitWordDraft(obj);
+    } else {
+      const src = applyPageToHtmlSource(draft, clean || null);
+      setDrafts((d) => ({ ...d, html: src }));
+      doApply(src, "html", docType);
+    }
+    showToast?.(clean
+      ? "Đã áp dụng cấu hình trang vào tài liệu."
+      : "Đã xoá cấu hình trang — tài liệu về mặc định cũ.", "success");
+  };
+  const handleSavePageDefault = (cfg) => {
+    const saved = saveWordPageDefaults(cfg);
+    setSavedPageDefault(saved || null);
+    showToast?.(saved
+      ? "Đã lưu cấu hình trang làm mặc định của bạn (trên máy này)."
+      : "Cấu hình đang trống — chưa có gì để lưu làm mặc định.", "info");
+  };
+
+  // ── Thao tác trên khối bảng đang chọn (Normal) ────────────────────
+  const handleTableOp = (op) => {
+    const obj = parseWordDraft();
+    if (!obj) return;
+    const blocks = Array.isArray(obj.blocks) ? obj.blocks : [];
+    const idx = targetBlockIndex;
+    if (idx == null || blocks[idx]?.type !== "table") {
+      showToast?.("Hãy đặt con trỏ vào một khối bảng trong khung soạn (hoặc chạm chọn bảng ở Xem trước) trước.", "error");
+      return;
+    }
+    const block = blocks[idx];
+    if (op.kind === "duplicate") {
+      blocks.splice(idx + 1, 0, duplicateTableBlock(block));
+      commitWordDraft(obj);
+      showToast?.("Đã nhân bản bảng ngay bên dưới.", "success");
+      return;
+    }
+    const ops = {
+      addRow: () => [addTableRow(block), "Đã thêm một hàng vào cuối bảng."],
+      removeRow: () => [removeTableRow(block), "Đã xoá hàng cuối của bảng."],
+      addCol: () => [addTableColumn(block), "Đã thêm một cột vào cuối bảng."],
+      removeCol: () => [removeTableColumn(block), "Đã xoá cột cuối của bảng."],
+      sort: () => [sortTableByColumn(block, op.col, op.dir), `Đã sắp xếp bảng theo cột ${op.dir === "desc" ? "giảm dần" : "tăng dần"}.`],
+      stt: () => [addSttColumn(block), "Đã thêm/cập nhật cột STT."],
+      statsRow: () => [appendStatsRow(block, op.col, op.statKind), op.statKind === "avg" ? "Đã thêm hàng Trung bình vào cuối bảng." : "Đã thêm hàng Tổng vào cuối bảng."],
+      equalize: () => [equalizeTableWidths(block), "Đã chia đều bề rộng các cột."],
+    };
+    const run = ops[op.kind];
+    if (!run) return;
+    const [next, message] = run();
+    if (!next) {
+      showToast?.("Thao tác này không áp dụng được cho bảng hiện tại.", "error");
+      return;
+    }
+    blocks[idx] = next;
+    commitWordDraft(obj);
+    showToast?.(message, "success");
+  };
+
+  const handleSaveTableTemplate = (tplName) => {
+    const obj = parseWordDraft();
+    if (!obj) return;
+    const block = (obj.blocks || [])[targetBlockIndex];
+    if (!block || block.type !== "table") {
+      showToast?.("Hãy chọn một khối bảng trước khi lưu mẫu.", "error");
+      return;
+    }
+    const tpl = saveTableTemplate(tplName || `Mẫu bảng ${tableTemplates.length + 1}`, block);
+    if (tpl) {
+      setTableTemplates(loadTableTemplates());
+      showToast?.(`Đã lưu mẫu bảng “${tpl.name}” — chèn lại từ tab Thành phần.`, "success");
+    }
+  };
+
+  const handleInsertTableTemplate = (tpl) => {
+    if (mode === "html") {
+      insertSnippet(tableHtmlFromRows(tpl.rows), { stay: true });
+      return;
+    }
+    insertWordBlocks([{
+      type: "table",
+      rows: tpl.rows.map((r) => [...r]),
+      ...(Array.isArray(tpl.colWidths) ? { colWidths: [...tpl.colWidths] } : {}),
+    }], `mẫu bảng “${tpl.name}”`);
+  };
+
+  const handleRemoveTableTemplate = (tpl) => {
+    removeTableTemplate(tpl.id);
+    setTableTemplates(loadTableTemplates());
+    showToast?.(`Đã xoá mẫu bảng “${tpl.name}”.`, "success");
   };
 
   const handleFormat = () => {
@@ -1184,7 +1482,17 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
           <input id="docstudio-name" className="docstudio-input" value={name}
             onChange={(e) => setName(e.target.value)} placeholder="Tên tài liệu…" />
 
-
+          {docType === "word" && (
+            <PageSettings
+              key={JSON.stringify(validApplied?.model?.page || null)}
+              value={validApplied?.model?.page || null}
+              hasTheme={Boolean(validApplied?.model?.theme)}
+              savedDefault={savedPageDefault}
+              onApply={applyPageConfig}
+              onSaveDefault={handleSavePageDefault}
+              onClear={() => applyPageConfig(null)}
+            />
+          )}
 
           {docType === "powerpoint" && (
             <>
@@ -1412,6 +1720,10 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
               ))}
             </div>
           </div>
+          {docType === "word" && tableTemplates.length > 0 && (
+            <TableTemplateList templates={tableTemplates}
+              onInsert={handleInsertTableTemplate} onRemove={handleRemoveTableTemplate} />
+          )}
         </aside>
       );
     }
@@ -1437,13 +1749,13 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
         </div>
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          <span className={`docstudio-save-state ${isDirty || saveFailed ? "is-dirty" : "is-saved"}`}
+          <span className={`docstudio-save-state ${saveFailed && isDirty ? "is-failed" : isDirty ? "is-dirty" : "is-saved"}`}
             title={saveFailed ? "Lần lưu gần nhất thất bại — kiểm tra kết nối mạng rồi bấm Lưu lại" : undefined}>
             {saving ? "Đang lưu…"
-              : saveFailed && isDirty ? "⚠ Chưa lưu được"
-                : isDirty ? "● Chưa lưu"
-                  : lastSaved?.auto
-                    ? `✓ Đã lưu tự động ${lastSaved.at.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+              : saveFailed && isDirty ? "⚠ Không lưu được"
+                : isDirty ? "● Có thay đổi chưa lưu"
+                  : lastSaved
+                    ? `✓ Đã lưu${lastSaved.auto ? " tự động" : ""} lúc ${lastSaved.at.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
                     : "✓ Đã lưu"}
           </span>
           <button type="button" className="docstudio-ai-btn" onClick={() => setAiOpen(true)}>
@@ -1533,7 +1845,19 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
 
               {docType === "word" && showFormatTools && (
                 <FormatControls layout="bar" state={formatState} onFormat={applyFormat}
-                  htmlMode={mode === "html"} />
+                  htmlMode={mode === "html"} history={toolbarHistory}
+                  onFindReplace={handleFindReplace} onInsertItem={handleInsertItem}
+                  pageNumberOn={pageNumberOn} />
+              )}
+
+              {docType === "word" && mode === "json" && targetTableBlock && (
+                <TableTools block={targetTableBlock} onOp={handleTableOp}
+                  onSaveTemplate={handleSaveTableTemplate}
+                  searchQuery={tableQuery} onSearchChange={setTableQuery}
+                  matchRows={tableMatchRows} />
+              )}
+              {docType === "word" && mode === "html" && draftHasTable && (
+                <TableToolsDisabled />
               )}
 
               {docType === "word" ? (
@@ -1541,7 +1865,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                   <div className="docstudio-editor-code">
                     <CodeEditor ref={editorRef} value={draft} language={mode === "json" ? "json" : "html"}
                       onChange={(text) => setDrafts((d) => (d[mode] === text ? d : { ...d, [mode]: text }))}
-                      onCursor={handleCursor} />
+                      onCursor={handleCursor} onHistoryChange={handleHistoryChange} />
                   </div>
 
                   <div className="docstudio-editor-foot">
@@ -1607,11 +1931,12 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                     <InteractiveWordPreview
                       model={validApplied?.model}
                       selectedIndex={targetBlockIndex}
+                      highlight={tableHighlight}
                       onSelectBlock={(i) => setPicked({ key: pickKey, index: i })} />
                   ) : (
                     <WordPreview
-                      bodyHtml={validApplied ? validApplied.bodyHtml : ""}
-                      cssText={validApplied?.mode === "html" ? validApplied.cssText : ""}
+                      bodyHtml={previewBodyHtml}
+                      cssText={validApplied?.cssText || ""}
                       zoom={zoom} reveal={reveal} />
                   )
                 ) : (
@@ -1747,11 +2072,17 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
         mobileSheet === "format" && (
           <FormatSheet state={formatState} onFormat={applyFormat} htmlMode={mode === "html"}
             onClose={() => setMobileSheet(null)}
+            history={toolbarHistory} onFindReplace={handleFindReplace}
+            onInsertItem={handleInsertItem} pageNumberOn={pageNumberOn}
             hint={mode === "html"
               ? "Hãy bôi đen đoạn chữ trong khung Soạn trước — định dạng sẽ bọc thẻ quanh đúng đoạn đó."
               : "Định dạng áp lên khối đang chọn: đặt con trỏ vào khối trong khung Soạn, hoặc chạm chọn khối ở tab Xem."} />
         )
       }
+
+      {/* ── Tìm & thay thế nội dung (chế độ Normal) ─────────────────── */}
+      <FindReplaceDialog open={findOpen} onClose={() => setFindOpen(false)}
+        onCount={findReplaceCount} onReplace={doFindReplace} />
 
       {/* ── Kết quả xuất file (.docx / .pptx thật) ─────────────────────── */}
       {

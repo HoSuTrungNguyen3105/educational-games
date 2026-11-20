@@ -83,6 +83,7 @@ export function blockFormatState(block) {
     marks: { bold: false, italic: false, underline: false, strike: false },
     color: null, highlight: null, font: null, fontSize: null,
     align: "left", listType: null,
+    headingLevel: null, lineHeight: null, spacingAfter: null,
   };
   if (!block || typeof block !== "object") return none;
   if (block.type === "list") {
@@ -90,6 +91,8 @@ export function blockFormatState(block) {
       ...none, canBlock: true,
       align: block.align || "left",
       listType: block.ordered ? "ordered" : "bullet",
+      lineHeight: block.lineHeight ?? null,
+      spacingAfter: block.spacingAfter ?? null,
     };
   }
   if (!TEXT_BLOCK_TYPES.includes(block.type)) return none;
@@ -111,6 +114,9 @@ export function blockFormatState(block) {
     fontSize: block.fontSize || null,
     align: block.align || "left",
     listType: null,
+    headingLevel: block.type === "heading" ? (block.level || 1) : 0,
+    lineHeight: block.lineHeight ?? null,
+    spacingAfter: block.spacingAfter ?? null,
   };
 }
 
@@ -120,6 +126,9 @@ export function blockFormatState(block) {
  * op: { type: "mark", mark } | { type: "color", value|null }
  *     | { type: "highlight", value|null } | { type: "font", value|null }
  *     | { type: "align", value } | { type: "list", value: "bullet"|"ordered"|null }
+ *     | { type: "heading", value: 1|2|3|null } — đoạn ⇄ tiêu đề / đổi cấp
+ *     | { type: "lineHeight", value: number|null }
+ *     | { type: "spacingAfter", value: number|null } (pt)
  *     | { type: "clear" }
  */
 export function applyBlockFormat(block, op) {
@@ -158,6 +167,34 @@ export function applyBlockFormat(block, op) {
     return null;
   }
 
+  // Giãn dòng / khoảng sau đoạn cấp khối: heading, paragraph và list
+  // đều giữ hai field này (preview + DOCX cùng đọc — xem model.js).
+  if (op.type === "lineHeight" || op.type === "spacingAfter") {
+    if (block.type !== "list" && !TEXT_BLOCK_TYPES.includes(block.type)) return null;
+    const out = { ...block };
+    if (op.value === null || op.value === undefined) delete out[op.type];
+    else {
+      const n = Number(op.value);
+      if (!Number.isFinite(n)) return null;
+      out[op.type] = n;
+    }
+    return out;
+  }
+
+  // Đoạn ⇄ tiêu đề: đổi loại khối nhưng giữ nguyên mọi định dạng đã có
+  // (runs, màu, font, căn lề, giãn dòng…). value null/0 → đoạn thường.
+  if (op.type === "heading") {
+    if (!TEXT_BLOCK_TYPES.includes(block.type)) return null;
+    const level = [1, 2, 3].includes(op.value) ? op.value : null;
+    if (level === null) {
+      if (block.type === "paragraph") return { ...block };
+      const out = { ...block, type: "paragraph" };
+      delete out.level;
+      return out;
+    }
+    return { ...block, type: "heading", level };
+  }
+
   // Từ đây chỉ heading/paragraph áp dụng được.
   if (!TEXT_BLOCK_TYPES.includes(block.type)) return null;
 
@@ -178,6 +215,8 @@ export function applyBlockFormat(block, op) {
     delete out.runs;
     delete out.font;
     delete out.fontSize;
+    delete out.lineHeight;
+    delete out.spacingAfter;
     return out;
   }
   if (op.type === "mark" && MARKS.includes(op.mark)) {
@@ -240,5 +279,54 @@ export function wrapHtmlSelection(source, from, to, op) {
   if (op.type === "fontSize" && op.value) {
     return `<span style="font-size: ${op.value}pt">${selected}</span>`;
   }
+  if (op.type === "lineHeight" && op.value) {
+    return `<span style="line-height: ${op.value}">${selected}</span>`;
+  }
   return null;
+}
+
+const BLOCK_TAG_RE = /^(p|h[1-6])$/i;
+
+/**
+ * Chế độ Beautiful — op "heading": ĐỔI THẺ của khối chứa vùng chọn.
+ * Khác wrapHtmlSelection (chỉ thay đúng đoạn đã chọn), thao tác này cần
+ * sửa cả thẻ mở/đóng nằm NGOÀI vùng chọn nên trả { from, to, text } là
+ * khoảng thay thế MỞ RỘNG (gồm cả hai thẻ) cho editor gọi replaceRange.
+ *
+ * Áp dụng được khi vùng chọn:
+ *   (a) nằm trọn trong MỘT thẻ khối <p>/<h1>–<h6> (trước vùng chọn là
+ *       thẻ mở, sau vùng chọn là thẻ đóng khớp nhau), hoặc
+ *   (b) bao trọn cả phần tử (từ thẻ mở tới thẻ đóng).
+ * Ngoài hai trường hợp trên → null (editor nhắc giáo viên chọn cả đoạn).
+ * Thuộc tính của thẻ mở được giữ nguyên; level null/0 → thẻ <p>.
+ */
+export function retitleHtmlBlock(source, from, to, level) {
+  const src = String(source || "");
+  if (typeof from !== "number" || typeof to !== "number" || from < 0 || to > src.length || from > to) return null;
+  const newTag = [1, 2, 3].includes(level) ? `h${level}` : "p";
+
+  // (b) Vùng chọn bao trọn phần tử.
+  const whole = /^<(p|h[1-6])((?:\s[^>]*)?)>([\s\S]*)<\/(p|h[1-6])>$/i.exec(src.slice(from, to).trim());
+  if (whole && whole[1].toLowerCase() === whole[4].toLowerCase()) {
+    const lead = src.slice(from, to).indexOf("<");
+    const start = from + lead;
+    const end = from + src.slice(from, to).lastIndexOf(">") + 1;
+    return { from: start, to: end, text: `<${newTag}${whole[2] || ""}>${whole[3]}</${newTag}>` };
+  }
+
+  // (a) Vùng chọn nằm trọn trong một thẻ khối.
+  const before = src.slice(0, from);
+  const after = src.slice(to);
+  const open = /<(p|h[1-6])((?:\s[^>]*)?)>\s*$/i.exec(before);
+  const close = /^\s*<\/(p|h[1-6])>/i.exec(after);
+  if (!open || !close || !BLOCK_TAG_RE.test(open[1])) return null;
+  if (open[1].toLowerCase() !== close[1].toLowerCase()) return null;
+  const openStart = before.length - open[0].length + open[0].indexOf("<");
+  const closeEnd = to + close[0].length;
+  const inner = src.slice(from, to);
+  return {
+    from: openStart,
+    to: closeEnd,
+    text: `<${newTag}${open[2] || ""}>${inner}</${newTag}>`,
+  };
 }

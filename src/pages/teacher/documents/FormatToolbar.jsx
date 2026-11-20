@@ -1,8 +1,9 @@
 import { useState } from "react";
 import {
-  AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Eraser,
-  Highlighter, Italic, List, ListOrdered, MoreHorizontal, Plus,
-  Strikethrough, Underline, X,
+  AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, CalendarDays, Check,
+  ChevronDown, Eraser, Hash, Highlighter, Image as ImageIcon, Italic, List,
+  ListOrdered, MoreHorizontal, PenLine, Plus, Redo2, Replace,
+  SeparatorHorizontal, Strikethrough, Table2, Underline, Undo2, X,
 } from "lucide-react";
 import {
   FONT_OPTIONS, FONT_SIZE_OPTIONS, HIGHLIGHT_PRESETS, TEXT_COLOR_PRESETS,
@@ -38,6 +39,134 @@ const ALIGN_DEFS = [
   { value: "right", label: "Căn phải", Icon: AlignRight },
   { value: "justify", label: "Căn đều hai bên", Icon: AlignJustify },
 ];
+
+// ── Giai đoạn 1 Word: kiểu tiêu đề, giãn dòng, khoảng đoạn, menu Chèn ──
+const HEADING_OPTIONS = [
+  { value: 0, label: "Đoạn văn" },
+  { value: 1, label: "Tiêu đề 1" },
+  { value: 2, label: "Tiêu đề 2" },
+  { value: 3, label: "Tiêu đề 3" },
+];
+const LINE_HEIGHT_OPTIONS = [1, 1.15, 1.5, 2];
+const SPACING_AFTER_OPTIONS = [0, 6, 12];
+
+const INSERT_ITEMS = [
+  { id: "table3", label: "Bảng 3×3", Icon: Table2, title: "Chèn bảng trống 3 cột × 3 hàng" },
+  { id: "image", label: "Hình ảnh", Icon: ImageIcon, title: "Chèn hình ảnh (mở tab Hình ảnh)" },
+  { id: "signature", label: "Chữ ký", Icon: PenLine, title: "Chèn khối chữ ký (chức danh, chỗ ký, họ tên) căn phải" },
+  { id: "date", label: "Ngày tháng", Icon: CalendarDays, title: "Chèn đoạn ghi ngày tháng hôm nay" },
+  { id: "pageBreak", label: "Ngắt trang", Icon: SeparatorHorizontal, title: "Chèn ngắt trang — có hiệu lực khi in và trong file DOCX" },
+  {
+    id: "pageNumber", label: "Số trang", Icon: Hash,
+    title: "Đánh số trang ở chân trang trong file DOCX. Bản xem trước là một tờ giấy dài chưa chia trang nên chỉ hiện dòng chân “Số trang”, không đánh số từng tờ.",
+  },
+];
+
+function HistoryButtons({ history, wide = false }) {
+  if (!history) return null;
+  const cls = wide ? "ds-fmt-btn-wide" : "";
+  return (
+    <>
+      <FmtButton title="Hoàn tác (Ctrl+Z)" disabled={!history.canUndo} className={cls}
+        onClick={history.onUndo}>
+        <Undo2 className="w-4 h-4" />{wide && <span>Hoàn tác</span>}
+      </FmtButton>
+      <FmtButton title="Làm lại (Ctrl+Y)" disabled={!history.canRedo} className={cls}
+        onClick={history.onRedo}>
+        <Redo2 className="w-4 h-4" />{wide && <span>Làm lại</span>}
+      </FmtButton>
+    </>
+  );
+}
+
+function HeadingSelect({ state, onFormat, htmlMode, wide = false }) {
+  const disabled = !htmlMode && !state?.canBlock;
+  return (
+    <select className={`ds-fmt-fontsize ds-fmt-heading ${wide ? "ds-fmt-select-wide" : ""}`}
+      aria-label="Kiểu tiêu đề" title="Kiểu tiêu đề — đổi đoạn văn thành tiêu đề 1/2/3 hoặc ngược lại"
+      disabled={disabled}
+      value={state?.headingLevel ?? 0}
+      onChange={(e) => onFormat({ type: "heading", value: Number(e.target.value) || null })}>
+      {HEADING_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+}
+
+function LineHeightSelect({ state, onFormat, htmlMode, wide = false }) {
+  const disabled = !htmlMode && !state?.canBlock;
+  return (
+    <select className={`ds-fmt-fontsize ds-fmt-lineheight ${wide ? "ds-fmt-select-wide" : ""}`}
+      aria-label="Giãn dòng" title="Giãn dòng cho khối đang chọn"
+      disabled={disabled}
+      value={state?.lineHeight ?? ""}
+      onChange={(e) => onFormat({ type: "lineHeight", value: e.target.value ? Number(e.target.value) : null })}>
+      <option value="">Dòng…</option>
+      {LINE_HEIGHT_OPTIONS.map((v) => <option key={v} value={v}>{String(v).replace(".", ",")}</option>)}
+    </select>
+  );
+}
+
+function SpacingSelect({ state, onFormat, htmlMode, wide = false }) {
+  return (
+    <select className={`ds-fmt-fontsize ds-fmt-spacing ${wide ? "ds-fmt-select-wide" : ""}`}
+      aria-label="Khoảng cách sau đoạn"
+      title={htmlMode
+        ? "Khoảng cách sau đoạn — ở chế độ Beautiful hãy sửa trực tiếp trong mã HTML"
+        : "Khoảng cách sau đoạn (pt) cho khối đang chọn"}
+      disabled={htmlMode || !state?.canBlock}
+      value={state?.spacingAfter ?? ""}
+      onChange={(e) => onFormat({ type: "spacingAfter", value: e.target.value === "" ? null : Number(e.target.value) })}>
+      <option value="">Sau…</option>
+      {SPACING_AFTER_OPTIONS.map((v) => <option key={v} value={v}>{v} pt</option>)}
+    </select>
+  );
+}
+
+/** Menu "Chèn" dạng popover trên thanh desktop. */
+function InsertMenu({ onInsertItem, pageNumberOn }) {
+  const [open, setOpen] = useState(false);
+  if (!onInsertItem) return null;
+  const pick = (id) => { onInsertItem(id); setOpen(false); };
+  return (
+    <div className={`ds-fmt-pop-wrap ${open ? "is-open" : ""}`}>
+      <FmtButton title="Chèn bảng, ảnh, chữ ký, ngày tháng, ngắt trang, số trang"
+        className="ds-fmt-btn-wide" onClick={() => setOpen((o) => !o)}>
+        <Plus className="w-4 h-4" /> <span>Chèn</span> <ChevronDown className="w-3.5 h-3.5" />
+      </FmtButton>
+      {open && (
+        <>
+          <button type="button" className="ds-fmt-pop-backdrop" aria-hidden="true" tabIndex={-1}
+            onClick={() => setOpen(false)} />
+          <div className="ds-fmt-pop ds-fmt-menu" role="menu" aria-label="Chèn nội dung">
+            {INSERT_ITEMS.map(({ id, label, Icon, title }) => (
+              <button key={id} type="button" role="menuitem" className="ds-fmt-menu-item"
+                title={title} onClick={() => pick(id)}>
+                <Icon className="w-4 h-4" /> <span>{label}</span>
+                {id === "pageNumber" && pageNumberOn && <Check className="w-4 h-4 ds-fmt-menu-check" />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Các nút Chèn dạng lưới cho panel mobile. */
+function InsertButtons({ onInsertItem, pageNumberOn }) {
+  if (!onInsertItem) return null;
+  return (
+    <div className="ds-fmt-insert-grid">
+      {INSERT_ITEMS.map(({ id, label, Icon, title }) => (
+        <button key={id} type="button" className="ds-fmt-btn ds-fmt-btn-wide ds-fmt-insert-btn"
+          title={title} onClick={() => onInsertItem(id)}>
+          <Icon className="w-4 h-4" /> <span>{label}</span>
+          {id === "pageNumber" && pageNumberOn && <Check className="w-4 h-4" />}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function FmtButton({ active = false, disabled = false, onClick, title, children, className = "" }) {
   return (
@@ -99,7 +228,7 @@ function SwatchRow({ presets, value, onPick, allowNone, noneTitle }) {
       )}
       {presets.map((c) => (
         <button key={c} type="button" className={`ds-fmt-swatch ${norm(value) === norm(c) ? "is-active" : ""}`}
-          style={{ background: c }} title={c} aria-label={`Màu ${c}`}
+          style={{ background: c }} title={`Màu ${c}`} aria-label={`Màu ${c}`}
           onClick={() => onPick(c)} />
       ))}
       <label className="ds-fmt-custom" title="Màu tuỳ chọn">
@@ -175,10 +304,33 @@ function FontSizeSelect({ state, onFormat }) {
  * nhãn như ảnh mẫu: Phông chữ / Kiểu chữ / Màu chữ / Màu tô sáng /
  * Căn lề / Danh sách).
  */
-export function FormatControls({ state, onFormat, layout = "bar", htmlMode = false }) {
+export function FormatControls({
+  state, onFormat, layout = "bar", htmlMode = false,
+  history = null, onFindReplace = null, onInsertItem = null, pageNumberOn = false,
+}) {
   if (layout === "panel") {
     return (
       <div className="ds-fmt-panel">
+        {(history || onFindReplace) && (
+          <div className="ds-fmt-group">
+            <span className="ds-fmt-group-label">Soạn thảo</span>
+            <div className="ds-fmt-row">
+              <HistoryButtons history={history} wide />
+              {onFindReplace && (
+                <FmtButton title="Tìm và thay thế nội dung" className="ds-fmt-btn-wide"
+                  onClick={onFindReplace}>
+                  <Replace className="w-4 h-4" /> <span>Tìm &amp; thay thế</span>
+                </FmtButton>
+              )}
+            </div>
+          </div>
+        )}
+        <div className="ds-fmt-group">
+          <span className="ds-fmt-group-label">Kiểu tiêu đề</span>
+          <div className="ds-fmt-row">
+            <HeadingSelect state={state} onFormat={onFormat} htmlMode={htmlMode} wide />
+          </div>
+        </div>
         <div className="ds-fmt-group">
           <span className="ds-fmt-group-label">Phông chữ</span>
           <div className="ds-fmt-row" style={{ gap: 6 }}>
@@ -215,9 +367,22 @@ export function FormatControls({ state, onFormat, layout = "bar", htmlMode = fal
           <div className="ds-fmt-row"><AlignButtons state={state} onFormat={onFormat} /></div>
         </div>
         <div className="ds-fmt-group">
+          <span className="ds-fmt-group-label">Giãn dòng &amp; khoảng đoạn</span>
+          <div className="ds-fmt-row" style={{ gap: 6 }}>
+            <LineHeightSelect state={state} onFormat={onFormat} htmlMode={htmlMode} wide />
+            <SpacingSelect state={state} onFormat={onFormat} htmlMode={htmlMode} wide />
+          </div>
+        </div>
+        <div className="ds-fmt-group">
           <span className="ds-fmt-group-label">Danh sách</span>
           <div className="ds-fmt-row"><ListButtons state={state} onFormat={onFormat} /></div>
         </div>
+        {onInsertItem && (
+          <div className="ds-fmt-group">
+            <span className="ds-fmt-group-label">Chèn</span>
+            <InsertButtons onInsertItem={onInsertItem} pageNumberOn={pageNumberOn} />
+          </div>
+        )}
         {htmlMode && (
           <p className="ds-fmt-hint">
             Ở chế độ Beautiful, căn lề và danh sách sửa trực tiếp trong mã HTML;
@@ -229,14 +394,28 @@ export function FormatControls({ state, onFormat, layout = "bar", htmlMode = fal
   }
   return (
     <div className="docstudio-formatbar" role="toolbar" aria-label="Định dạng chữ">
+      {(history || onFindReplace) && (
+        <>
+          <HistoryButtons history={history} />
+          {onFindReplace && (
+            <FmtButton title="Tìm và thay thế nội dung" onClick={onFindReplace}>
+              <Replace className="w-4 h-4" />
+            </FmtButton>
+          )}
+          <span className="ds-fmt-sep" aria-hidden="true" />
+        </>
+      )}
       <FontSelect state={state} onFormat={onFormat} htmlMode={htmlMode} />
       <FontSizeSelect state={state} onFormat={onFormat} />
+      <HeadingSelect state={state} onFormat={onFormat} htmlMode={htmlMode} />
       <span className="ds-fmt-sep" aria-hidden="true" />
       <MarkButtons state={state} onFormat={onFormat} />
       <ColorPopoverButton kind="color" state={state} onFormat={onFormat} htmlMode={htmlMode} />
       <ColorPopoverButton kind="highlight" state={state} onFormat={onFormat} htmlMode={htmlMode} />
       <span className="ds-fmt-sep" aria-hidden="true" />
       <AlignButtons state={state} onFormat={onFormat} />
+      <LineHeightSelect state={state} onFormat={onFormat} htmlMode={htmlMode} />
+      <SpacingSelect state={state} onFormat={onFormat} htmlMode={htmlMode} />
       <span className="ds-fmt-sep" aria-hidden="true" />
       <ListButtons state={state} onFormat={onFormat} />
       {!htmlMode && (
@@ -246,6 +425,12 @@ export function FormatControls({ state, onFormat, layout = "bar", htmlMode = fal
             onClick={() => onFormat({ type: "clear" })}>
             <Eraser className="w-4 h-4" />
           </FmtButton>
+        </>
+      )}
+      {onInsertItem && (
+        <>
+          <span className="ds-fmt-sep" aria-hidden="true" />
+          <InsertMenu onInsertItem={onInsertItem} pageNumberOn={pageNumberOn} />
         </>
       )}
       {!state?.canText && !state?.canBlock && (
@@ -290,7 +475,10 @@ export function MobileFormatBar({ state, onFormat, onInsert, onOpenPanel }) {
 }
 
 /** Panel định dạng trượt từ dưới lên trên mobile (bottom sheet). */
-export function FormatSheet({ state, onFormat, htmlMode = false, hint = "", onClose }) {
+export function FormatSheet({
+  state, onFormat, htmlMode = false, hint = "", onClose,
+  history = null, onFindReplace = null, onInsertItem = null, pageNumberOn = false,
+}) {
   return (
     <div className="docstudio-mobile-sheet-wrap">
       <button type="button" className="docstudio-mobile-sheet-backdrop"
@@ -302,7 +490,9 @@ export function FormatSheet({ state, onFormat, htmlMode = false, hint = "", onCl
         </header>
         <div className="docstudio-mobile-sheet-body">
           {hint && <p className="ds-fmt-hint">{hint}</p>}
-          <FormatControls layout="panel" state={state} onFormat={onFormat} htmlMode={htmlMode} />
+          <FormatControls layout="panel" state={state} onFormat={onFormat} htmlMode={htmlMode}
+            history={history} onFindReplace={onFindReplace}
+            onInsertItem={onInsertItem} pageNumberOn={pageNumberOn} />
         </div>
       </section>
     </div>

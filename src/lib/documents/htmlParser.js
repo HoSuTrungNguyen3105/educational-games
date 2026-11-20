@@ -13,6 +13,8 @@
 // được sang Word/PowerPoint → ghi vào danh sách cảnh báo để giáo viên
 // biết trước, không âm thầm bỏ qua (đúng §7 đặc tả).
 
+import { parsePageStyleCss } from "./pageConfig.js";
+
 const normWs = (s) => String(s || "").replace(/\s+/g, " ").trim();
 
 // ── Tách mã nguồn HTML thành phần thân + CSS + tiêu đề ─────────────────
@@ -248,7 +250,15 @@ function collectWordBlocks(node, rules, blocks, warnings) {
     } else if (tag === "IMG") {
       blocks.push({ type: "image", src: child.getAttribute("src") || "", alt: child.getAttribute("alt") || "" });
     } else if (tag === "HR") {
-      warnings.push("Đường kẻ ngang (<hr>) chưa có khối tương ứng — đã bỏ qua khi chuyển đổi.");
+      // <hr class="page-break"> là khối ngắt trang của Word model (do
+      // modelRender sinh ra / giáo viên chèn từ menu Chèn); <hr> thường
+      // vẫn chưa có khối tương ứng.
+      if (child.classList?.contains("page-break")) blocks.push({ type: "pageBreak" });
+      else warnings.push("Đường kẻ ngang (<hr>) chưa có khối tương ứng — đã bỏ qua khi chuyển đổi.");
+    } else if (tag === "DIV" && child.classList?.contains("doc-signature")) {
+      const role = normWs(child.querySelector(".doc-signature-role")?.textContent || "");
+      const name = normWs(child.querySelector(".doc-signature-name")?.textContent || "");
+      blocks.push({ type: "signature", role, name });
     } else if (CONTAINER_TAGS.has(tag)) {
       const img = child.querySelector(":scope > img");
       if (tag === "FIGURE" && img) {
@@ -270,8 +280,16 @@ export function parseHtmlToWordModel(source) {
   const blocks = [];
   if (doc.body) collectWordBlocks(doc.body, rules, blocks, warnings);
   const firstHeading = blocks.find((b) => b.type === "heading");
+  // Cấu hình trang ở chế độ Beautiful sống trong <style
+  // id="docstudio-page"> (xem pageConfig.js) — đọc vào model.page để
+  // chuyển chế độ / xuất DOCX vẫn giữ đúng khổ giấy, lề và chữ mặc định.
+  const pageStyleEl = doc.querySelector('style#docstudio-page');
+  const page = pageStyleEl ? parsePageStyleCss(pageStyleEl.textContent || "") : undefined;
   return {
-    model: { kind: "word", title: titleText || firstHeading?.text || "", subject: "", grade: null, blocks },
+    model: {
+      kind: "word", title: titleText || firstHeading?.text || "", subject: "", grade: null, blocks,
+      ...(page ? { page } : {}),
+    },
     warnings,
     bodyHtml,
     cssText,
