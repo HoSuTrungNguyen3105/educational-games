@@ -8,11 +8,27 @@
  *   • pdf.js có thể transfer buffer sang worker (detach) → luôn truyền BẢN SAO,
  *     giữ bản gốc (Uint8Array) cho bước xuất bằng pdf-lib.
  *   • Xử lý file hoàn toàn phía client — không gửi tài liệu lên server.
+ *   • Thư viện pdfjs-dist được tải động (lazy) chỉ khi cần thiết.
  */
-import * as pdfjsLib from "pdfjs-dist";
-import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+let pdfjsLib = null;
+let workerSrcPromise = null;
+
+/** Tải pdfjs-dist một lần (lazy). */
+async function loadPdfJs() {
+  if (pdfjsLib) return pdfjsLib;
+  if (!workerSrcPromise) {
+    // Worker URL được resolve bởi Vite tại build-time (?url suffix)
+    workerSrcPromise = import("pdfjs-dist/build/pdf.worker.min.mjs?url").then((m) => m.default);
+  }
+  const [{ default: lib }, workerUrl] = await Promise.all([
+    import("pdfjs-dist"),
+    workerSrcPromise,
+  ]);
+  lib.GlobalWorkerOptions.workerSrc = workerUrl;
+  pdfjsLib = lib;
+  return pdfjsLib;
+}
 
 /** Giới hạn dung lượng file tải lên (30 MB). */
 export const MAX_PDF_BYTES = 30 * 1024 * 1024;
@@ -57,12 +73,11 @@ export function pdfOpenError(err) {
  * xoay (đơn vị pt), rotate là góc xoay cố định sẵn có của trang (/Rotate).
  */
 export async function openPdf(bytes) {
-  const task = pdfjsLib.getDocument({
+  const lib = await loadPdfJs();
+  const task = lib.getDocument({
     data: bytes.slice(),
     isEvalSupported: false,
     disableAutoFetch: true,
-    // Giữ lại bytes font nhúng + tên font thật trong commonObjs để "Sửa chữ"
-    // tái dùng đúng font gốc (xem srcFonts.js).
     fontExtraProperties: true,
   });
   const pdfDoc = await task.promise;
@@ -84,7 +99,7 @@ export async function openPdf(bytes) {
  * Render một trang vào <canvas> theo `scale` và góc `rotation` (tổng góc xoay).
  * Trả về RenderTask — caller await task.promise và có thể task.cancel().
  */
-export function renderPageToCanvas(pdfPage, canvas, { scale, rotation, dpr = 1 }) {
+export async function renderPageToCanvas(pdfPage, canvas, { scale, rotation, dpr = 1 }) {
   const cssViewport = pdfPage.getViewport({ scale, rotation });
   const pxViewport = dpr === 1 ? cssViewport : pdfPage.getViewport({ scale: scale * dpr, rotation });
   canvas.width = Math.max(1, Math.round(pxViewport.width));
@@ -108,15 +123,15 @@ export function renderPageToCanvas(pdfPage, canvas, { scale, rotation, dpr = 1 }
  * Trả về TextLayer để caller cancel() khi đổi trang / zoom.
  */
 export async function renderTextLayer(pdfPage, container, { scale, rotation }) {
+  const lib = await loadPdfJs();
   const viewport = pdfPage.getViewport({ scale, rotation });
-  // TextLayer tính cỡ chữ / bề rộng span qua các biến CSS này (theo pdf_viewer).
   container.style.setProperty("--scale-factor", String(scale));
   container.style.setProperty("--user-unit", "1");
   container.style.setProperty("--total-scale-factor", "calc(var(--scale-factor) * var(--user-unit))");
   container.style.setProperty("--scale-round-x", "1px");
   container.style.setProperty("--scale-round-y", "1px");
   const content = await pdfPage.getTextContent();
-  const layer = new pdfjsLib.TextLayer({ textContentSource: content, container, viewport });
+  const layer = new lib.TextLayer({ textContentSource: content, container, viewport });
   await layer.render();
   return layer;
 }
@@ -129,6 +144,7 @@ export async function renderTextLayer(pdfPage, container, { scale, rotation }) {
  * "Vùng che chữ gốc" (xem PdfEditorPage — nhóm thao tác với chữ gốc).
  */
 export async function extractTextItems(pdfPage) {
+  const lib = await loadPdfJs();
   const content = await pdfPage.getTextContent();
   const raw = [];
   for (const item of content.items || []) {
@@ -137,13 +153,10 @@ export async function extractTextItems(pdfPage) {
     const [a, b, c, d, e, f] = t;
     const w = item.width || 0;
     const h = item.height || Math.abs(d) || 0;
-    // width/height đã là pt — nhân vector đơn vị trục chữ, không nhân cỡ chữ
-    // lần nữa (transform đã chứa cỡ chữ).
     const ux = a / (Math.hypot(a, b) || 1);
     const uy = b / (Math.hypot(a, b) || 1);
     const vx = c / (Math.hypot(c, d) || 1);
     const vy = d / (Math.hypot(c, d) || 1);
-    // Bốn góc của run chữ theo ma trận chữ (e,f) là gốc.
     const corners = [
       [e, f],
       [e + ux * w, f + uy * w],
@@ -163,7 +176,6 @@ export async function extractTextItems(pdfPage) {
     });
   }
 
-  // Gộp các từ cùng dòng (cùng baseline) thành một hộp để che cho gọn.
   const lines = [];
   const byBaseline = new Map();
   for (const it of raw) {
@@ -171,7 +183,7 @@ export async function extractTextItems(pdfPage) {
       lines.push({ x0: it.x0, y0: it.y0, x1: it.x1, y1: it.y1, text: it.str });
       continue;
     }
-    const key = Math.round(it.baseline * 2) / 2; // làm tròn 0.5pt
+    const key = Math.round(it.baseline * 2) / 2;
     const bucket = byBaseline.get(key);
     if (bucket) {
       bucket.x0 = Math.min(bucket.x0, it.x0);
@@ -200,6 +212,7 @@ export async function extractTextItems(pdfPage) {
  * TÊN THẬT của font nhúng — tên nội bộ kiểu "g_d0_f3" không nói lên kiểu chữ.
  */
 export async function extractEditableText(pdfPage, srcFonts = null) {
+  const lib = await loadPdfJs();
   const content = await pdfPage.getTextContent();
   const styles = content.styles || {};
   const runs = [];
@@ -211,8 +224,6 @@ export async function extractEditableText(pdfPage, srcFonts = null) {
     const fontSize = Math.hypot(a, b) || Math.abs(d) || item.height || 12;
     const w = item.width || 0;
     const h = item.height || fontSize;
-    // width/height của pdf.js ĐÃ là pt (cỡ chữ nằm sẵn trong transform) —
-    // chỉ nhân với VECTOR ĐƠN VỊ của trục chữ, không nhân lại cỡ chữ.
     const ux = a / (Math.hypot(a, b) || 1);
     const uy = b / (Math.hypot(a, b) || 1);
     const vx = c / (Math.hypot(c, d) || 1);
@@ -232,12 +243,8 @@ export async function extractEditableText(pdfPage, srcFonts = null) {
     const horizontal = Math.abs(b) < 0.02 && Math.abs(c) < 0.02;
     runs.push({
       str: item.str,
-      // Chỉ số item trong getTextContent — trùng chỉ số span của TextLayer,
-      // nhờ đó ánh xạ được vùng bôi đen về đúng dòng chữ này.
       srcIndex: idx,
       x0: Math.min(...xs),
-      // Chừa chỗ cho phần chữ thòng xuống dưới baseline (g, y, ỵ…) và dấu
-      // tiếng Việt xếp chồng phía trên — hộp chữ của pdf.js chỉ cao 1 cỡ chữ.
       y0: horizontal ? Math.min(Math.min(...ys), f - fontSize * 0.3) : Math.min(...ys),
       x1: Math.max(...xs),
       y1: horizontal ? Math.max(Math.max(...ys), f + fontSize * 1.06) : Math.max(...ys),
@@ -276,14 +283,10 @@ export async function extractEditableText(pdfPage, srcFonts = null) {
       bucket.italic === it.italic &&
       bucket.family === it.family &&
       Math.abs(bucket.fontSize - it.fontSize) <= Math.max(1, it.fontSize * 0.15);
-    // Khoảng cách <= ~1 cỡ chữ = cùng một dòng (kể cả khoảng trắng giữa từ);
-    // xa hơn là cột / ô khác → tách dòng riêng.
     if (sameStyle && gap <= it.fontSize * 1.1 && gap >= -it.fontSize * 0.3) {
       const joiner = gap > it.fontSize * 0.12 ? " " : "";
       const start = bucket.text.length + joiner.length;
       bucket.text += joiner + it.str;
-      // parts: khoảng ký tự của từng span gốc trong dòng đã gộp — dùng để
-      // đặt vùng chọn sẵn trong ô sửa chữ khi người dùng bôi đen một phần dòng.
       bucket.parts.push({ i: it.srcIndex, start, end: start + it.str.length });
       bucket.x0 = Math.min(bucket.x0, it.x0);
       bucket.y0 = Math.min(bucket.y0, it.y0);
@@ -335,12 +338,9 @@ export function sampleTextColors(canvas, box, pageW, pageH) {
       }
     }
     if (!pixels.length) return fallback;
-    // Nền = cụm màu chiếm đa số trong hộp (chữ thường phủ < 50% diện tích).
     let best = null;
     for (const e of hist.values()) if (!best || e.n > best.n) best = e;
     const bg = [best.r / best.n, best.g / best.n, best.b / best.n];
-    // Chữ = lõi nét chữ: chỉ lấy pixel gần mức khác nền NHẤT (bỏ pixel rìa
-    // chống răng cưa đã pha màu nền, tránh ra màu xám/nhạt hơn chữ thật).
     const ranked = pixels
       .map(([r, g, b]) => ({
         d: Math.abs(r - bg[0]) + Math.abs(g - bg[1]) + Math.abs(b - bg[2]),

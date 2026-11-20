@@ -11,9 +11,18 @@
  *
  * Font gốc không dùng được (không nhúng / thiếu ký tự / người dùng đổi font,
  * đổi kiểu chữ) → resolveTextFace trả bộ DejaVu gần nhất thay thế.
+ * Thư viện @pdf-lib/fontkit được tải động (lazy) chỉ khi cần đọc font nhúng.
  */
-import fontkit from "@pdf-lib/fontkit";
 import { familyById } from "./fonts.js";
+
+let fontkitModule = null;
+
+async function loadFontkit() {
+  if (fontkitModule) return fontkitModule;
+  const { default: fontkit } = await import("@pdf-lib/fontkit");
+  fontkitModule = fontkit;
+  return fontkitModule;
+}
 
 let faceSeq = 0;
 
@@ -43,6 +52,7 @@ function cleanName(name) {
  *     lúc đó chỉ dùng bold/italic/family để chọn font DejaVu thay thế cho đúng.
  */
 export async function collectSrcFonts(pdfPage, existing = null) {
+  const fontkit = await loadFontkit();
   // getOperatorList nạp font vào commonObjs (render cũng dùng lại danh sách này).
   await pdfPage.getOperatorList();
   const content = await pdfPage.getTextContent();

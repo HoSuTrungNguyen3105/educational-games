@@ -834,6 +834,25 @@
     transition: flex-grow 0.34s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.24s ease,
       border-color 0.24s ease, box-shadow 0.24s ease, visibility 0s 0.34s;
   }
+
+  /* PowerPoint: khi xem trước mở, ẩn panel soạn thảo bên trái để preview full màn */
+  .docstudio-screen.is-powerpoint .docstudio-split:not(.is-preview-closed) .docstudio-split-editor {
+    flex-grow: 0;
+    width: 0;
+    min-width: 0;
+    opacity: 0;
+    border-color: transparent;
+    box-shadow: none;
+    pointer-events: none;
+    visibility: hidden;
+    overflow: hidden;
+    transition: flex-grow 0.34s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.24s ease,
+      border-color 0.24s ease, box-shadow 0.24s ease, visibility 0s 0.34s, width 0.34s;
+  }
+  .docstudio-screen.is-powerpoint .docstudio-split:not(.is-preview-closed) .docstudio-preview {
+    flex-grow: 1;
+    min-width: 0;
+  }
 }
 .docstudio-preview-foot {
   flex: 0 0 auto;
@@ -1571,4 +1590,59 @@
   }
   [data-theme="dark"] .ds-fmt-mbtn { color: #a7aaad; }
   [data-theme="dark"] .ds-fmt-mbtn.is-active { color: #e9eef2; }
+}
+
+/* ── PowerPoint Edit Notice ────────────────────────────────────────────── */
+.docstudio-powerpoint-edit-notice {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.docstudio-powerpoint-notice-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  max-width: 320px;
+}
+
+.docstudio-powerpoint-notice-content h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.docstudio-powerpoint-notice-content p {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6b7280;
+  margin: 0;
+}
+
+[data-theme="dark"] .docstudio-powerpoint-notice-content h3 {
+  color: #e9eef2;
+}
+
+[data-theme="dark"] .docstudio-powerpoint-notice-content p {
+  color: #a7aaad;
+}
+
+/* ── PowerPoint Title ─────────────────────────────────────────────────── */
+.docstudio-powerpoint-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  padding: 4px 0;
+}
+
+[data-theme="dark"] .docstudio-powerpoint-title {
+  color: #e9eef2;
 }

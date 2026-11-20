@@ -318,6 +318,12 @@ export function themeCssForModel(model) {
 
 /** Khung preview HTML cho PowerPoint ở chế độ HTML (tài liệu cuộn). */
 export function buildSlidesScrollSrcDoc({ bodyHtml, cssText = "" }) {
+  // Nếu bodyHtml không chứa phần tử .slide, wrap toàn bộ nội dung trong .slide
+  let processedBodyHtml = bodyHtml || "";
+  if (!processedBodyHtml.includes('class="slide"') && !processedBodyHtml.includes("class='slide'")) {
+    processedBodyHtml = `<div class="slide">${processedBodyHtml}</div>`;
+  }
+
   return `<!doctype html>
 <html lang="vi"><head><meta charset="utf-8">
 <style>
@@ -340,5 +346,5 @@ export function buildSlidesScrollSrcDoc({ bodyHtml, cssText = "" }) {
   }
 </style>
 ${cssText ? `<style>${cssText}</style>` : ""}
-</head><body>${bodyHtml || ""}</body></html>`;
+</head><body>${processedBodyHtml}</body></html>`;
 }

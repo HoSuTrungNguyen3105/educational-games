@@ -7,7 +7,7 @@
 import { parseHtmlToModel, validateHtmlBalance } from "./htmlParser.js";
 import { validateDocumentJson } from "./schemas.js";
 import { jsonToModel, modelToJson } from "./model.js";
-import { escapeHtml, renderModelBodyHtml, themeCssForModel } from "./modelRender.js";
+import { escapeHtml, renderModelBodyHtml, themeCssForModel, buildSlidesScrollSrcDoc } from "./modelRender.js";
 import { jsonErrorPosition } from "./format.js";
 
 const errText = (e) => [{ message: String(e?.message || e) }];
@@ -87,8 +87,11 @@ export function convertSource(source, fromMode, docType) {
   const bodyHtml = renderModelBodyHtml(applied.model);
   const title = escapeHtml(applied.model.title || "Tài liệu");
   const css = themeCssForModel(applied.model);
+
+  // Sử dụng buildSlidesScrollSrcDoc cho PowerPoint để đảm bảo consistency
+  // với preview trong PowerPointPreview component
   const html = docType === "powerpoint"
-    ? `<!doctype html>\n<html lang="vi">\n<head>\n<meta charset="utf-8">\n<title>${title}</title>\n<style>\n.slide { font-family: Arial, sans-serif; width: 880px; max-width: calc(100% - 32px); margin: 20px auto; padding: 36px 44px; background: #fff; border-radius: 8px; }\n${css}\n</style>\n</head>\n<body>\n${bodyHtml}\n</body>\n</html>\n`
+    ? buildSlidesScrollSrcDoc({ bodyHtml, cssText: css })
     : `<!doctype html>\n<html lang="vi">\n<head>\n<meta charset="utf-8">\n<title>${title}</title>\n<style>\n.doc-page { font-family: Arial, sans-serif; padding: 8px 0; }\n${css}\n</style>\n</head>\n<body>\n<div class="doc-page">${bodyHtml}</div>\n</body>\n</html>\n`;
   return { ok: true, source: html, model: applied.model, warnings: [] };
 }

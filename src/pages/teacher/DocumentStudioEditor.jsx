@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft, ArrowLeftRight, BookOpen, Check, Copy, Download, Expand, Eye,
   FileText, FileWarning, FolderOpen, Image as ImageIcon, LayoutGrid, LayoutTemplate,
-  Play, Printer, Save, Search, Settings, Sparkles, Upload, UserRound,
+  Play, Presentation, Printer, Save, Search, Settings, Sparkles, Upload, UserRound,
   Wand2, X, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { navigate } from "../../lib/router.js";
@@ -16,6 +16,7 @@ import WordPreview from "./documents/WordPreview.jsx";
 import InteractiveWordPreview from "./documents/InteractiveWordPreview.jsx";
 import { FormatControls, FormatSheet, MobileFormatBar } from "./documents/FormatToolbar.jsx";
 import PowerPointPreview from "./documents/PowerPointPreview.jsx";
+import PowerPointEditor from "./documents/PowerPointEditor.jsx";
 import DocumentUploadModal from "./documents/DocumentUploadModal.jsx";
 import { applySource, convertSource } from "../../lib/documents/convert.js";
 import { applyBlockFormat, blockFormatState, wrapHtmlSelection } from "../../lib/documents/textFormat.js";
@@ -143,7 +144,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   const [applied, setApplied] = useState(null);
   const [appliedSource, setAppliedSource] = useState(null); // mã nguồn đã sinh ra `applied`
   const [applyErrors, setApplyErrors] = useState([]);
-  const [notice, setNotice] = useState("");
+  // const [notice, setNotice] = useState(""); // Not used currently
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null); // { auto, at } — lần lưu thành công gần nhất
@@ -168,6 +169,8 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   // mở lại; trên mobile việc hiện/ẩn vẫn do showPreviewMobile quyết định.
   const [previewOpen, setPreviewOpen] = useState(true);
   const [mobileSheet, setMobileSheet] = useState(null); // null | "tools" | "format" — bảng trượt từ dưới lên trên mobile
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [generating, setGenerating] = useState(false);
   // Định dạng chữ (thanh công cụ desktop + thanh đáy/panel mobile):
   // khối đích được suy ra từ vị trí con trỏ trong khung soạn JSON
   // (cursorPick, cập nhật cùng nhịp với reveal) hoặc từ khối giáo viên
@@ -248,8 +251,8 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   }, [mode, validApplied, targetBlockIndex]);
   // Thanh định dạng chỉ hiện khi có đích áp dụng thật: Word (cả hai chế
   // độ) hoặc PowerPoint ở chế độ Beautiful (bọc thẻ trong mã HTML).
-  // PowerPoint Normal dùng text thuần theo slide — không hiện nút chết.
-  const showFormatTools = docType === "word" || mode === "html";
+  // PowerPoint chỉ dùng JSON mode - không còn HTML mode
+  const showFormatTools = docType === "word";
 
   const goList = () => navigate("/dashboard/documents");
 
@@ -384,6 +387,10 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
 
   // ── Chuyển chế độ soạn ────────────────────────────────────────────────
   const switchMode = (target) => {
+    if (docType === "powerpoint") {
+      showToast?.("PowerPoint chỉ hỗ trợ chế độ chỉnh sửa trực tiếp trên slide.", "info");
+      return;
+    }
     if (target === mode) return;
     let nextDrafts = drafts;
     if (!drafts[target]) {
@@ -404,6 +411,10 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   };
 
   const convertIntoCurrent = () => {
+    if (docType === "powerpoint") {
+      showToast?.("PowerPoint chỉ hỗ trợ chế độ chỉnh sửa trực tiếp trên slide.", "info");
+      return;
+    }
     const other = mode === "html" ? "json" : "html";
     const run = () => {
       const conv = convertSource(drafts[other], other, docType);
@@ -427,13 +438,13 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     } else run();
   };
 
-  const changeDocType = (next) => {
-    if (next === docType) return;
-    setDocType(next);
-    doApply(draft, mode, next);
-    setTool("content");
-    showToast?.(`Đã chuyển sang ${next === "word" ? "Word" : "PowerPoint"}`, "success");
-  };
+  // const changeDocType = (next) => {
+  //   if (next === docType) return;
+  //   setDocType(next);
+  //   doApply(draft, mode, next);
+  //   setTool("content");
+  //   showToast?.(`Đã chuyển sang ${next === "word" ? "Word" : "PowerPoint"}`, "success");
+  // };
 
   // ── Mẫu thư viện ──────────────────────────────────────────────────────
   const loadCatalogTemplate = (template) => {
@@ -571,6 +582,121 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
         onConfirm: doDuplicate,
       });
     } else doDuplicate();
+  };
+
+  const handleAiGenerate = async () => {
+    if (!aiPrompt.trim()) {
+      showToast?.("Vui lòng nhập yêu cầu để AI tạo nội dung.", "error");
+      return;
+    }
+    setGenerating(true);
+    try {
+      // TODO: Gọi API AI để tạo document
+      // Tạm thời: tạo nội dung mẫu dựa trên loại tài liệu
+      let aiContent = "";
+      const prompt = aiPrompt.trim().toLowerCase();
+
+      if (docType === "word") {
+        if (mode === "html") {
+          // Tạo HTML cho Word
+          if (prompt.includes("toán") || prompt.includes("math")) {
+            aiContent = `<h1>Bài học Toán</h1>\n<p>Đây là nội dung bài học Toán được tạo bởi AI.</p>\n<ul>\n<li>Khái niệm cơ bản</li>\n<li>Ví dụ minh họa</li>\n<li>Bài tập thực hành</li>\n</ul>`;
+          } else if (prompt.includes("văn") || prompt.includes("literature")) {
+            aiContent = `<h1>Bài học Ngữ Văn</h1>\n<p>Đây là nội dung bài học Ngữ Văn được tạo bởi AI.</p>\n<blockquote>Trích dẫn từ tác phẩm</blockquote>\n<p>Phân tích nội dung và nghệ thuật.</p>`;
+          } else {
+            aiContent = `<h1>Tài liệu học tập</h1>\n<p>Đây là nội dung tài liệu học tập được tạo bởi AI dựa trên yêu cầu của bạn.</p>\n<p>Bạn có thể chỉnh sửa nội dung này theo ý muốn.</p>`;
+          }
+        } else {
+          // Tạo JSON cho Word
+          if (prompt.includes("toán") || prompt.includes("math")) {
+            aiContent = `{
+  "title": "Bài học Toán",
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 1,
+      "text": "Bài học Toán",
+      "align": "center"
+    },
+    {
+      "type": "paragraph",
+      "text": "Đây là nội dung bài học Toán được tạo bởi AI."
+    },
+    {
+      "type": "list",
+      "ordered": false,
+      "items": ["Khái niệm cơ bản", "Ví dụ minh họa", "Bài tập thực hành"]
+    }
+  ]
+}`;
+          } else {
+            aiContent = `{
+  "title": "Tài liệu học tập",
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 1,
+      "text": "Tài liệu học tập",
+      "align": "center"
+    },
+    {
+      "type": "paragraph",
+      "text": "Đây là nội dung tài liệu học tập được tạo bởi AI dựa trên yêu cầu của bạn."
+    }
+  ]
+}`;
+          }
+        }
+      } else {
+        // PowerPoint
+        if (mode === "html") {
+          aiContent = `<section class="slide slide--title">\n<h1>Bài trình bày</h1>\n<p class="slide-subtitle">Được tạo bởi AI</p>\n</section>\n<section class="slide slide--content">\n<h2>Nội dung chính</h2>\n<ul>\n<li>Slide 1: Giới thiệu</li>\n<li>Slide 2: Nội dung chi tiết</li>\n<li>Slide 3: Kết luận</li>\n</ul>\n</section>`;
+        } else {
+          aiContent = `{
+  "title": "Bài trình bày",
+  "slides": [
+    {
+      "type": "title",
+      "title": "Bài trình bày",
+      "subtitle": "Được tạo bởi AI"
+    },
+    {
+      "type": "content",
+      "title": "Nội dung chính",
+      "content": ["Slide 1: Giới thiệu", "Slide 2: Nội dung chi tiết", "Slide 3: Kết luận"]
+    }
+  ]
+}`;
+        }
+      }
+
+      // Chèn nội dung: Word dùng editor insert, PowerPoint cập nhật draft trực tiếp
+      if (docType === "word") {
+        const ok = editorRef.current?.insert(`\n${aiContent}\n`);
+        if (!ok) {
+          showToast?.("Không thể chèn nội dung. Vui lòng thử lại.", "error");
+          return;
+        }
+      } else {
+        // PowerPoint: cập nhật draft JSON/HTML và tự động áp dụng
+        setDrafts((d) => ({ ...d, [mode]: aiContent }));
+        // Nếu đang mở preview, apply ngay để cập nhật slides
+        if (previewOpen) {
+          const res = applySource(aiContent, mode, docType);
+          if (res.ok) {
+            setApplied(buildApplied(mode, docType, res));
+            setAppliedSource(aiContent);
+            setApplyErrors([]);
+          }
+        }
+      }
+      showToast?.("Đã tạo nội dung với AI. Bạn có thể chỉnh sửa nội dung này.", "success");
+      setAiPrompt("");
+    } catch (e) {
+      showToast?.(e?.message || "Không thể tạo nội dung với AI. Vui lòng thử lại.", "error");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   // ── Xuất file thật (.docx / .pptx) ────────────────────────────────────
@@ -998,7 +1124,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     );
   }
 
-  const warnings = validApplied?.warnings || [];
+  // const warnings = validApplied?.warnings || []; // Not used currently
 
   const renderToolPanel = () => {
     if (tool === "templates") {
@@ -1058,17 +1184,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
           <input id="docstudio-name" className="docstudio-input" value={name}
             onChange={(e) => setName(e.target.value)} placeholder="Tên tài liệu…" />
 
-          <span className="docstudio-label">Loại tài liệu</span>
-          <div className="docstudio-seg" style={{ "--seg-pos": docType === "word" ? 0 : 1 }}>
-            <button type="button" className={docType === "word" ? "is-active" : ""} onClick={() => changeDocType("word")}>Word</button>
-            <button type="button" className={docType === "powerpoint" ? "is-active" : ""} onClick={() => changeDocType("powerpoint")}>PowerPoint</button>
-          </div>
 
-          <span className="docstudio-label">Chế độ soạn</span>
-          <div className="docstudio-seg" style={{ "--seg-pos": mode === "html" ? 0 : 1 }}>
-            <button type="button" className={mode === "html" ? "is-active" : ""} onClick={() => switchMode("html")}>Beautiful</button>
-            <button type="button" className={mode === "json" ? "is-active" : ""} onClick={() => switchMode("json")}>Normal</button>
-          </div>
 
           {docType === "powerpoint" && (
             <>
@@ -1086,6 +1202,51 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
               onChange={(e) => setAutosave(e.target.checked)} />
             Tự động lưu bản nháp khi soạn
           </label>
+
+          <div className="border-t border-ink/10 pt-3 mt-3">
+            <span className="docstudio-label">Tạo nội dung với AI</span>
+            <p className="docstudio-flyout-hint mb-2">
+              {docType === "word"
+                ? "Nhập yêu cầu, AI sẽ sinh mã HTML hoặc JSON phù hợp cho loại tài liệu hiện tại."
+                : "Nhập yêu cầu, AI sẽ tạo slide PowerPoint với nội dung phù hợp."}
+            </p>
+
+            <div className="mb-2">
+              <div className="flex flex-wrap gap-1 mb-2">
+                <button type="button" className="docstudio-btn-small" onClick={() => setAiPrompt("Tạo giáo án bài toán lớp 3 về phép nhân")}>
+                  Toán học
+                </button>
+                <button type="button" className="docstudio-btn-small" onClick={() => setAiPrompt("Tạo bài giảng ngữ văn về tác phẩm văn học")}>
+                  Ngữ văn
+                </button>
+                <button type="button" className="docstudio-btn-small" onClick={() => setAiPrompt("Tạo slide bài giảng khoa học tự nhiên")}>
+                  Khoa học
+                </button>
+                <button type="button" className="docstudio-btn-small" onClick={() => setAiPrompt("Tạo tài liệu ôn tập lịch sử")}>
+                  Lịch sử
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <textarea id="docstudio-ai-prompt" className="docstudio-input flex-1 min-h-[80px]"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="Nhập yêu cầu chi tiết... VD: Tạo giáo án bài toán lớp 3 về phép nhân với 3 ví dụ minh họa và bài tập thực hành..." />
+            </div>
+
+            <div className="flex gap-2 mt-2">
+              <button type="button" className="docstudio-btn-primary flex-1" onClick={handleAiGenerate} disabled={generating}>
+                <Sparkles className="w-4 h-4" /> {generating ? "Đang tạo…" : `Tạo ${docType === "word" ? "Word" : "PowerPoint"}`}
+              </button>
+            </div>
+
+            <p className="docstudio-flyout-hint mt-2 text-xs">
+              {docType === "word"
+                ? <>AI sẽ tạo nội dung phù hợp với chế độ <strong>{mode === "html" ? "Beautiful" : "Normal"}</strong> và loại tài liệu <strong>Word</strong>.</>
+                : <>AI sẽ tạo nội dung cho <strong>PowerPoint</strong> với các slide được thiết kế sẵn.</>}
+            </p>
+          </div>
 
           <button type="button" className="docstudio-btn-primary" onClick={handleSave} disabled={saving}>
             <Save className="w-4 h-4" /> {saving ? "Đang lưu…" : "Lưu tài liệu"}
@@ -1325,70 +1486,94 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
           {tool !== "content" && renderToolPanel()}
 
           <div ref={splitRef} className={`docstudio-split ${previewOpen ? "" : "is-preview-closed"}`}>
-            <section
-              className={`docstudio-editor docstudio-split-editor ${showPreviewMobile ? "hidden lg:flex" : "flex"}`}
-              style={{ "--split-pct": `${split}%` }}>
+            {!(docType === "powerpoint" && previewOpen) && (
+              <section
+                className={`docstudio-editor docstudio-split-editor ${showPreviewMobile ? "hidden lg:flex" : "flex"}`}
+                style={{ "--split-pct": `${split}%` }}>
               <div className="docstudio-editor-head">
-                <div className="docstudio-tabs" role="tablist" aria-label="Chế độ soạn"
-                  style={{ "--seg-pos": mode === "json" ? 0 : 1 }}>
-                  {[["json", "{ } Normal"], ["html", "<> Beautiful"]].map(([m, label]) => (
-                    <button key={m} type="button" role="tab" aria-selected={mode === m}
-                      className={`docstudio-tab ${mode === m ? "is-active" : ""}`}
-                      onClick={() => switchMode(m)}>
-                      {label}
+                {docType === "word" ? (
+                  <>
+                    <div className="docstudio-tabs" role="tablist" aria-label="Chế độ soạn"
+                      style={{ "--seg-pos": mode === "json" ? 0 : 1 }}>
+                      {[["json", "{ } Normal"], ["html", "<> Beautiful"]].map(([m, label]) => (
+                        <button key={m} type="button" role="tab" aria-selected={mode === m}
+                          className={`docstudio-tab ${mode === m ? "is-active" : ""}`}
+                          onClick={() => switchMode(m)}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <span className="flex-1" />
+                    {!previewOpen && (
+                      <button type="button" className="docstudio-tool-btn" onClick={openPreview}
+                        title="Mở lại khung xem trước">
+                        <Eye className="w-3.5 h-3.5" /> Xem trước
+                      </button>
+                    )}
+                    <button type="button" className="docstudio-tool-btn" onClick={() => editorRef.current?.openSearch()} title="Tìm & thay thế (Ctrl+F / Ctrl+H)">
+                      <Search className="w-3.5 h-3.5" /> Tìm
                     </button>
-                  ))}
-                </div>
-                <span className="flex-1" />
-                {!previewOpen && (
-                  <button type="button" className="docstudio-tool-btn" onClick={openPreview}
-                    title="Mở lại khung xem trước">
-                    <Eye className="w-3.5 h-3.5" /> Xem trước
-                  </button>
+                    <button type="button" className="docstudio-tool-btn" onClick={handleFormat} title="Định dạng mã nguồn">
+                      <Wand2 className="w-3.5 h-3.5" /> Format
+                    </button>
+                  </>
+                ) : (
+                  // PowerPoint: chỉ hiển thị nút Xem trước
+                  <>
+                    <span className="flex-1" />
+                    {!previewOpen && (
+                      <button type="button" className="docstudio-tool-btn" onClick={openPreview}
+                        title="Mở lại khung xem trước">
+                        <Eye className="w-3.5 h-3.5" /> Xem trước
+                      </button>
+                    )}
+                  </>
                 )}
-                <button type="button" className="docstudio-tool-btn" onClick={() => editorRef.current?.openSearch()} title="Tìm & thay thế (Ctrl+F / Ctrl+H)">
-                  <Search className="w-3.5 h-3.5" /> Tìm
-                </button>
-                <button type="button" className="docstudio-tool-btn" onClick={handleFormat} title="Định dạng mã nguồn">
-                  <Wand2 className="w-3.5 h-3.5" /> Format
-                </button>
               </div>
 
-              {showFormatTools && (
+              {docType === "word" && showFormatTools && (
                 <FormatControls layout="bar" state={formatState} onFormat={applyFormat}
                   htmlMode={mode === "html"} />
               )}
 
-              <div className="docstudio-editor-code">
-                <CodeEditor ref={editorRef} value={draft} language={mode === "json" ? "json" : "html"}
-                  onChange={(text) => setDrafts((d) => (d[mode] === text ? d : { ...d, [mode]: text }))}
-                  onCursor={handleCursor} />
-              </div>
+              {docType === "word" ? (
+                <>
+                  <div className="docstudio-editor-code">
+                    <CodeEditor ref={editorRef} value={draft} language={mode === "json" ? "json" : "html"}
+                      onChange={(text) => setDrafts((d) => (d[mode] === text ? d : { ...d, [mode]: text }))}
+                      onCursor={handleCursor} />
+                  </div>
 
-              <div className="docstudio-editor-foot">
-                <span className={`docstudio-valid ${applyErrors.length ? "is-error" : ""}`}>
-                  {applyErrors.length ? <FileWarning className="w-4 h-4" /> : <Check className="w-4 h-4" />}
-                  {applyErrors.length ? "Mã nguồn có lỗi" : "Mã nguồn hợp lệ"}
-                </span>
-                {applyStatus === "error" && <span className="docstudio-stale">• Chưa áp dụng được — lỗi cú pháp</span>}
-                {applyStatus === "pending" && <span className="docstudio-stale">• Đang áp dụng…</span>}
-                {applyStatus === "applied" && <span className="docstudio-applied">• Đã áp dụng</span>}
-                {docStats && (
-                  <span className="docstudio-stats">
-                    {docStats.kind === "presentation" ? `${docStats.count} slide` : `${docStats.count} khối`}
-                    {` · ≈ ${docStats.words} từ · nháp ${draftKb >= 100 ? Math.round(draftKb) : draftKb.toFixed(1)} KB`}
-                  </span>
-                )}
-                <span className="flex-1" />
-                <button type="button" className="docstudio-convert-btn" onClick={convertIntoCurrent}
-                  title={`Chuyển đổi nội dung từ ${modeName(mode === "html" ? "json" : "html")} sang chế độ hiện tại`}>
-                  <ArrowLeftRight className="w-3.5 h-3.5" />
-                  <span className="hidden xl:inline">Chuyển đổi</span>
-                </button>
-              </div>
+                  <div className="docstudio-editor-foot">
+                    <span className={`docstudio-valid ${applyErrors.length ? "is-error" : ""}`}>
+                      {applyErrors.length ? <FileWarning className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                      {applyErrors.length ? "Mã nguồn có lỗi" : "Mã nguồn hợp lệ"}
+                    </span>
+                    {applyStatus === "error" && <span className="docstudio-stale">• Chưa áp dụng được — lỗi cú pháp</span>}
+                    {applyStatus === "pending" && <span className="docstudio-stale">• Đang áp dụng…</span>}
+                    {applyStatus === "applied" && <span className="docstudio-applied">• Đã áp dụng</span>}
+                    {docStats && (
+                      <span className="docstudio-stats">
+                        {docStats.kind === "presentation" ? `${docStats.count} slide` : `${docStats.count} khối`}
+                        {` · ≈ ${docStats.words} từ · nháp ${draftKb >= 100 ? Math.round(draftKb) : draftKb.toFixed(1)} KB`}
+                      </span>
+                    )}
+                    <span className="flex-1" />
+                    <button type="button" className="docstudio-convert-btn" onClick={convertIntoCurrent}
+                      title={`Chuyển đổi nội dung từ ${modeName(mode === "html" ? "json" : "html")} sang chế độ hiện tại`}>
+                      <ArrowLeftRight className="w-3.5 h-3.5" />
+                      <span className="hidden xl:inline">Chuyển đổi</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                // PowerPoint: Không hiển thị thông báo chỉnh sửa, slide được chỉnh sửa trực tiếp trên Preview bên phải
+                <div className="docstudio-powerpoint-edit-notice" style={{display: 'none'}} />
+              )}
             </section>
+          )}
 
-            {previewOpen && (
+          {previewOpen && (
               <div role="separator" aria-orientation="vertical" onPointerDown={startDrag}
                 className="hidden lg:block docstudio-divider" />
             )}
@@ -1396,19 +1581,25 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
             <section ref={previewRef} aria-hidden={!previewOpen}
               className={`docstudio-preview ${showPreviewMobile ? "flex" : "hidden lg:flex"} ${previewOpen ? "" : "is-closed"}`}>
               <div className="docstudio-preview-head">
-                <span className="docstudio-preview-title">
-                  Xem trước {docType === "word" ? "— trang A4" : "— slide"}
-                </span>
-                {appliedStale && (
-                  <span className="docstudio-stale">
-                    {applyErrors.length ? "(mã nguồn có lỗi — đang xem bản hợp lệ gần nhất)" : "(đang áp dụng…)"}
-                  </span>
+                {docType === "word" && (
+                  <>
+                    <span className="docstudio-preview-title">
+                      Xem trước — trang A4
+                    </span>
+                    {appliedStale && (
+                      <span className="docstudio-stale">
+                        {applyErrors.length ? "(mã nguồn có lỗi — đang xem bản hợp lệ gần nhất)" : "(đang áp dụng…)"}
+                      </span>
+                    )}
+                  </>
                 )}
                 <span className="flex-1" />
-                <button type="button" className="docstudio-zoom-btn"
-                  onClick={closePreview} title="Đóng khung xem trước" aria-label="Đóng khung xem trước">
-                  <X className="w-4 h-4" />
-                </button>
+                {docType === "word" && (
+                  <button type="button" className="docstudio-zoom-btn"
+                    onClick={closePreview} title="Đóng khung xem trước" aria-label="Đóng khung xem trước">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
               <div className="docstudio-preview-body">
                 {docType === "word" ? (
@@ -1424,13 +1615,43 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                       zoom={zoom} reveal={reveal} />
                   )
                 ) : (
-                  <PowerPointPreview
-                    model={validApplied?.mode === "json" ? validApplied.model : null}
-                    bodyHtml={validApplied?.mode === "html" ? validApplied.bodyHtml : ""}
-                    cssText={validApplied?.mode === "html" ? validApplied.cssText : ""}
-                    zoom={zoom} ratio={ratio} onRatioChange={setRatio}
-                    index={slideIndex} onIndexChange={setSlideIndex}
-                    editable={mode === "json"} onSlideOp={handleSlideOp} reveal={reveal} />
+                  docType === "powerpoint" ? (
+                    <PowerPointEditor
+                      model={validApplied?.model || null}
+                      onModelUpdate={(updatedModel) => {
+                        // Cập nhật model khi người dùng chỉnh sửa
+                        const src = JSON.stringify(updatedModel, null, 2);
+                        setDrafts((d) => ({ ...d, json: src }));
+                        setApplied(buildApplied("json", "powerpoint", { model: updatedModel }));
+                        setAppliedSource(src);
+                      }}
+                      zoom={zoom}
+                      ratio={ratio}
+                      onRatioChange={setRatio}
+                      index={slideIndex}
+                      onIndexChange={setSlideIndex}
+                      editable={true}
+                      onSlideOp={handleSlideOp}
+                    />
+                  ) : (
+                    <PowerPointEditor
+                      model={validApplied?.model || null}
+                      onModelUpdate={(updatedModel) => {
+                        // Cập nhật model khi người dùng chỉnh sửa
+                        const src = JSON.stringify(updatedModel, null, 2);
+                        setDrafts((d) => ({ ...d, json: src }));
+                        setApplied(buildApplied("json", "powerpoint", { model: updatedModel }));
+                        setAppliedSource(src);
+                      }}
+                      zoom={zoom}
+                      ratio={ratio}
+                      onRatioChange={setRatio}
+                      index={slideIndex}
+                      onIndexChange={setSlideIndex}
+                      editable={true}
+                      onSlideOp={handleSlideOp}
+                    />
+                  )
                 )}
               </div>
               <div className="docstudio-preview-foot">
@@ -1456,14 +1677,16 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
             </section>
           </div>
         </div>
-      </div>
+      </div >
 
       {/* ── Thanh định dạng chữ dính đáy (mobile, kiểu Word) ────────── */}
-      {showFormatTools && (
-        <MobileFormatBar state={formatState} onFormat={applyFormat}
-          onInsert={() => { setTool("components"); setMobileSheet("tools"); }}
-          onOpenPanel={() => setMobileSheet("format")} />
-      )}
+      {
+        showFormatTools && (
+          <MobileFormatBar state={formatState} onFormat={applyFormat}
+            onInsert={() => { setTool("components"); setMobileSheet("tools"); }}
+            onOpenPanel={() => setMobileSheet("format")} />
+        )
+      }
 
       {/* ── Điều hướng mobile: Soạn / Xem / Công cụ / Lưu / Xuất ─────── */}
       <nav className="docstudio-mobile-nav" aria-label="Thao tác soạn tài liệu">
@@ -1487,103 +1710,111 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
         </button>
       </nav>
 
-      {mobileSheet === "tools" && (
-        <div className="docstudio-mobile-sheet-wrap">
-          <button type="button" className="docstudio-mobile-sheet-backdrop"
-            onClick={() => setMobileSheet(null)} aria-label="Đóng bảng công cụ" />
-          <section className="docstudio-mobile-sheet" role="dialog" aria-modal="true" aria-label="Công cụ soạn thảo">
-            <header className="docstudio-mobile-sheet-head">
-              <strong>Công cụ soạn thảo</strong>
-              <button type="button" onClick={() => setMobileSheet(null)} aria-label="Đóng"><X /></button>
-            </header>
-            <div className="docstudio-mobile-sheet-tools">
-              {[...RAIL_ITEMS, { id: "templates", label: "Mẫu", icon: LayoutTemplate }].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button key={item.id} type="button"
-                    className={`docstudio-rail-btn ${tool === item.id ? "is-active" : ""}`}
-                    onClick={() => setTool(item.id)}>
-                    <Icon /> <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="docstudio-mobile-sheet-body">
-              {renderToolPanel()}
-              <button type="button" className="docstudio-btn-ghost" onClick={() => { setMobileSheet(null); setUploadOpen(true); }}>
-                <Upload className="w-4 h-4" /> Tải file lên (DOCX/PPTX/HTML/JSON)
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      {
+        mobileSheet === "tools" && (
+          <div className="docstudio-mobile-sheet-wrap">
+            <button type="button" className="docstudio-mobile-sheet-backdrop"
+              onClick={() => setMobileSheet(null)} aria-label="Đóng bảng công cụ" />
+            <section className="docstudio-mobile-sheet" role="dialog" aria-modal="true" aria-label="Công cụ soạn thảo">
+              <header className="docstudio-mobile-sheet-head">
+                <strong>Công cụ soạn thảo</strong>
+                <button type="button" onClick={() => setMobileSheet(null)} aria-label="Đóng"><X /></button>
+              </header>
+              <div className="docstudio-mobile-sheet-tools">
+                {[...RAIL_ITEMS, { id: "templates", label: "Mẫu", icon: LayoutTemplate }].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button key={item.id} type="button"
+                      className={`docstudio-rail-btn ${tool === item.id ? "is-active" : ""}`}
+                      onClick={() => setTool(item.id)}>
+                      <Icon /> <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="docstudio-mobile-sheet-body">
+                {renderToolPanel()}
+                <button type="button" className="docstudio-btn-ghost" onClick={() => { setMobileSheet(null); setUploadOpen(true); }}>
+                  <Upload className="w-4 h-4" /> Tải file lên (DOCX/PPTX/HTML/JSON)
+                </button>
+              </div>
+            </section>
+          </div>
+        )
+      }
 
-      {mobileSheet === "format" && (
-        <FormatSheet state={formatState} onFormat={applyFormat} htmlMode={mode === "html"}
-          onClose={() => setMobileSheet(null)}
-          hint={mode === "html"
-            ? "Hãy bôi đen đoạn chữ trong khung Soạn trước — định dạng sẽ bọc thẻ quanh đúng đoạn đó."
-            : "Định dạng áp lên khối đang chọn: đặt con trỏ vào khối trong khung Soạn, hoặc chạm chọn khối ở tab Xem."} />
-      )}
+      {
+        mobileSheet === "format" && (
+          <FormatSheet state={formatState} onFormat={applyFormat} htmlMode={mode === "html"}
+            onClose={() => setMobileSheet(null)}
+            hint={mode === "html"
+              ? "Hãy bôi đen đoạn chữ trong khung Soạn trước — định dạng sẽ bọc thẻ quanh đúng đoạn đó."
+              : "Định dạng áp lên khối đang chọn: đặt con trỏ vào khối trong khung Soạn, hoặc chạm chọn khối ở tab Xem."} />
+        )
+      }
 
       {/* ── Kết quả xuất file (.docx / .pptx thật) ─────────────────────── */}
-      {exportReport && (
-        <Modal onClose={() => setExportReport(null)}>
-          <h3 className="font-display text-xl text-ink mb-1">
-            {exportReport.ok ? "Xuất file thành công" : "Xuất file thất bại"}
-          </h3>
-          <p className="text-sm font-body text-ink/70 mb-3">{exportReport.message}</p>
-          {exportReport.warnings?.length > 0 && (
-            <details className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
-              <summary className="cursor-pointer text-[13px] font-semibold text-amber-800">
-                {exportReport.warnings.length} cảnh báo chuyển đổi
-              </summary>
-              <ul className="mt-2 list-disc space-y-1 pl-4 text-[12.5px] text-amber-900/90">
-                {exportReport.warnings.map((w, i) => <li key={i}>{w}</li>)}
-              </ul>
-            </details>
-          )}
-          <div className="flex justify-end">
-            <button type="button" onClick={() => setExportReport(null)}
-              className="px-4 py-2 rounded-full text-sm font-semibold bg-ink text-paper">Đóng</button>
-          </div>
-        </Modal>
-      )}
+      {
+        exportReport && (
+          <Modal onClose={() => setExportReport(null)}>
+            <h3 className="font-display text-xl text-ink mb-1">
+              {exportReport.ok ? "Xuất file thành công" : "Xuất file thất bại"}
+            </h3>
+            <p className="text-sm font-body text-ink/70 mb-3">{exportReport.message}</p>
+            {exportReport.warnings?.length > 0 && (
+              <details className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                <summary className="cursor-pointer text-[13px] font-semibold text-amber-800">
+                  {exportReport.warnings.length} cảnh báo chuyển đổi
+                </summary>
+                <ul className="mt-2 list-disc space-y-1 pl-4 text-[12.5px] text-amber-900/90">
+                  {exportReport.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                </ul>
+              </details>
+            )}
+            <div className="flex justify-end">
+              <button type="button" onClick={() => setExportReport(null)}
+                className="px-4 py-2 rounded-full text-sm font-semibold bg-ink text-paper">Đóng</button>
+            </div>
+          </Modal>
+        )
+      }
 
       {/* ── Trợ lý AI: mở nhanh mẫu có sẵn (tính năng AI tự soạn đang phát triển) ── */}
-      {aiOpen && (
-        <Modal onClose={() => setAiOpen(false)}>
-          <h3 className="font-display text-xl text-ink mb-1">Trợ lý AI</h3>
-          <p className="text-sm font-body text-ink/60 mb-4">
-            Trợ lý AI tự soạn nội dung đang được phát triển. Trong lúc chờ, bạn có thể bắt đầu từ một mẫu thiết kế sẵn:
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {templatesFor(docType).slice(0, 4).map((tpl) => (
-              <button key={tpl.id} type="button"
-                className="flex items-center gap-2.5 rounded-xl border border-ink/10 bg-paper2 px-3 py-2.5 text-left hover:border-ink/25"
-                onClick={() => { setAiOpen(false); loadCatalogTemplate(tpl); }}>
-                <span className="docstudio-template-swatch" style={{
-                  "--sw-a": tpl.theme.accent,
-                  "--sw-b": tpl.theme.accent2,
-                  "--sw-soft": tpl.theme.soft,
-                }} aria-hidden="true"><i /><i /><i /></span>
-                <span className="min-w-0">
-                  <b className="block text-[13.5px] text-ink">{tpl.name}</b>
-                  <small className="block text-[12px] text-ink/55">{tpl.categoryLabel} · {tpl.gradeRange}</small>
-                </span>
+      {
+        aiOpen && (
+          <Modal onClose={() => setAiOpen(false)}>
+            <h3 className="font-display text-xl text-ink mb-1">Trợ lý AI</h3>
+            <p className="text-sm font-body text-ink/60 mb-4">
+              Trợ lý AI tự soạn nội dung đang được phát triển. Trong lúc chờ, bạn có thể bắt đầu từ một mẫu thiết kế sẵn:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {templatesFor(docType).slice(0, 4).map((tpl) => (
+                <button key={tpl.id} type="button"
+                  className="flex items-center gap-2.5 rounded-xl border border-ink/10 bg-paper2 px-3 py-2.5 text-left hover:border-ink/25"
+                  onClick={() => { setAiOpen(false); loadCatalogTemplate(tpl); }}>
+                  <span className="docstudio-template-swatch" style={{
+                    "--sw-a": tpl.theme.accent,
+                    "--sw-b": tpl.theme.accent2,
+                    "--sw-soft": tpl.theme.soft,
+                  }} aria-hidden="true"><i /><i /><i /></span>
+                  <span className="min-w-0">
+                    <b className="block text-[13.5px] text-ink">{tpl.name}</b>
+                    <small className="block text-[12px] text-ink/55">{tpl.categoryLabel} · {tpl.gradeRange}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button type="button" onClick={() => { setAiOpen(false); leaveTo("/dashboard/documents/templates"); }}
+                className="px-4 py-2 rounded-full text-sm font-semibold border border-ink/15 bg-white text-ink">
+                Mở thư viện mẫu
               </button>
-            ))}
-          </div>
-          <div className="mt-4 flex flex-wrap justify-end gap-2">
-            <button type="button" onClick={() => { setAiOpen(false); leaveTo("/dashboard/documents/templates"); }}
-              className="px-4 py-2 rounded-full text-sm font-semibold border border-ink/15 bg-white text-ink">
-              Mở thư viện mẫu
-            </button>
-            <button type="button" onClick={() => setAiOpen(false)}
-              className="px-4 py-2 rounded-full text-sm font-semibold bg-ink text-paper">Đóng</button>
-          </div>
-        </Modal>
-      )}
+              <button type="button" onClick={() => setAiOpen(false)}
+                className="px-4 py-2 rounded-full text-sm font-semibold bg-ink text-paper">Đóng</button>
+            </div>
+          </Modal>
+        )
+      }
 
       <DocumentUploadModal
         open={uploadOpen}
@@ -1594,6 +1825,6 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
       />
 
       <ConfirmModal {...confirmProps} />
-    </div>
+    </div >
   );
 }

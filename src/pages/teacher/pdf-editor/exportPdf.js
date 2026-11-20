@@ -9,9 +9,9 @@
  *
  * Giới hạn trung thực: pdf-lib không sửa được chữ gốc đã có trong PDF — công
  * cụ chỉ thêm lớp nội dung mới lên trên (xem hướng dẫn trong trang).
+ * Thư viện pdf-lib và @pdf-lib/fontkit được tải động (lazy) chỉ khi cần xuất file.
  */
-import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
-import fontkit from "@pdf-lib/fontkit";
+
 import { ensureFontLoaded, getFontBytes } from "./fonts.js";
 import { resolveTextFace } from "./srcFonts.js";
 import {
@@ -35,6 +35,21 @@ export function exportNameFor(fileName) {
   return `${base}-edited.pdf`;
 }
 
+let pdfLibModule = null;
+let fontkitModule = null;
+
+/** Tải pdf-lib và fontkit một lần (lazy). */
+async function loadPdfLib() {
+  if (pdfLibModule && fontkitModule) return { pdfLibModule, fontkitModule };
+  const [{ default: PDFDocument, StandardFonts, degrees, rgb }, { default: fontkit }] = await Promise.all([
+    import("pdf-lib"),
+    import("@pdf-lib/fontkit"),
+  ]);
+  pdfLibModule = { PDFDocument, StandardFonts, degrees, rgb };
+  fontkitModule = fontkit;
+  return { pdfLibModule, fontkitModule };
+}
+
 async function embedFace(out, cache, familyId, bold, italic) {
   const key = `${familyId}|${bold ? 1 : 0}|${italic ? 1 : 0}`;
   if (cache.has(key)) return cache.get(key);
@@ -47,8 +62,7 @@ async function embedFace(out, cache, familyId, bold, italic) {
     try {
       font = await out.embedFont(bytes);
     } catch {
-      // Dự phòng cuối: font tiêu chuẩn của pdf-lib (chỉ thiếu vài ký tự lạ).
-      font = await out.embedFont(StandardFonts.Helvetica);
+      font = await out.embedFont(pdfLibModule.StandardFonts.Helvetica);
     }
   }
   cache.set(key, font);
@@ -88,7 +102,6 @@ function decodeDataUrl(dataUrl) {
 async function embedImage(out, cache, src) {
   if (cache.has(src)) return cache.get(src);
   const bytes = decodeDataUrl(src);
-  // Ảnh luôn được chuyển sang PNG khi chèn vào (xem PdfEditorPage) nên embed PNG.
   const img = await out.embedPng(bytes);
   cache.set(src, img);
   return img;
@@ -99,7 +112,6 @@ async function drawObject(out, page, obj, geo, caches, srcFonts) {
   const ctx = { rot, W, H };
 
   if (obj.type === "text") {
-    // Font gốc nhúng của PDF nếu dùng được — đo và vẽ phải cùng một mặt font.
     let face = resolveTextFace(obj, srcFonts);
     let font = face.embedded ? await embedSrcFace(out, caches.fonts, face.embedded) : null;
     if (!font) {
@@ -125,7 +137,7 @@ async function drawObject(out, page, obj, geo, caches, srcFonts) {
         size: obj.fontSize,
         font,
         color,
-        rotate: degrees(rot),
+        rotate: pdfLibModule.degrees(rot),
         opacity,
       });
     }
@@ -134,14 +146,13 @@ async function drawObject(out, page, obj, geo, caches, srcFonts) {
 
   if (obj.type === "image") {
     const img = await embedImage(out, caches.images, obj.src);
-    // Gốc tọa độ pdf-lib drawImage là GÓC DƯỚI-TRÁI của ảnh (đã xoay).
     const p = displayToPdf(obj.x, obj.y + obj.h, ctx);
     page.drawImage(img, {
       x: p.x,
       y: p.y,
       width: obj.w,
       height: obj.h,
-      rotate: degrees(rot),
+      rotate: pdfLibModule.degrees(rot),
       opacity: obj.opacity ?? 1,
     });
     return;
@@ -150,8 +161,6 @@ async function drawObject(out, page, obj, geo, caches, srcFonts) {
   if (obj.type === "rect" || obj.type === "redact") {
     const hasStroke = obj.type === "rect" && Boolean(obj.stroke) && (obj.strokeWidth || 0) > 0;
     const bw = hasStroke ? obj.strokeWidth : 0;
-    // Viền CSS nằm TRONG khung; pdf-lib vẽ viền ĐÚNG TRÊN đường path → thu
-    // khung vào bw/2 mỗi bên để hai bên giống hệt nhau.
     const x = obj.x + bw / 2;
     const y = obj.y + bw / 2;
     const w = obj.w - bw;
@@ -199,12 +208,13 @@ async function drawObject(out, page, obj, geo, caches, srcFonts) {
  * @returns {Promise<Uint8Array>}
  */
 export async function buildPdf({ doc, originalBytes, srcFonts = null }) {
+  const { pdfLibModule } = await loadPdfLib();
   if (!doc || !originalBytes) throw new Error("Chưa có tài liệu để xuất.");
   if (!doc.order.length) throw new Error("Tài liệu không còn trang nào để xuất.");
 
-  const src = await PDFDocument.load(originalBytes, { ignoreEncryption: true });
-  const out = await PDFDocument.create();
-  out.registerFontkit(fontkit);
+  const src = await pdfLibModule.PDFDocument.load(originalBytes, { ignoreEncryption: true });
+  const out = await pdfLibModule.PDFDocument.create();
+  out.registerFontkit(fontkitModule);
   try {
     out.setTitle(`${String(doc.fileName || "tai-lieu").replace(/\.pdf$/i, "")} (đã chỉnh sửa)`);
     out.setProducer("EduPlay — Chỉnh sửa PDF");
@@ -221,7 +231,7 @@ export async function buildPdf({ doc, originalBytes, srcFonts = null }) {
     const meta = doc.pages[pageIndex];
     const page = out.addPage(copied[i]);
     const rot = (((meta.rotate + (doc.deltas[pageIndex] || 0)) % 360) + 360) % 360;
-    page.setRotation(degrees(rot));
+    page.setRotation(pdfLibModule.degrees(rot));
 
     const objects = doc.objects.filter((o) => o.page === pageIndex);
     for (const obj of objects) {
@@ -234,7 +244,8 @@ export async function buildPdf({ doc, originalBytes, srcFonts = null }) {
 
 /** Mở lại file vừa xuất để chắc chắn không hỏng + đúng số trang. */
 export async function verifyExport(bytes, expectedPages) {
-  const check = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const { pdfLibModule } = await loadPdfLib();
+  const check = await pdfLibModule.PDFDocument.load(bytes, { ignoreEncryption: true });
   const count = check.getPageCount();
   if (count !== expectedPages) {
     throw new Error(`File xuất ra có ${count} trang (mong đợi ${expectedPages} trang).`);
