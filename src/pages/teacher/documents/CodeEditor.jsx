@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { EditorState } from "@codemirror/state";
 import { EditorView, highlightActiveLineGutter, keymap, lineNumbers } from "@codemirror/view";
 import { minimalSetup } from "codemirror";
-import { indentWithTab } from "@codemirror/commands";
+import { indentWithTab, redo, redoDepth, undo, undoDepth } from "@codemirror/commands";
 import { html } from "@codemirror/lang-html";
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { linter, lintGutter } from "@codemirror/lint";
@@ -16,16 +16,24 @@ import { formatHtmlText, formatJsonText } from "../../../lib/documents/format.js
 // của @codemirror/search). KHÔNG thực thi mã của giáo viên — đây chỉ là
 // trình soạn văn bản có cấu trúc.
 //
-// Props: value (mã nguồn), onChange(text), language: "html" | "json".
+// Props: value (mã nguồn), onChange(text), language: "html" | "json",
+//        onHistoryChange({ canUndo, canRedo }) — báo mỗi khi mốc
+//        Hoàn tác/Làm lại thay đổi để thanh công cụ bật/tắt nút đúng.
 // Ref: format() — định dạng lại toàn bộ mã nguồn hiện tại;
-//      openSearch() — mở panel tìm & thay thế.
-const CodeEditor = forwardRef(function CodeEditor({ value, onChange, language, onCursor }, ref) {
+//      openSearch() — mở panel tìm & thay thế;
+//      undo() / redo() / canUndo() / canRedo() — lịch sử CodeMirror:
+//      MỌI thay đổi (gõ tay, chèn snippet, định dạng qua dispatch,
+//      đồng bộ value từ bên ngoài) đều chung một lịch sử này.
+const CodeEditor = forwardRef(function CodeEditor({ value, onChange, language, onCursor, onHistoryChange }, ref) {
   const hostRef = useRef(null);
   const viewRef = useRef(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const onCursorRef = useRef(onCursor);
   onCursorRef.current = onCursor;
+  const onHistoryRef = useRef(onHistoryChange);
+  onHistoryRef.current = onHistoryChange;
+  const historyCacheRef = useRef({ canUndo: false, canRedo: false });
   const lastEmittedRef = useRef(value);
 
   useImperativeHandle(ref, () => ({
@@ -88,6 +96,28 @@ const CodeEditor = forwardRef(function CodeEditor({ value, onChange, language, o
       view.focus();
       return openSearchPanel(view);
     },
+    // Hoàn tác / Làm lại bằng lịch sử tích hợp của CodeMirror
+    // (@codemirror/commands) — cùng lịch sử với Ctrl+Z / Ctrl+Y.
+    undo() {
+      const view = viewRef.current;
+      if (!view) return false;
+      view.focus();
+      return undo(view);
+    },
+    redo() {
+      const view = viewRef.current;
+      if (!view) return false;
+      view.focus();
+      return redo(view);
+    },
+    canUndo() {
+      const view = viewRef.current;
+      return view ? undoDepth(view.state) > 0 : false;
+    },
+    canRedo() {
+      const view = viewRef.current;
+      return view ? redoDepth(view.state) > 0 : false;
+    },
   }), [language]);
 
   // Tạo editor khi mount / khi đổi ngôn ngữ (mỗi chế độ soạn một ngôn ngữ).
@@ -114,6 +144,17 @@ const CodeEditor = forwardRef(function CodeEditor({ value, onChange, language, o
           const text = update.state.doc.toString();
           lastEmittedRef.current = text;
           onChangeRef.current?.(text);
+        }
+        // Mốc Hoàn tác/Làm lại thay đổi (gõ, chèn, undo/redo…) → báo
+        // ra ngoài để nút trên thanh công cụ bật/tắt đúng lúc.
+        const hist = {
+          canUndo: undoDepth(update.state) > 0,
+          canRedo: redoDepth(update.state) > 0,
+        };
+        if (hist.canUndo !== historyCacheRef.current.canUndo
+          || hist.canRedo !== historyCacheRef.current.canRedo) {
+          historyCacheRef.current = hist;
+          onHistoryRef.current?.(hist);
         }
         // Con trỏ dời do click/phím mũi tên (không phải do gõ chữ) → báo
         // vị trí để preview cuộn tới + bôi xanh đoạn tương ứng.

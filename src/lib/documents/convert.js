@@ -7,6 +7,7 @@
 import { parseHtmlToModel, validateHtmlBalance } from "./htmlParser.js";
 import { validateDocumentJson } from "./schemas.js";
 import { jsonToModel, modelToJson } from "./model.js";
+import { pageStyleBlockHtml } from "./pageConfig.js";
 import { escapeHtml, renderModelBodyHtml, themeCssForModel, buildSlidesScrollSrcDoc } from "./modelRender.js";
 import { jsonErrorPosition } from "./format.js";
 
@@ -90,8 +91,11 @@ export function convertSource(source, fromMode, docType) {
 
   // Sử dụng buildSlidesScrollSrcDoc cho PowerPoint để đảm bảo consistency
   // với preview trong PowerPointPreview component
+  // Cấu hình trang của Word đi sang Beautiful bằng khối <style
+  // id="docstudio-page"> để vòng JSON → HTML → JSON không mất cấu hình.
+  const pageBlock = docType === "powerpoint" ? "" : pageStyleBlockHtml(applied.model.page);
   const html = docType === "powerpoint"
     ? buildSlidesScrollSrcDoc({ bodyHtml, cssText: css })
-    : `<!doctype html>\n<html lang="vi">\n<head>\n<meta charset="utf-8">\n<title>${title}</title>\n<style>\n.doc-page { font-family: Arial, sans-serif; padding: 8px 0; }\n${css}\n</style>\n</head>\n<body>\n<div class="doc-page">${bodyHtml}</div>\n</body>\n</html>\n`;
+    : `<!doctype html>\n<html lang="vi">\n<head>\n<meta charset="utf-8">\n<title>${title}</title>\n<style>\n.doc-page { font-family: Arial, sans-serif; padding: 8px 0; }\n${css}\n</style>${pageBlock ? `\n${pageBlock}` : ""}\n</head>\n<body>\n<div class="doc-page">${bodyHtml}</div>\n</body>\n</html>\n`;
   return { ok: true, source: html, model: applied.model, warnings: [] };
 }

@@ -9,7 +9,9 @@
 // thể kiểu "blocks[2].items[0]" để giáo viên sửa đúng chỗ). Mỗi lỗi là
 // { path, message } — UI liệt kê toàn bộ, không dừng ở lỗi đầu tiên.
 
-export const WORD_BLOCK_TYPES = ["heading", "paragraph", "list", "table", "image"];
+import { PAGE_ORIENTATIONS, PAGE_SIZE_KEYS } from "./pageConfig.js";
+
+export const WORD_BLOCK_TYPES = ["heading", "paragraph", "list", "table", "image", "pageBreak", "signature"];
 export const SLIDE_TYPES = ["title", "content", "image", "two-column", "table", "summary"];
 
 const isObj = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
@@ -75,7 +77,84 @@ function checkBlockStyle(b, p, errors) {
       errors.push({ path: `${p}.fontSize`, message: "'fontSize' phải là số từ 1 đến 200 (đơn vị pt)" });
     }
   }
+  checkSpacingFields(b, p, errors);
   checkRuns(b, p, errors);
+}
+
+/** Giãn dòng + khoảng sau đoạn cấp khối (heading/paragraph/list). */
+function checkSpacingFields(b, p, errors) {
+  if (b.lineHeight !== undefined) {
+    const n = Number(b.lineHeight);
+    if (!Number.isFinite(n) || n < 0.5 || n > 4) {
+      errors.push({ path: `${p}.lineHeight`, message: "'lineHeight' (giãn dòng) phải là số từ 0.5 đến 4" });
+    }
+  }
+  if (b.spacingAfter !== undefined) {
+    const n = Number(b.spacingAfter);
+    if (!Number.isFinite(n) || n < 0 || n > 200) {
+      errors.push({ path: `${p}.spacingAfter`, message: "'spacingAfter' (khoảng sau đoạn, pt) phải là số từ 0 đến 200" });
+    }
+  }
+}
+
+/** Cấu hình trang `page` của tài liệu Word — field tuỳ chọn, thiếu thì bỏ qua. */
+function checkPage(v, errors) {
+  if (v === undefined) return;
+  if (!isObj(v)) {
+    errors.push({ path: "page", message: "'page' (cấu hình trang) phải là một đối tượng" });
+    return;
+  }
+  if (v.size !== undefined && !PAGE_SIZE_KEYS.includes(v.size)) {
+    errors.push({ path: "page.size", message: `'page.size' (khổ giấy) chỉ nhận ${PAGE_SIZE_KEYS.join(", ")}` });
+  }
+  if (v.orientation !== undefined && !PAGE_ORIENTATIONS.includes(v.orientation)) {
+    errors.push({ path: "page.orientation", message: "'page.orientation' (hướng giấy) chỉ nhận portrait (dọc) hoặc landscape (ngang)" });
+  }
+  if (v.margins !== undefined) {
+    if (!isObj(v.margins)) {
+      errors.push({ path: "page.margins", message: "'page.margins' (lề trang) phải là đối tượng { top, right, bottom, left } theo cm" });
+    } else {
+      for (const side of ["top", "right", "bottom", "left"]) {
+        const mv = v.margins[side];
+        if (mv !== undefined) {
+          const n = Number(mv);
+          if (!Number.isFinite(n) || n < 0 || n > 10) {
+            errors.push({ path: `page.margins.${side}`, message: `Lề ${side} phải là số từ 0 đến 10 (cm)` });
+          }
+        }
+      }
+    }
+  }
+  if (v.font !== undefined && !isStr(v.font)) {
+    errors.push({ path: "page.font", message: "'page.font' phải là tên phông chữ dạng chuỗi" });
+  }
+  if (v.fontSize !== undefined) {
+    const n = Number(v.fontSize);
+    if (!Number.isFinite(n) || n <= 0 || n > 200) {
+      errors.push({ path: "page.fontSize", message: "'page.fontSize' phải là số từ 1 đến 200 (pt)" });
+    }
+  }
+  if (v.color !== undefined && !isStr(v.color)) {
+    errors.push({ path: "page.color", message: "'page.color' phải là mã màu dạng chuỗi" });
+  }
+  if (v.align !== undefined && !ALIGN_VALUES.includes(v.align)) {
+    errors.push({ path: "page.align", message: `'page.align' chỉ nhận ${ALIGN_VALUES.join(", ")}` });
+  }
+  if (v.lineHeight !== undefined) {
+    const n = Number(v.lineHeight);
+    if (!Number.isFinite(n) || n < 0.5 || n > 4) {
+      errors.push({ path: "page.lineHeight", message: "'page.lineHeight' (giãn dòng) phải là số từ 0.5 đến 4" });
+    }
+  }
+  if (v.spacingAfter !== undefined) {
+    const n = Number(v.spacingAfter);
+    if (!Number.isFinite(n) || n < 0 || n > 200) {
+      errors.push({ path: "page.spacingAfter", message: "'page.spacingAfter' (khoảng sau đoạn, pt) phải là số từ 0 đến 200" });
+    }
+  }
+  if (v.pageNumber !== undefined && typeof v.pageNumber !== "boolean") {
+    errors.push({ path: "page.pageNumber", message: "'page.pageNumber' (đánh số trang trong DOCX) phải là true hoặc false" });
+  }
 }
 
 /** Ô bảng/danh sách: chấp nhận số/boolean bằng cách ép chuỗi; null/object là lỗi. */
@@ -140,6 +219,7 @@ export function validateWordJson(obj) {
     errors.push({ path: "type", message: `Tài liệu Word cần "type": "document" (đang là ${JSON.stringify(obj.type)})` });
   }
   checkMeta(obj, errors);
+  checkPage(obj.page, errors);
   if (!Array.isArray(obj.blocks)) {
     errors.push({ path: "blocks", message: "'blocks' phải là mảng các khối nội dung" });
     return errors;
@@ -167,13 +247,33 @@ export function validateWordJson(obj) {
       if (b.align !== undefined && !ALIGN_VALUES.includes(b.align)) {
         errors.push({ path: `${p}.align`, message: `'align' chỉ nhận ${ALIGN_VALUES.join(", ")}` });
       }
+      checkSpacingFields(b, p, errors);
       checkStringArray(b.items, `${p}.items`, errors, "items");
     }
-    if (b.type === "table") checkRows(b.rows, `${p}.rows`, errors);
+    if (b.type === "table") {
+      checkRows(b.rows, `${p}.rows`, errors);
+      if (b.colWidths !== undefined) {
+        if (!Array.isArray(b.colWidths)) {
+          errors.push({ path: `${p}.colWidths`, message: "'colWidths' (bề rộng cột, %) phải là mảng số" });
+        } else {
+          b.colWidths.forEach((w, ci) => {
+            const n = Number(w);
+            if (!Number.isFinite(n) || n <= 0) {
+              errors.push({ path: `${p}.colWidths[${ci}]`, message: "Bề rộng cột phải là số phần trăm lớn hơn 0" });
+            }
+          });
+        }
+      }
+    }
     if (b.type === "image") {
       if (!isStr(b.src) || !b.src.trim()) errors.push({ path: `${p}.src`, message: "Khối hình ảnh cần 'src' là đường dẫn/URL ảnh" });
       if (b.alt !== undefined && !isStr(b.alt)) errors.push({ path: `${p}.alt`, message: "'alt' phải là chuỗi văn bản" });
     }
+    if (b.type === "signature") {
+      if (b.role !== undefined && !isStr(b.role)) errors.push({ path: `${p}.role`, message: "'role' (chức danh người ký) phải là chuỗi văn bản" });
+      if (b.name !== undefined && !isStr(b.name)) errors.push({ path: `${p}.name`, message: "'name' (họ tên người ký) phải là chuỗi văn bản" });
+    }
+    // pageBreak không có field nào cần kiểm tra.
   });
   return errors;
 }
