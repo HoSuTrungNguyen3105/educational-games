@@ -39,10 +39,7 @@ import { record as auditRecord, AUDIT } from "./auditService.js";
 import { round1 } from "./aiLearningMetrics.js";
 import { getRolePermissions } from "./permissionService.js";
 import { getRoleIdentity } from "./permissionService.js";
-import {
-  FEATURES as PERMISSION_FEATURES,
-  PERMISSION_CATALOG,
-} from "../../../src/config/roles.js";
+import { PERMISSION_CATALOG } from "../../../src/config/roles.js";
 
 /** Số mục tối đa đưa vào ngữ cảnh cho mỗi danh sách (tổng số luôn có riêng). */
 const MAX_LIST = 20;
@@ -595,37 +592,27 @@ const CATALOG_LABELS = new Map();
 for (const p of PERMISSION_CATALOG) {
   if (!CATALOG_LABELS.has(p.slug)) CATALOG_LABELS.set(p.slug, p.name_vi);
 }
-/** Slug kiểu cũ `x.manage` → key mô-đun tương ứng trong FEATURES. */
-const MANAGE_KEY_ALIASES = {
-  "game-config": "game_config", "question-bank": "question_bank",
-  "daily-tasks": "daily_tasks", "avatar-items": "avatar_items",
-  "avatar-templates": "avatar_templates", "pet-catalog": "pet_catalog",
-  "body-custom": "body_custom", "plant-types": "plant_types",
-  "upload-items": "upload_items", setup: "settings",
-};
 
-/** Dịch nhãn dễ hiểu cho quyền nằm NGOÀI ma trận FEATURES (quyền phụ trợ). */
+/** Dịch nhãn dễ hiểu cho quyền nằm NGOÀI catalog (hầu như không còn — mọi
+ * permission string hệ thống kiểm tra đều đã là bản ghi catalog riêng). */
 function extraPermissionLabel(slug) {
   if (CATALOG_LABELS.has(slug)) return CATALOG_LABELS.get(slug);
   if (slug === "games.play") return "Chơi trò chơi";
   if (slug === "attendance.checkin") return "Chấm công · điểm danh";
-  const m = /^(.+)\.manage$/.exec(slug);
-  if (m) {
-    const key = MANAGE_KEY_ALIASES[m[1]] || m[1];
-    const f = PERMISSION_FEATURES.find((x) => x.key === key);
-    if (f) return `Quản lý — ${f.label}`;
-  }
   return slug;
 }
 
 /**
  * Quyền HIỆU LỰC THẬT của vai trò người hỏi — đúng đường GET /auth/me
  * dùng (routes/auth.js cũng gọi permissionService.getRolePermissions với
- * role trong hồ sơ/token đã xác thực). roleKey ở đây CHÍNH LÀ identity.role
- * từ hồ sơ DB ("admin"/"teacher"/...) vì cây roles dùng chung các key
- * built-in này (permissionService.getRoleIdentity tra cùng một key).
- * Kết quả được nhóm theo mô-đun bằng nhãn tiếng Việt của FEATURES để đưa
- * vào prompt — AI trình bày lại bằng nhãn, không lộ slug kỹ thuật.
+ * role trong hồ sơ/token đã xác thực; nguồn là collection
+ * `role_permissions`). roleKey ở đây CHÍNH LÀ identity.role từ hồ sơ DB
+ * ("admin"/"teacher"/...) vì cây roles dùng chung các key built-in này
+ * (permissionService.getRoleIdentity tra cùng một key).
+ * Kết quả được nhóm theo mô-đun bằng nhãn tiếng Việt của Permission
+ * Catalog để đưa vào prompt — AI trình bày lại bằng nhãn, không lộ slug
+ * kỹ thuật. (Trước đây nhóm theo FEATURES/object {view,edit,delete} —
+ * đã loại bỏ ở đợt refactor Role & Permission.)
  */
 export async function myPermissions({ role } = {}) {
   const roleKey = String(role || "").trim();
@@ -634,22 +621,25 @@ export async function myPermissions({ role } = {}) {
     getRoleIdentity(roleKey).catch(() => null),
   ]);
   const granted = new Set(permissions);
-  const modules = [];
   const covered = new Set();
-  for (const f of PERMISSION_FEATURES) {
-    const actions = [];
-    for (const [action, slug] of Object.entries(f.permissions)) {
-      if (granted.has(slug)) {
-        actions.push({ view: "xem", edit: "sửa", delete: "xóa" }[action] || action);
-        covered.add(slug);
-      }
+  const byModule = new Map();
+  for (const p of PERMISSION_CATALOG) {
+    if (!granted.has(p.slug)) continue;
+    covered.add(p.slug);
+    const key = p.module || "other";
+    if (!byModule.has(key)) {
+      byModule.set(key, { label: p.module_vi || p.module || key, actions: [], fullAccess: false, extras: [] });
     }
-    const fullAccess = granted.has(`${f.key}_all`);
-    if (fullAccess) covered.add(`${f.key}_all`);
-    if (actions.length > 0 || fullAccess) {
-      modules.push({ label: f.label, actions, fullAccess });
+    const group = byModule.get(key);
+    if (p.is_all) group.fullAccess = true;
+    else if (p.action) {
+      const actionLabel = { view: "xem", edit: "sửa", delete: "xóa" }[p.action] || p.action;
+      if (!group.actions.includes(actionLabel)) group.actions.push(actionLabel);
+    } else {
+      group.extras.push(p.name_vi);
     }
   }
+  const modules = [...byModule.values()];
   const others = permissions
     .filter((p) => !covered.has(p))
     .map((slug) => ({ slug, label: extraPermissionLabel(slug) }));

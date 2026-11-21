@@ -9,8 +9,6 @@ import {
   getUserCounts,
   listPermissionsPaged,
   seedAllAccessPermissions,
-  PERMISSION_FEATURES,
-  PERMISSION_CATALOG,
 } from "../services/permissionService.js";
 import { sendSuccess, sendCreated, sendNoContent, sendError, buildPagination } from "../utils/response.js";
 import { respondWithRange, respondWithPagedRange } from "../utils/rangeList.js";
@@ -63,14 +61,35 @@ router.post("/all", requireRoles("admin"), async (req, res, next) => {
   }
 });
 
-// GET /api/permissions/features — permission matrix feature definitions
-router.get("/features", requireRoles("admin", "teacher"), (_req, res) => {
-  sendSuccess(res, PERMISSION_FEATURES);
-});
-
-// GET /api/permissions/catalog — flat permission catalog for role detail modal
-router.get("/catalog", requireRoles("admin", "teacher"), (_req, res) => {
-  sendSuccess(res, PERMISSION_CATALOG);
+// GET /api/permissions/catalog — Permission Catalog CHUẨN HOÁ: bản ghi
+// PHẲNG từng quyền { id, slug, name_vi, name_en, module, created_at,
+// updated_at } đọc từ collection `permissions`, có phân trang
+// (?from=&to= hoặc ?page=&perPage=, tìm kiếm ?keyword=) — cùng handler
+// với GET /api/permissions. (Endpoint /api/permissions/features cũ —
+// cấu trúc object {view, edit, delete} — ĐÃ BỊ LOẠI BỎ ở đợt refactor
+// Role & Permission; gọi vào sẽ 404.)
+router.get("/catalog", requireRoles("admin", "teacher"), async (req, res, next) => {
+  try {
+    const q = req.query || {};
+    if (await respondWithPagedRange(req, res, async (p, pp) => {
+      const r = await listPermissionsPaged({ ...q, page: p, perPage: pp });
+      return { items: r.data, total: r.total };
+    })) return;
+    const { data, total, page, perPage } = await listPermissionsPaged(q);
+    sendSuccess(res, data, "success", buildPagination({
+      page,
+      perPage,
+      total,
+      keyword: String(q.keyword || "").trim(),
+      sortBy: String(q.sort_by || "").trim(),
+      sortDir: String(q.sort_dir || "DESC"),
+      fromDate: String(q.from_date || "").trim(),
+      toDate: String(q.to_date || "").trim(),
+      dateCol: String(q.date_col || "created_at"),
+    }));
+  } catch (e) {
+    next(e);
+  }
 });
 
 // GET /api/permissions/roles — list roles + account counts + matrix

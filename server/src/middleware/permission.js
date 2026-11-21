@@ -19,23 +19,21 @@
  */
 import { verifyToken } from "../services/authService.js";
 import { getRolePermissionsCached } from "../services/permissionService.js";
-import { FEATURES } from "../../../src/config/roles.js";
+import { PERMISSION_CATALOG } from "../../../src/config/roles.js";
 import { sendError } from "../utils/response.js";
 
 const PLAY = "games.play";
 const PROFILE = "profile";
 const ACTION = { GET: "view", HEAD: "view", OPTIONS: "view", POST: "edit", PUT: "edit", PATCH: "edit", DELETE: "delete" };
 
-/** "games.delete" → "Trò chơi · xóa" để câu lỗi 403 dễ hiểu với người dùng. */
+/**
+ * Nhãn thân thiện cho câu lỗi 403 — lấy thẳng `name_vi` của Permission
+ * Catalog ("Trò chơi - Xóa"…) nên mọi permission string hệ thống kiểm
+ * tra đều có nhãn, kể cả alias kiểu cũ và quyền `_all`.
+ */
 const LABELS = (() => {
   const m = {};
-  const act = { view: "xem", edit: "sửa", delete: "xóa" };
-  for (const f of FEATURES) for (const [a, perm] of Object.entries(f.permissions)) m[perm] = `${f.label} · ${act[a]}`;
-  // Quyền `_all` (toàn quyền mô-đun, ngoài ma trận) — nhãn cho câu 403.
-  for (const f of FEATURES) m[`${f.key}_all`] = `${f.label} · toàn quyền`;
-  // Quyền kiểu cũ không có trong ma trận ⇒ tự đặt nhãn cho câu 403 dễ hiểu.
-  m["attendance.checkin"] = "Chấm công · điểm danh";
-  m["events.manage"] = "Sự kiện theo mùa · quản lý";
+  for (const p of PERMISSION_CATALOG) m[p.slug] = p.name_vi;
   return m;
 })();
 const label = (perm) => LABELS[perm] || perm;
@@ -163,6 +161,10 @@ const RULES = [
   { re: /^\/support/, perms: [PROFILE] },
 
   // ── Phân quyền / thống kê / AI / seed ────────────────────────────────
+  // API gán quyền theo vai trò (refactor Role & Permission): GET cần
+  // roles.view, POST/PUT roles.edit, DELETE roles.delete (feature roles);
+  // route còn chốt requireRoles("admin") cho các thao tác ghi.
+  { re: /^\/rolePermissions(\/|$)/, feature: "roles" },
   { re: /^\/roles(\/|$)/, feature: "roles" },
   { re: /^\/permissions\/roles/, feature: "roles" },
   { re: /^\/permissions/, perms: ["roles.view"] },
