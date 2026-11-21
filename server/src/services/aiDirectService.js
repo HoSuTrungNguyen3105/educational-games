@@ -32,7 +32,10 @@ import {
   computeLearningMetrics, fallbackNarrative, withinPeriod, validatePeriod,
   ANALYSIS_DISCLAIMER,
 } from "./aiLearningMetrics.js";
-import { buildChatContext, searchLessonMaterials, searchCorrections, vietnamNowText } from "./aiChatContext.js";
+import {
+  buildChatContext, searchLessonMaterials, searchCorrections, vietnamNowText,
+  detectIdentityQuestion, detectSystemQuestion,
+} from "./aiChatContext.js";
 import {
   resolveEffectiveTutorConfig, levelKeyForGrade, levelLabelForKey, levelKeyForLabel,
 } from "./aiTutorConfigService.js";
@@ -214,14 +217,30 @@ async function directChat(body, req) {
   // dùng studentSystemPrompt (chatSystem cũ + khối lớp + cổng dữ liệu cá
   // nhân).
   const identityRole = context.identity?.role || req?.user?.role || null;
+
+  // Danh tính + thông tin hệ thống theo vai trò (Nguyên chốt 2026-11-21):
+  // với người dùng KHÔNG phải admin, câu hỏi DANH TÍNH ("bạn là ai") và
+  // câu hỏi HỆ THỐNG (model đang dùng, quyền của tôi, số tài khoản, cấu
+  // hình...) được Backend trả theo khuôn sẵn — KHÔNG gọi model, KHÔNG đi
+  // qua cổng phạm vi bài học của cấu hình Gia sư (hai nhóm này không phải
+  // câu hỏi bài học; ca production 2026-11-21 học sinh hỏi "Bạn là ai?"
+  // bị rơi vào câu từ chối phạm vi bài học), và tuyệt đối không lộ
+  // model/nhà cung cấp/quyền/số liệu. Admin KHÔNG bị chặn ở đây: danh
+  // tính của admin đi prompt quản trị (được kèm model), câu hệ thống của
+  // admin đã được tra cứu thật ở buildChatContext (context.adminData).
+  const cannedAnswer = identityRole === "admin"
+    ? null
+    : cannedRoleAnswer(message, identityRole);
+
   const promptCtx = {
     dateTimeText: context.dateTimeText,
-    // Tên model + nhà cung cấp khai trong prompt = của ĐƯỜNG ĐANG CHẠY (Groq
-    // khác Ollama) để AI Bạn Học tự giới thiệu đúng sự thật như quyết định
-    // đợt #66 — thiếu modelProvider thì prompt mặc định nói "qua Ollama" kể
-    // cả khi đang chạy Groq (lỗi phát hiện khi kiểm chứng production #69).
-    // Đường Groq lấy model HIỆU LỰC (admin có thể vừa đổi ở Cài đặt) để lời
-    // giới thiệu khớp model thật sự trả lời lượt này.
+    // Tên model + nhà cung cấp = của ĐƯỜNG ĐANG CHẠY (Groq khác Ollama),
+    // lấy model HIỆU LỰC (admin có thể vừa đổi ở Cài đặt). Từ chốt
+    // 2026-11-21 của Nguyên, hai giá trị này CHỈ còn được adminSystemPrompt
+    // dùng (admin được biết model); chatSystem/studentSystemPrompt không
+    // khai model nữa — danh tính với user thường chỉ là AI Bạn Học, và hai
+    // nhóm câu danh tính/hệ thống của user thường đã được chặn ở tầng
+    // Backend bằng cannedRoleAnswer phía trên.
     modelName: (config.ollama.provider === "groq" ? await getEffectiveGroqModel() : config.ollama.model) || null,
     modelProvider: config.ollama.provider === "groq" ? "Groq" : "Ollama",
     learning: context.learning,
@@ -261,7 +280,9 @@ async function directChat(body, req) {
     && corrections.length === 0;
 
   let answer;
-  if (tutorScopeRefusal) {
+  if (cannedAnswer) {
+    answer = cannedAnswer;
+  } else if (tutorScopeRefusal) {
     answer = TUTOR_SCOPE_REFUSAL;
   } else if (tutorEntry) {
     system += savedTutorConfigSection({
@@ -360,6 +381,56 @@ const STRICT_SCOPE_REFUSAL =
   + "và cấu hình đang bật chế độ “Chỉ trả lời trong phạm vi bài học hiện tại” nên Gia sư AI "
   + "không trả lời bằng kiến thức ngoài bài. Hãy thử câu hỏi thuộc nội dung bài học đã xuất "
   + "bản, hoặc tắt công tắc phạm vi ở Tab Cấu hình rồi kiểm thử lại.";
+
+/**
+ * Trả lời DANH TÍNH theo khuôn cho người dùng KHÔNG phải admin (Nguyên
+ * chốt 2026-11-21): chỉ nói mình là AI Bạn Học của EduPlay — TUYỆT ĐỐI
+ * không nhắc model, nhà cung cấp, quyền hay bất kỳ thông tin hệ thống
+ * nào. Hai giọng: học sinh (xưng "mình", gọi "con" — khớp giọng bắt buộc
+ * của studentSystemPrompt) và người lớn (giáo viên/phụ huynh).
+ */
+const IDENTITY_ANSWER_STUDENT =
+  "Mình là AI Bạn Học — trợ lý học tập của nền tảng EduPlay! Mình luôn ở đây để "
+  + "đồng hành cùng con: giải thích bài học, gợi ý cách làm bài và giúp con ôn "
+  + "luyện kiến thức. Con muốn hỏi mình về bài học nào hôm nay?";
+const IDENTITY_ANSWER_ADULT =
+  "Tôi là AI Bạn Học — trợ lý học tập của nền tảng EduPlay. Tôi có thể hỗ trợ "
+  + "giải thích bài học, gợi ý cách hướng dẫn học sinh và ôn luyện kiến thức. "
+  + "Bạn muốn hỏi về nội dung học tập nào?";
+
+/**
+ * Từ chối câu hỏi HỆ THỐNG theo khuôn cho người dùng KHÔNG phải admin:
+ * nói rõ đúng ngữ cảnh (thông tin hệ thống chỉ dành cho quản trị viên)
+ * thay cho câu từ chối phạm vi bài học vốn sai ngữ cảnh, và không kèm
+ * bất kỳ dữ kiện hệ thống nào.
+ */
+const SYSTEM_REFUSAL_STUDENT =
+  "Thông tin con hỏi thuộc về hệ thống của EduPlay (như model AI đang dùng, "
+  + "quyền tài khoản hay số liệu quản trị) — những thông tin này chỉ dành cho "
+  + "quản trị viên (admin) nên mình không thể chia sẻ với con được. Mình giúp "
+  + "con học bài nhé: con muốn hỏi về bài học nào?";
+const SYSTEM_REFUSAL_ADULT =
+  "Xin lỗi, thông tin bạn hỏi thuộc về hệ thống của EduPlay (như model AI đang "
+  + "dùng, quyền tài khoản hay số liệu quản trị) — những thông tin này chỉ dành "
+  + "cho quản trị viên (admin) nên tôi không thể cung cấp. Tôi có thể hỗ trợ bạn "
+  + "về nội dung học tập và bài giảng.";
+
+/**
+ * Câu trả lời khuôn sẵn cho lượt chat của người dùng KHÔNG phải admin,
+ * hoặc null khi câu hỏi không thuộc hai nhóm danh tính/hệ thống (đi tiếp
+ * luồng thường). Nhận diện ở aiChatContext (detectIdentityQuestion /
+ * detectSystemQuestion — khớp cụm từ đã bỏ dấu, không gọi model).
+ */
+function cannedRoleAnswer(message, role) {
+  const adult = role === "teacher" || role === "parent";
+  if (detectIdentityQuestion(message)) {
+    return adult ? IDENTITY_ANSWER_ADULT : IDENTITY_ANSWER_STUDENT;
+  }
+  if (detectSystemQuestion(message)) {
+    return adult ? SYSTEM_REFUSAL_ADULT : SYSTEM_REFUSAL_STUDENT;
+  }
+  return null;
+}
 
 /**
  * Bản từ chối tương ứng cho CHAT THẬT khi cấu hình Gia sư ĐÃ LƯU bật công

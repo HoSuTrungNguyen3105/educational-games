@@ -470,6 +470,103 @@ export function detectAboveGradeTopic(message, grade) {
   return null;
 }
 
+// ─────── Nhận diện câu hỏi DANH TÍNH + câu hỏi HỆ THỐNG (Nguyên chốt 2026-11-21) ───────
+//
+// Nguyên chốt hành vi: hỏi "Bạn là ai?" → AI chỉ trả lời danh tính AI Bạn
+// Học; thông tin HỆ THỐNG (model đang dùng, quyền tài khoản, số tài
+// khoản/số liệu quản trị, cấu hình) CHỈ admin mới được thấy — admin hỏi
+// thì tra cứu thật (buildChatContext/adminData), user thường hỏi thì bị
+// từ chối, không lộ dữ kiện. Hai nhóm này được BACKEND nhận diện bằng
+// khớp cụm từ tiếng Việt đã bỏ dấu (cùng pattern detectAboveGradeTopic /
+// detectAdminQuery — không gọi AI phân loại) để aiDirectService trả lời
+// theo khuôn sẵn TRƯỚC khi gọi model và TRƯỚC cổng phạm vi bài học của
+// cấu hình Gia sư đã lưu: câu danh tính/hệ thống không phải câu hỏi bài
+// học nên không bao giờ được rơi vào câu từ chối "phạm vi bài học" (ca
+// production 2026-11-21: học sinh hỏi "Bạn là ai?" nhận câu từ chối phạm
+// vi bài học).
+//
+// Nguyên tắc chống bắt nhầm: chỉ dùng cụm ĐỦ ĐẶC TRƯNG của từng nhóm.
+// "quyền" đứng một mình KHÔNG bắt (bài GDCD có "quyền trẻ em"); "hệ
+// thống" đứng một mình KHÔNG bắt (bài Khoa học có "hệ thống tiêu hoá") —
+// chỉ bắt các cụm góc nhìn quản trị/kỹ thuật rõ ràng ở dưới.
+
+/** Bỏ dấu + bỏ dấu câu + gọn khoảng trắng — cùng chuẩn hoá với detectAboveGradeTopic. */
+function foldedForIntent(message) {
+  return foldText(message)
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const IDENTITY_QUESTION_PATTERNS = [
+  /\b(ban|may|ai ban hoc|tro ly ai) (la ai|ten (la )?gi|la gi|co ten (la )?gi)\b/,
+  /\bai (tao|lam|phat trien) ra ban\b/,
+  /\bban (do|duoc) ai (tao|lam) ra\b/,
+  /\bban co phai (la )?(chatgpt|chat gpt|gpt|gemini|con nguoi|nguoi that)\b/,
+  /\bban la (nguoi|may|robot|ai|con nguoi)\b/,
+  /\bwho are you\b/,
+  /\bwhat is your name\b/,
+  /\byour name\b/,
+];
+
+/**
+ * Câu hỏi hỏi DANH TÍNH của chính AI ("bạn là ai", "bạn tên gì", "who
+ * are you"...). Hàm thuần. Cố ý KHÔNG bắt "bạn <tên người> là ai" (hỏi
+ * về người thứ ba trong bài học) — mẫu đòi "bạn" đứng ngay trước
+ * "là ai/tên gì".
+ */
+export function detectIdentityQuestion(message) {
+  const folded = foldedForIntent(message);
+  if (!folded) return false;
+  return IDENTITY_QUESTION_PATTERNS.some((re) => re.test(folded));
+}
+
+const SYSTEM_QUESTION_PATTERNS = [
+  // Model / nhà cung cấp / kỹ thuật vận hành.
+  /\bmodel (gi|nao|dang dung|hien tai|j)\b/,
+  /\b(dung|chay|dang chay|su dung) model\b/,
+  /\bmo hinh ngon ngu\b/,
+  /\bchatgpt\b/,
+  /\bchat gpt\b/,
+  /\bgroq\b/,
+  /\bollama\b/,
+  /\bgemini\b/,
+  /\bapi key\b/,
+  /\bkhoa api\b/,
+  /\bprompt he thong\b/,
+  /\bsystem prompt\b/,
+  /\bma nguon\b/,
+  /\bdatabase cua he thong\b/,
+  // Quyền / vai trò của CHÍNH người hỏi (góc nhìn phân quyền hệ thống).
+  /\bquyen (han )?cua (toi|em|minh|ban)\b/,
+  /\b(toi|em|minh) co (may |nhung |bao nhieu )?quyen\b/,
+  /\bco quyen gi\b/,
+  /\bvai tro cua (toi|em|minh)\b/,
+  /\bphan quyen\b/,
+  // Số tài khoản / người dùng theo vai trò + cấu hình quản trị.
+  /\btai khoan (admin|giao vien|hoc sinh|phu huynh|quan tri)\b/,
+  /\b(may|bao nhieu) tai khoan\b/,
+  /\bso (luong )?tai khoan\b/,
+  /\btong so tai khoan\b/,
+  /\buser admin\b/,
+  /\badmin co may\b/,
+  /\bco bao nhieu (tai khoan|nguoi dung|user)\b/,
+  /\bcau hinh (ai|he thong)\b/,
+  /\bnguong diem thap\b/,
+];
+
+/**
+ * Câu hỏi về HỆ THỐNG (model đang dùng, quyền của tôi, số tài khoản,
+ * cấu hình...) — nhóm thông tin chỉ admin được xem. Hàm thuần. CHỈ dùng
+ * để chặn ở phía người dùng KHÔNG phải admin (aiDirectService); admin
+ * hỏi các câu này đi đường tra cứu thật, không qua hàm chặn này.
+ */
+export function detectSystemQuestion(message) {
+  const folded = foldedForIntent(message);
+  if (!folded) return false;
+  return SYSTEM_QUESTION_PATTERNS.some((re) => re.test(folded));
+}
+
 // ─────────────────────── Điểm vào dùng chung ───────────────────────
 
 /**
@@ -525,7 +622,11 @@ export async function buildChatContext(req, message) {
       console.warn(`[ai] Không nhận diện được chủ đề vượt lớp cho chat: ${e?.message || e}`);
     }
   }
-  if (role === "admin") {
+  // Câu hỏi DANH TÍNH của admin ("bạn là ai") không cần dữ liệu quản trị
+  // nào — bỏ qua cả hai đường tra cứu để khỏi tốn thêm một lượt gọi model
+  // chọn công cụ cho một câu trả lời prompt quản trị đã tự chứa (đỡ chạm
+  // hạn mức provider — xem đợt vá 429 2026-11-21 ở aiGroqGateway).
+  if (role === "admin" && !detectIdentityQuestion(message)) {
     // Đường A trước: cho model TỰ CHỌN công cụ từ danh mục (hiểu được cả
     // câu diễn đạt lạ không khớp mẫu từ khoá). Không chọn được công cụ
     // nào / nhà cung cấp không hỗ trợ tool calling / lượt chọn lỗi →
