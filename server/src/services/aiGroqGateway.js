@@ -190,6 +190,39 @@ async function postChat(body, timeoutMs) {
   }
 }
 
+/**
+ * Trần chờ thử lại sau 429: chỉ thử lại khi provider bảo chờ NGẮN (≤10s).
+ * Retry-After dài (hết hạn mức ngày — ví dụ 42s hay vài phút) thì giữ
+ * nguyên hành vi cũ: ném AI_RATE_LIMITED ngay để frontend báo người dùng.
+ */
+const RATE_LIMIT_RETRY_MAX_WAIT_SECONDS = 10;
+
+const sleepMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * POST /chat/completions có thử lại ĐÚNG 1 lần khi provider trả 429 kèm
+ * Retry-After ngắn. Lý do (ca production 2026-11-21): hạn mức theo phút
+ * của free tier là cửa sổ trượt — lượt tra cứu quản trị của admin tốn 2
+ * lượt gọi provider cho 1 tin nhắn (chọn công cụ + trả lời) nên vài câu
+ * hệ thống liên tiếp dễ chạm trần thoáng qua và bị báo 429 "oan" dù hạn
+ * mức ngày còn nguyên. Provider đã nói rõ thời gian chờ qua Retry-After:
+ * chờ đúng khoảng đó rồi thử lại một lần là tôn trọng giới hạn, KHÔNG
+ * nới bất kỳ giới hạn nào — 429 dai dẳng (lần thử lại vẫn 429) vẫn ném
+ * AI_RATE_LIMITED như cũ, và bộ giới hạn nội bộ theo người dùng ở
+ * aiDirectService (checkRateLimit) không đổi.
+ */
+async function postChatWithRetry(body, timeoutMs) {
+  let res = await postChat(body, timeoutMs);
+  if (res.status === 429
+    && res.retryAfterSeconds != null
+    && res.retryAfterSeconds <= RATE_LIMIT_RETRY_MAX_WAIT_SECONDS) {
+    console.warn(`[ai] Groq trả 429 — chờ ${res.retryAfterSeconds}s theo Retry-After rồi thử lại 1 lần.`);
+    await sleepMs(res.retryAfterSeconds * 1000);
+    res = await postChat(body, timeoutMs);
+  }
+  return res;
+}
+
 /** Rút choices[0].message.content từ response chuẩn OpenAI. */
 function extractContent(raw) {
   if (!raw || !String(raw).trim()) {
@@ -214,7 +247,7 @@ async function call(system, messages, jsonMode, options = {}) {
   const timeoutMs = config.aiBackend.timeoutMs;
 
   try {
-    const res = await postChat(body, timeoutMs);
+    const res = await postChatWithRetry(body, timeoutMs);
     if (res.status < 200 || res.status >= 300) throw translateHttp(res.status, res.retryAfterSeconds, model);
     const text = extractContent(res.raw);
     // Ghi nhận lượt gọi model THẬT cho health inference (xem aiInferenceStatus)
@@ -261,7 +294,7 @@ export async function groqCompleteWithTools(system, messages, tools) {
   body.parallel_tool_calls = false;
   const timeoutMs = config.aiBackend.timeoutMs;
   try {
-    const res = await postChat(body, timeoutMs);
+    const res = await postChatWithRetry(body, timeoutMs);
     if (res.status < 200 || res.status >= 300) throw translateHttp(res.status, res.retryAfterSeconds, model);
     let root;
     try {

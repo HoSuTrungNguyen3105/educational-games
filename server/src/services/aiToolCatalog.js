@@ -85,6 +85,15 @@ export const AI_TOOLS = [
     parameters: NO_PARAMS,
   },
   {
+    name: "user_counts",
+    description:
+      "ĐẾM SỐ TÀI KHOẢN theo TỪNG VAI TRÒ tại thời điểm hiện tại: tổng số tài khoản và số lượng của từng vai trò " +
+      "(quản trị viên, giáo viên, học sinh, phụ huynh và vai trò tuỳ chỉnh nếu có). Chỉ trả SỐ LƯỢNG, không có danh sách chi tiết. " +
+      "Ví dụ câu hỏi: \"Hệ thống có mấy tài khoản admin?\"; \"User admin có mấy người?\"; \"Có bao nhiêu tài khoản giáo viên?\"; \"Tổng số tài khoản trong hệ thống là bao nhiêu?\". " +
+      "Phân biệt: overview cho NHIỀU loại tổng số cùng lúc (thêm lớp, game, bài học, lượt chơi...) — câu hỏi CHỈ hỏi số tài khoản/người dùng theo vai trò thì dùng công cụ này; học sinh MỚI ĐĂNG KÝ trong một kỳ thì dùng new_students.",
+    parameters: NO_PARAMS,
+  },
+  {
     name: "content_new",
     description:
       "Nội dung MỚI của hệ thống: các trò chơi và bài học MỚI ĐƯỢC TẠO GẦN ĐÂY NHẤT (5 mục mỗi loại, kèm môn, trạng thái, " +

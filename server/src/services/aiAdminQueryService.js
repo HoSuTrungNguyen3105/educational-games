@@ -124,6 +124,20 @@ export function detectAdminQuery(message) {
   // chữ "thấp" nhưng là câu thống kê theo lớp, không phải lọc điểm thấp.
   if (/thong ke|trung binh|theo lop|theo mon/.test(m)) return { type: "stats", period };
   if (/dang ky/.test(m) && /(moi|vua|hoc sinh)/.test(m)) return { type: "new_students", period };
+  // Số tài khoản theo vai trò — TRƯỚC overview: "hệ thống có mấy tài
+  // khoản admin" là câu ĐẾM TÀI KHOẢN theo vai trò nhưng trượt mẫu
+  // overview (mẫu đó đòi chữ "bao nhiêu"/"tổng số"/"số lượng" đi kèm đối
+  // tượng liệt kê sẵn, không có "tài khoản" — ca production 2026-11-21:
+  // cả đường công cụ lẫn đường từ khoá đều không bắt được cách hỏi này
+  // nên admin nhận trả lời "chưa có dữ liệu truy vấn" dù số liệu có thật).
+  // Điều kiện: nhắc tới tài khoản/user/người dùng VÀ (nhắc một vai trò
+  // hoặc dùng từ đếm) — tránh nuốt câu hỏi kiến thức về "tài khoản" nói
+  // chung (không vai trò, không từ đếm thì không phải câu tra cứu này).
+  if (/(tai khoan|user|nguoi dung)/.test(m)
+    && (/(admin|quan tri|giao vien|hoc sinh|phu huynh)/.test(m)
+      || /(may|bao nhieu|so luong|tong so)/.test(m))) {
+    return { type: "user_counts", period };
+  }
   // Tổng quan hệ thống — sau new_students để "học sinh mới đăng ký" không
   // bị nuốt vào nhóm đếm tổng.
   if (/tong quan|toan he thong|he thong.*(bao nhieu|hien co|co gi)|co bao nhieu (hoc sinh|giao vien|lop|game|tro choi|bai hoc)|tong so (hoc sinh|giao vien|nguoi dung|lop|game|bai hoc)|so luong (hoc sinh|giao vien|nguoi dung|lop)/.test(m)) {
@@ -467,6 +481,32 @@ export async function systemOverview() {
   };
 }
 
+// ─────────────────── Số tài khoản theo vai trò (nhóm mới) ───────────────────
+
+/** Nhãn tiếng Việt của các vai trò gốc; vai trò tuỳ chỉnh giữ nguyên key. */
+export const USER_ROLE_LABELS = {
+  admin: "Quản trị viên",
+  teacher: "Giáo viên",
+  student: "Học sinh",
+  parent: "Phụ huynh",
+};
+
+/**
+ * Đếm tài khoản theo TỪNG vai trò đang có trong collection users (gồm cả
+ * vai trò tuỳ chỉnh do admin tạo — đợt refactor Role & Permission) + tổng
+ * số. Chỉ SỐ LƯỢNG, không chi tiết cá nhân. Tài khoản thiếu field role
+ * được gom vào nhóm "(không rõ vai trò)" thay vì bị bỏ mất khỏi tổng.
+ */
+export async function userCounts() {
+  const rows = await getCollection("users").aggregate([
+    { $group: { _id: "$role", count: { $sum: 1 } } },
+  ]).toArray();
+  const byRole = rows
+    .map((r) => ({ role: r._id == null || r._id === "" ? "(không rõ vai trò)" : String(r._id), count: r.count || 0 }))
+    .sort((a, b) => b.count - a.count);
+  return { total: byRole.reduce((sum, r) => sum + r.count, 0), byRole };
+}
+
 // ─────────────────── Nội dung mới nhất (nhóm mới) ───────────────────
 
 const RECENT_CONTENT_LIMIT = 5;
@@ -705,6 +745,12 @@ export function formatAdminContext(intent, result) {
     lines.push(`- Ngân hàng câu hỏi: ${result.banksTotal} câu hỏi.`);
     lines.push(`- Bài kiểm tra đã giao: ${result.assignmentsTotal} bài.`);
     lines.push(`- Tổng lượt chơi game đã ghi nhận: ${result.playsTotal} lượt.`);
+  } else if (intent.type === "user_counts") {
+    lines.push("[KẾT QUẢ TRA CỨU THẬT — số tài khoản theo vai trò]");
+    lines.push(`- Tổng số tài khoản: ${result.total} tài khoản.`);
+    for (const r of result.byRole) {
+      lines.push(`- ${USER_ROLE_LABELS[r.role] || r.role}: ${r.count} tài khoản.`);
+    }
   } else if (intent.type === "content_new") {
     lines.push("[KẾT QUẢ TRA CỨU THẬT — nội dung mới nhất]");
     lines.push("- Trò chơi mới nhất:");
@@ -882,6 +928,9 @@ export async function executeAdminQuery(intent, { req, identity, selection = "ke
   } else if (intent.type === "overview") {
     result = await systemOverview();
     resultCount = result.students;
+  } else if (intent.type === "user_counts") {
+    result = await userCounts();
+    resultCount = result.total;
   } else if (intent.type === "content_new") {
     result = await recentContent();
     resultCount = result.games.length + result.lessons.length;

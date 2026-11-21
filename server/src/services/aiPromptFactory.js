@@ -58,20 +58,23 @@ export function enforceLimit(prompt) {
  * thay thế (Nang_cap_AI_Ban_Hoc.md §3). `ctx` là ngữ cảnh Backend dựng sẵn cho
  * lượt chat này (aiChatContext.buildChatContext + model đang cấu hình):
  *   { dateTimeText, modelName, modelProvider, learning, materials }
- * Danh tính model lấy theo CẤU HÌNH THẬT của đường đang chạy để AI không nói
- * sai về chính nó: đường Ollama chạy model nào thì nói đúng model đó qua
- * Ollama, đường Groq (từ PR #69) thì nói qua Groq — và không bao giờ tự
- * nhận là ChatGPT/Gemini/OpenAI.
+ * Danh tính khai trong prompt này CHỈ là "AI Bạn Học" của EduPlay: Nguyên
+ * chốt 2026-11-21 rằng thông tin model/nhà cung cấp là thông tin hệ thống
+ * CHỈ dành cho admin — prompt của học sinh/giáo viên (chatSystem và
+ * studentSystemPrompt dựng trên nó) TUYỆT ĐỐI không chứa tên model hay
+ * nhà cung cấp, kể cả khi ctx có modelName (playground vẫn truyền vào).
+ * Model đang chạy CHỈ được khai ở adminSystemPrompt phía dưới.
  */
 export function chatSystem(displayName, subject, topic, ctx = {}) {
   let sb = "";
   sb += "Bạn là AI Bạn Học — trợ lý học tập thân thiện của nền tảng giáo dục EduPlay, "
     + "đồng hành cùng học sinh Việt Nam.\n";
-  if (ctx.modelName) {
-    sb += "Bạn đang chạy trên model " + ctx.modelName + " thông qua " + (ctx.modelProvider || "Ollama") + ". Nếu học sinh hỏi "
-      + "bạn là ai hoặc bạn dùng model gì, hãy trả lời đúng như vậy. Bạn KHÔNG phải ChatGPT, "
-      + "Gemini hay sản phẩm của OpenAI — đừng bao giờ tự nhận như vậy.\n";
-  }
+  sb += "Về danh tính: nếu được hỏi bạn là ai, CHỈ trả lời bạn là AI Bạn Học, trợ lý "
+    + "học tập của nền tảng EduPlay. Bạn KHÔNG phải ChatGPT, Gemini hay sản phẩm của "
+    + "OpenAI — đừng bao giờ tự nhận như vậy. TUYỆT ĐỐI không tiết lộ model hay nhà "
+    + "cung cấp đang vận hành bạn: đó là thông tin hệ thống chỉ dành cho quản trị "
+    + "viên; được hỏi tới thì lịch sự nói rằng phần kỹ thuật đó mình không chia sẻ "
+    + "được và mời quay lại nội dung học tập.\n";
   sb += "\nNguyên tắc bắt buộc:\n";
   sb += "1. Trả lời bằng tiếng Việt tự nhiên, rõ ràng, đúng ngữ pháp, không dùng ký tự lạ. "
     + "Câu hỏi đơn giản thì trả lời ngắn gọn NHƯNG vẫn đủ câu, đủ chủ ngữ và giọng thân thiện; "
@@ -313,7 +316,7 @@ export function adminSystemPrompt(displayName, subject, topic, ctx = {}) {
     + "Các loại dữ liệu Backend tra cứu được hiện nay: học sinh mới đăng ký; điểm kiểm "
     + "tra thấp (theo ngưỡng đã cấu hình); học sinh chưa hoàn thành bài kiểm tra; thống "
     + "kê theo lớp/môn và lớp trung bình thấp nhất; học sinh có kết quả giảm; tổng quan "
-    + "hệ thống (số tài khoản, lớp, game, bài học); nội dung mới nhất (game/bài học mới "
+    + "hệ thống (số tài khoản, lớp, game, bài học); số tài khoản theo từng vai trò; nội dung mới nhất (game/bài học mới "
     + "tạo); báo cáo người dùng và yêu cầu hỗ trợ đang chờ xử lý; hoạt động hỏi AI "
     + "(lượt hỏi, người hỏi nhiều); trạng thái cấu hình AI; và quyền của CHÍNH người "
     + "đang hỏi theo vai trò của họ. Nếu câu hỏi cần số liệu quản "
