@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Copy, Plus, Trash2, Type, Image as ImageIcon, Square, Circle, Table, LayoutGrid, Move, RotateCw, Minimize2, Maximize2, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, Strikethrough, List, ListOrdered, Palette, Highlighter, Text, Delete, Copy as DuplicateIcon, Grid, Columns, Table as TableIcon } from "lucide-react";
 import { SLIDE_TYPE_OPTIONS, emptySlide, insertSlideAfter, duplicateSlide, removeSlide, moveSlide, moveSlideTo } from "../../../lib/documents/slideOps.js";
+import ImagePickerModal from "../studio/ImagePicker.jsx";
 
 const SLIDE_W = 920;
 
@@ -10,15 +12,6 @@ const DEFAULT_PPT_THEME = {
   heroBg: "#1d4ed8", heroText: "#ffffff",
   font: "Arial", displayFont: "Arial",
 };
-
-function readAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("Không đọc được tệp ảnh."));
-    reader.readAsDataURL(file);
-  });
-}
 
 /** Editable text field - click to edit inline */
 function EditableText({ value, onChange, placeholder, style, className, multiline = false }) {
@@ -260,49 +253,67 @@ function EditableTable({ rows, onChange, style }) {
   );
 }
 
-/** Image input with preview */
+/** Image input with preview — chọn ảnh qua hộp thoại DÙNG CHUNG
+ * ImagePickerModal (thư viện ảnh qua API /images, dán link có kiểm tra,
+ * tải lên qua POST /images/upload), cùng một đường với panel Chèn hình
+ * ảnh của Document Studio. Hộp thoại render qua portal ra document.body
+ * vì slide đang nằm trong khung transform scale — modal fixed ở trong
+ * sẽ bị lệch vị trí. */
 function ImageInput({ src, onChange, alt, onAltChange, style }) {
-  const [imgLoaded, setImgLoaded] = useState(false);
-  const [imgError, setImgError] = useState(false);
+  // Trạng thái tải gắn với CHÍNH src đã sinh ra nó — đổi sang ảnh khác
+  // (hoặc xoá) là tự về "đang tải", không cần effect reset.
+  const [loadState, setLoadState] = useState({ src: null, loaded: false, error: false });
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const imgLoaded = loadState.src === src && loadState.loaded;
+  const imgError = loadState.src === src && loadState.error;
+
+  const picker = createPortal(
+    <ImagePickerModal
+      open={pickerOpen}
+      onClose={() => setPickerOpen(false)}
+      onPick={(url) => { onChange(url); setPickerOpen(false); }}
+    />,
+    document.body
+  );
 
   return (
     <div style={style}>
       {!imgLoaded && !imgError && src && <div className="img-loading" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9ca3af'}}>Đang tải...</div>}
       {imgError && <div style={{height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fef2f2', color: '#ef4444'}}>Lỗi tải ảnh</div>}
-      {src && (
+      {src && !imgError && (
         <img
           src={src}
           alt={alt || ""}
-          onLoad={() => setImgLoaded(true)}
-          onError={() => { setImgError(true); setImgLoaded(false); }}
+          onLoad={() => setLoadState({ src, loaded: true, error: false })}
+          onError={() => setLoadState({ src, loaded: false, error: true })}
           style={{ width: '100%', height: '100%', objectFit: 'contain', maxHeight: '62%' }}
         />
       )}
       {!src && (
-        <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#f3f4f6', border: '2px dashed #d1d5db', borderRadius: '8px', color: '#9ca3af', gap: '8px', cursor: 'pointer' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#f3f4f6', border: '2px dashed #d1d5db', borderRadius: '8px', color: '#9ca3af', gap: '8px' }}>
           <ImageIcon className="w-10 h-10" />
           <span>Chưa có hình ảnh</span>
-          <input type="file" accept="image/*" hidden onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              const dataUrl = await readAsDataUrl(file);
-              onChange(dataUrl);
-            }
-            e.target.value = "";
-          }} />
-          <button type="button" className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Chọn ảnh</button>
-        </label>
+          <button type="button" onClick={() => setPickerOpen(true)} className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Chọn ảnh</button>
+          <span style={{ fontSize: '11px' }}>Thư viện ảnh · dán link · tải lên</span>
+        </div>
       )}
       {src && (
-        <input
-          type="text"
-          value={alt || ""}
-          onChange={(e) => onAltChange(e.target.value)}
-          placeholder="Chú thích ảnh (alt)"
-          className="mt-2 px-2 py-1 text-sm border rounded w-full max-w-xs"
-          style={{ marginLeft: 'auto', marginRight: 'auto' }}
-        />
+        <>
+          <input
+            type="text"
+            value={alt || ""}
+            onChange={(e) => onAltChange(e.target.value)}
+            placeholder="Chú thích ảnh (alt)"
+            className="mt-2 px-2 py-1 text-sm border rounded w-full max-w-xs"
+            style={{ marginLeft: 'auto', marginRight: 'auto', display: 'block' }}
+          />
+          <div className="flex gap-2 justify-center mt-2">
+            <button type="button" onClick={() => setPickerOpen(true)} className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Đổi ảnh</button>
+            <button type="button" onClick={() => onChange("")} className="px-3 py-1 text-xs border rounded hover:bg-gray-50">Xoá ảnh</button>
+          </div>
+        </>
       )}
+      {picker}
     </div>
   );
 }
