@@ -1,110 +1,284 @@
+// TRANG BÉ (/kid-dashboard) — trang riêng của học sinh Tiểu học.
+//
+// Từ 2026-11-21 trang này là trang TỔNG HỢP: gộp toàn bộ tính năng của trang
+// Hồ sơ cũ (/profile — giờ chuyển hướng về đây) vào một khung có SIDEBAR BÊN
+// TRÁI trên desktop; mobile giữ BottomNav như cũ + hàng chip chọn mục.
+//
+// Phân cấp:
+//   • useProfileVm (profile/useProfileVm.js) — nguồn dữ liệu/handler DUY NHẤT
+//     (nạp /auth/me, ví, game, sửa hồ sơ, PWA, push…), các khối
+//     ProfileSections nhận `vm` như cũ → không nhân bản logic.
+//   • KidSidebar / hàng chip — điều hướng, danh sách từ kid/kidNav.js.
+//   • Panel nội dung: KidHomePanel (Hôm nay) + các section của trang Hồ sơ.
+//
+// Breakpoint: ≥1024px (lg) hiện sidebar, ẩn BottomNav — khớp nhau tuyệt đối
+// nên không bao giờ có hai thanh điều hướng cùng lúc.
 import { useEffect, useState } from "react";
-import { walletService } from "../../services/api.js";
-import { Volume2, Gamepad2, Sprout, Trophy, Medal } from "lucide-react";
-import { useKidSettings } from "../../lib/kidSettings.js";
+import { Apple, CircleX, Share2, Wallet } from "lucide-react";
 import { navigate } from "../../lib/router.js";
+import { useKidSettings } from "../../lib/kidSettings.js";
 import BottomNav from "../../components/BottomNav.jsx";
 import useChatUnread from "../../hooks/useChatUnread.js";
+import DressUpCustomizer from "../../components/avatar/DressUpCustomizer.jsx";
+import { IconNotification } from "../../components/ui/index.js";
+import { speak } from "../../lib/speech.js";
+import useProfileVm from "./profile/useProfileVm.jsx";
+import KidSidebar from "./profile/KidSidebar.jsx";
+import KidHomePanel from "./kid/KidHomePanel.jsx";
+import { PANELS } from "./kid/kidNav.js";
+import {
+  PersonalInfoCard, WalletRows,
+  OutfitSection, ClassSection, GamesSection, KidSettingsSection, AppSection,
+} from "./profile/ProfileSections.jsx";
 
-const SECTIONS = [
-  { key: "tasks", label: "Nhiệm vụ", icon: Gamepad2 },
-  { key: "garden", label: "Khu vườn", icon: Sprout },
-  { key: "badges", label: "Kho báu", icon: Medal },
-  { key: "leaderboard", label: "Bảng vàng", icon: Trophy },
-];
+const CARD_STYLE = { background: "var(--card)", border: "1px solid var(--line)" };
+const panelCls = (activeId, id) => (activeId === id ? undefined : "hidden");
 
-export default function KidDashboard({ userAuth }) {
-  const { chatUnread } = useChatUnread(userAuth);
+export default function KidDashboard({ userAuth, onLogout, onUserLogin, showToast }) {
   const kid = useKidSettings();
-  const [active, setActive] = useState("tasks");
-  const [wallet, setWallet] = useState({ coins: 0, stars: 0 });
-  const [tasks] = useState([
-    { title: "Hoàn thành 1 trò chơi Toán", cta: "Chơi Ngay", path: "/categories" },
-    { title: "Đạt từ 80 điểm trở lên", cta: "Khám Phá", path: "/categories" },
-  ]);
+  const { chatUnread } = useChatUnread(userAuth);
 
+  const {
+    vm, profile, showLoading, error,
+    fgToast, clearFgToast,
+    showIosGuide, setShowIosGuide,
+    customizer, setCustomizer, outfit, handleSaveOutfit,
+  } = useProfileVm({ userAuth, showToast, onLogout, onBack: () => navigate("/") });
+
+  // Panel đang chọn — mặc định "Hôm nay". Đổi panel chỉ ẩn/hiện (giữ trạng
+  // thái trong section: danh sách game đang mở, tab cài đặt push…).
+  const [activeId, setActiveId] = useState("home");
+
+  // Đọc lời chào một lần khi vào trang (chỉ khi bé đã đăng nhập).
+  const userName = vm.user.name;
   useEffect(() => {
-    walletService.get().then((w) => setWallet({ coins: w?.coins ?? 0, stars: w?.stars ?? 0 })).catch(() => {});
-  }, []);
+    if (!userName || showLoading) return;
+    speak(`Chào ${userName}, hôm nay bé học gì nào?`);
+  }, [userName, showLoading]);
 
-  const speak = (text) => {
-    if (!("speechSynthesis" in window)) return;
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "vi-VN";
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-  };
+  const activeItem = PANELS.find((p) => p.id === activeId) || PANELS[0];
+
+  // ── Chưa đăng nhập ──
+  if (!userAuth?.user) {
+    return (
+      <div className="flex-1 flex items-center justify-center px-4 py-16">
+        <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-lg">
+          <div className="text-6xl">🦉</div>
+          <h2 className="mt-3 font-display text-xl text-ink">Xin chào bé!</h2>
+          <p className="mt-1 text-sm text-ink/50">
+            Bé đăng nhập để nhận nhiệm vụ hôm nay, tích xu và nuôi khu vườn nhé.
+          </p>
+          <button
+            onClick={onUserLogin}
+            className="mt-5 w-full rounded-2xl bg-sky-500 py-3 font-extrabold text-white shadow active:scale-95 transition"
+          >
+            Đăng nhập
+          </button>
+          <button
+            onClick={() => navigate("/")}
+            className="mt-2 w-full rounded-2xl py-3 text-sm font-semibold text-ink/60 hover:text-ink transition"
+          >
+            Về trang chủ
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Đang tải hồ sơ lần đầu ──
+  if (showLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center px-4">
+        <p className="text-sm text-ink/40 animate-pulse">Đang mở nhà của bé…</p>
+      </div>
+    );
+  }
+
+  // ── Lỗi tải + CHƯA có hồ sơ nào để hiện ──
+  if (!profile && error) {
+    return (
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-sm text-red-500 mb-3">{error}</p>
+          <button
+            onClick={() => navigate("/")}
+            className="rounded-xl bg-gold px-5 py-2 text-sm font-semibold text-white"
+          >
+            ← Về trang chủ
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-200 via-amber-100 to-emerald-100 p-4 pb-24">
-      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4">
-        <aside className="rounded-3xl bg-white/80 p-4 shadow space-y-3">
-          <div className="text-center">
-            <div className="text-5xl">🦉</div>
-            <h1 className="font-bold text-xl text-sky-700 mt-2">Chào {userAuth?.user?.name || "bé"}!</h1>
-            <p className="text-xs text-ink/60">Lớp {userAuth?.user?.className || ""}</p>
-            <div className="mt-2 flex justify-center gap-3 text-sm font-bold">
-              <span>🪙 {wallet.coins}</span>
-              <span>⭐ {wallet.stars}</span>
-            </div>
-            <button onClick={() => speak("Chào bé, hôm nay bé học gì nào?")} className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-500 text-white text-xs">
-              <Volume2 className="w-3.5 h-3.5" /> Đọc to
-            </button>
-          </div>
-          <nav className="space-y-1">
-            {SECTIONS.map((s) => (
-              <button key={s.key} onClick={() => setActive(s.key)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition ${active === s.key ? "bg-sky-500 text-white" : "hover:bg-sky-100 text-ink"}`}>
-                <s.icon className="w-4 h-4" /> {s.label}
+      <div className="max-w-6xl mx-auto">
+        {/* ── Foreground toast (tin push khi app đang mở) ── */}
+        {fgToast && (
+          <div
+            className="fixed top-4 left-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 rounded-2xl border bg-white p-4 shadow-xl animate-[popIn_.25s_ease]"
+            style={{ borderColor: "var(--line)" }}
+          >
+            <div className="flex gap-3">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-600 text-white">
+                <IconNotification className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-ink">{fgToast.title}</p>
+                <p className="line-clamp-2 text-xs text-ink/60">{fgToast.body}</p>
+              </div>
+              <button onClick={clearFgToast} className="text-ink/40 hover:text-ink">
+                <CircleX className="w-5 h-5" />
               </button>
-            ))}
-          </nav>
-        </aside>
+            </div>
+          </div>
+        )}
 
-        <main className="rounded-3xl bg-white/80 p-5 shadow">
-          {active === "tasks" && (
-            <div>
-              <h2 className="font-bold text-lg text-emerald-700 mb-3">Nhiệm vụ hôm nay</h2>
-              <div className="space-y-3">
-                {tasks.map((t, i) => (
-                  <div key={i} className="rounded-2xl bg-amber-50 p-3 flex items-center gap-3">
-                    <div className="text-3xl">🎯</div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-ink">{t.title}</p>
-                      <button onClick={() => speak(t.title)} className="text-xs text-sky-600 underline">🔊 nghe</button>
-                    </div>
-                    <button onClick={() => navigate(t.path)} className="px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold">
-                      {t.cta}
-                    </button>
+        <div className="flex w-full gap-5">
+          {/* ── SIDEBAR trái (desktop) ── */}
+          <KidSidebar
+            vm={vm}
+            kid={kid}
+            activeId={activeId}
+            onSelect={setActiveId}
+            onLogout={onLogout}
+          />
+
+          {/* ── Cột nội dung ── */}
+          <main className="min-w-0 flex-1">
+            {/* Tiêu đề panel — ẩn trên mobile vì chip đã ghi nhãn; desktop hiện
+              tiêu đề lớn để bé biết mình đang ở mục nào. */}
+            <div className="mb-3 hidden items-center gap-2 lg:flex">
+              <activeItem.Icon className="w-6 h-6" style={{ color: "var(--accent)" }} />
+              <h1 className="font-display text-xl text-ink">{activeItem.label}</h1>
+            </div>
+
+            {/* ── Hàng chip chọn mục (mobile, thay cho sidebar) ── */}
+            <nav
+              className="-mx-3 mb-3 flex gap-2 overflow-x-auto px-3 pb-1 lg:hidden"
+              aria-label="Khu vực trong trang"
+            >
+              {PANELS.map(({ id, label, Icon }) => {
+                const active = id === activeId;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setActiveId(id)}
+                    aria-current={active ? "page" : undefined}
+                    className="flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-extrabold transition"
+                    style={active
+                      ? { background: "var(--accent)", color: "#fff" }
+                      : { background: "var(--card)", color: "var(--ink, #1d2b52)", border: "1px solid var(--line)" }}
+                  >
+                    <Icon className="w-4 h-4" /> {label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* ── PANEL: Hôm nay ── */}
+            <div id="home" className={panelCls(activeId, "home")}>
+              <KidHomePanel
+                vm={vm}
+                kid={kid}
+                onClaimed={() => vm.refreshProfile?.()}
+              />
+            </div>
+
+            {/* ── PANEL: Tổng quan (Thông tin cá nhân + Ví của bé) ── */}
+            <div id="sec-overview" className={panelCls(activeId, "sec-overview")}>
+              <div className="grid items-start gap-4 lg:grid-cols-2">
+                <PersonalInfoCard vm={vm} />
+                <section className="rounded-2xl p-4 shadow-sm" style={CARD_STYLE}>
+                  <div className="mb-3 flex items-center gap-2">
+                    <span
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg"
+                      style={{ background: "var(--accent-bg)" }}
+                    >
+                      <Wallet className="w-4 h-4" style={{ color: "var(--accent)" }} />
+                    </span>
+                    <span className="font-display text-sm text-ink">Ví của bé</span>
                   </div>
-                ))}
+                  <WalletRows wallet={vm.wallet} />
+                </section>
               </div>
             </div>
-          )}
-          {active === "garden" && (
-            <div className="text-center space-y-3">
-              <div className="text-5xl">🌳</div>
-              <p className="font-semibold">Khu vườn điểm tốt</p>
-              <button onClick={() => navigate("/garden")} className="px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold">Vào khu vườn</button>
+
+            {/* ── Các panel còn lại — dùng chung khối ProfileSections ── */}
+            <div className={panelCls(activeId, "sec-outfit")}>
+              <OutfitSection vm={vm} />
             </div>
-          )}
-          {active === "badges" && (
-            <div className="text-center space-y-3">
-              <div className="text-5xl">🏆</div>
-              <p className="font-semibold">Kho báu huy hiệu</p>
-              <button onClick={() => navigate("/achievements")} className="px-4 py-2 rounded-xl bg-amber-500 text-white font-bold">Xem huy hiệu</button>
+            <div className={panelCls(activeId, "sec-class")}>
+              <ClassSection vm={vm} />
             </div>
-          )}
-          {active === "leaderboard" && (
-            <div className="text-center space-y-3">
-              <div className="text-5xl">🥇</div>
-              <p className="font-semibold">Bảng vàng lớp mình</p>
-              <button onClick={() => navigate("/leaderboard")} className="px-4 py-2 rounded-xl bg-yellow-500 text-white font-bold">Xem bảng vàng</button>
+            <div className={panelCls(activeId, "sec-games")}>
+              <GamesSection vm={vm} />
             </div>
-          )}
-        </main>
+            <div className={panelCls(activeId, "sec-settings")}>
+              <KidSettingsSection vm={vm} />
+            </div>
+            <div className={panelCls(activeId, "sec-app")}>
+              <AppSection vm={vm} />
+            </div>
+          </main>
+        </div>
+
+        {/* ── Thanh dưới cùng (mobile) — ẩn trên desktop vì có sidebar ── */}
+        <BottomNav userAuth={userAuth} activeKey="kid-dashboard" chatUnread={chatUnread} />
+
+        {/* ── Modal hướng dẫn cài PWA trên iOS ── */}
+        {showIosGuide && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm"
+            onClick={() => setShowIosGuide(false)}
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl p-5 shadow-xl"
+              style={CARD_STYLE}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-3 flex items-center gap-2">
+                <div className="grid h-8 w-8 place-items-center rounded-xl bg-black text-white">
+                  <Apple className="w-4 h-4" />
+                </div>
+                <h3 className="font-display text-sm font-bold text-ink">Hướng dẫn cài đặt trên iOS</h3>
+              </div>
+              <div className="space-y-3 text-sm text-ink/70">
+                <p className="flex gap-2">
+                  <span className="font-bold text-ink">1.</span>
+                  Nhấn nút <Share2 className="inline h-4 w-4 text-violet-600" /> <b>Chia sẻ</b> ở thanh điều hướng Safari
+                </p>
+                <p className="flex gap-2">
+                  <span className="font-bold text-ink">2.</span> Cuộn xuống và chọn <b>"Thêm vào Màn hình chính"</b>
+                </p>
+                <p className="flex gap-2">
+                  <span className="font-bold text-ink">3.</span> Nhấn <b>"Thêm"</b> ở góc trên phải để hoàn tất
+                </p>
+              </div>
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                Sau khi cài, mở EduPlay từ màn hình chính rồi vào lại đây để bật thông báo đẩy.
+              </div>
+              <button
+                onClick={() => setShowIosGuide(false)}
+                className="mt-4 w-full rounded-xl bg-ink py-2.5 text-sm font-bold text-white transition hover:bg-ink/90"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Modal tùy chỉnh avatar / thú cưng ── */}
+        {customizer && (
+          <DressUpCustomizer
+            kind={customizer}
+            initial={outfit[customizer].value}
+            onSave={handleSaveOutfit}
+            onClose={() => setCustomizer(null)}
+          />
+        )}
       </div>
-      <BottomNav userAuth={userAuth} activeKey="kid-dashboard" chatUnread={chatUnread} />
     </div>
   );
 }
