@@ -355,6 +355,11 @@ async function _runHeavyInit(database) {
           examDuration: { bsonType: "int" },
           deadline: { bsonType: "string" },
           maxAttempts: { bsonType: ["int", "null"] },
+          // Bài đích danh của Gói can thiệp 1 chạm (Đợt 2) — tuỳ chọn, bài
+          // thường không có: chỉ giao cho các học sinh trong danh sách.
+          targetStudentIds: { bsonType: "array" },
+          source: { bsonType: "string" },
+          topicKey: { bsonType: "string" },
           status: { enum: ["ACTIVE", "CLOSED"] },
           createdAt: { bsonType: "string" },
           updatedAt: { bsonType: "string" },

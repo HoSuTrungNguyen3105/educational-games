@@ -20,7 +20,7 @@ function withoutGame(doc) {
 
 // ── Assignment CRUD ──
 
-export async function createAssignment({ teacherId, templateId, questionIds, title, description, classId, isExam, examDuration, deadline, maxAttempts }) {
+export async function createAssignment({ teacherId, templateId, questionIds, title, description, classId, isExam, examDuration, deadline, maxAttempts, targetStudentIds, source, topicKey }) {
   if (!teacherId || !title || !classId) {
     throw new Error("teacherId, title, classId là bắt buộc");
   }
@@ -41,6 +41,15 @@ export async function createAssignment({ teacherId, templateId, questionIds, tit
     deadline: deadline || null,
     maxAttempts: maxAttempts != null ? maxAttempts : 1,
     status: "ACTIVE",
+    // Bài ĐÍCH DANH (Gói can thiệp 1 chạm — Đợt 2): chỉ giao cho một nhóm
+    // học sinh thay vì cả lớp. Ba field này chỉ ghi khi người gọi truyền
+    // vào; bài thường vắng/rỗng → hành vi cả lớp y như cũ (danh sách phía
+    // học sinh + startSubmission chỉ lọc khi danh sách đích danh khác rỗng).
+    ...(Array.isArray(targetStudentIds) && targetStudentIds.length
+      ? { targetStudentIds: [...new Set(targetStudentIds)] }
+      : {}),
+    ...(source ? { source } : {}),
+    ...(topicKey ? { topicKey } : {}),
     createdAt: now,
     updatedAt: now,
   };
@@ -114,6 +123,13 @@ export async function startSubmission({ assignmentId, studentId }) {
   if (assignment.status !== "ACTIVE") throw new Error("Bài giao đã đóng");
   if (assignment.deadline && new Date(assignment.deadline) < new Date()) {
     throw new Error("Đã hết hạn nộp bài");
+  }
+  // Bài đích danh (targetStudentIds khác rỗng): chỉ học sinh được giao mới
+  // bắt đầu được — học sinh khác trong lớp (và khách) bị từ chối tại đây,
+  // kể cả khi họ biết mã/id bài.
+  if (Array.isArray(assignment.targetStudentIds) && assignment.targetStudentIds.length
+    && !assignment.targetStudentIds.includes(studentId)) {
+    throw new Error("Bài tập này không được giao cho bạn");
   }
 
   // Check if there's an IN_PROGRESS submission — return it
