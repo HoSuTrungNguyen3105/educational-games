@@ -1,0 +1,129 @@
+/* character-stage.css — sân khấu nhân vật chibi giả lập 3D (fallback CSS).
+ *
+ * Cấu trúc: .character-stage (khung, cha quyết định kích thước)
+ *   ├─ .cs__shadow  — bóng đổ dưới chân, co giãn theo nhịp nhảy
+ *   └─ .cs__turn    — lớp xoay phối cảnh theo turnX (transition mềm)
+ *      └─ .cs__anim — lớp chạy animation theo mood (keyframes)
+ *         └─ .cs__fig — artwork SVG ghép lớp của hệ avatar (.eg-du)
+ *
+ * Tách turn và mood ra hai lớp lồng nhau để transform của keyframes
+ * không ghi đè transform xoay. Mọi animation đều tắt khi người dùng
+ * bật prefers-reduced-motion. */
+
+.character-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cs__shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 1.5%;
+  width: 52%;
+  height: 5.5%;
+  min-height: 6px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(29, 43, 82, 0.32) 0%, rgba(29, 43, 82, 0) 68%);
+  pointer-events: none;
+}
+
+.cs__turn {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transition: transform 0.28s ease-out;
+  will-change: transform;
+}
+
+.cs__anim {
+  height: 97%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transform-origin: 50% 92%;
+  will-change: transform;
+}
+
+.cs__fig {
+  height: 100%;
+  aspect-ratio: 512 / 700;
+  max-width: 100%;
+  line-height: 0;
+}
+.cs__fig img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.cs__rive {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── mood: idle — nhún thở nhẹ ─────────────────────────────── */
+.cs--mood-idle .cs__anim { animation: cs-breathe 2.8s ease-in-out infinite; }
+.cs--mood-idle .cs__shadow { animation: cs-shadow-breathe 2.8s ease-in-out infinite; }
+@keyframes cs-breathe {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(-4px) scale(0.998, 1.012); }
+}
+@keyframes cs-shadow-breathe {
+  0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 1; }
+  50% { transform: translateX(-50%) scaleX(0.94); opacity: 0.85; }
+}
+
+/* ── mood: wave — lắc thân thiện vẫy chào ──────────────────── */
+.cs--mood-wave .cs__anim { animation: cs-wave 0.9s ease-in-out infinite; }
+.cs--mood-wave .cs__shadow { animation: cs-shadow-breathe 0.9s ease-in-out infinite; }
+@keyframes cs-wave {
+  0%, 100% { transform: rotate(-2.6deg) translateY(0); }
+  50% { transform: rotate(2.6deg) translateY(-5px); }
+}
+
+/* ── mood: happy — nhảy vui liên tục ───────────────────────── */
+.cs--mood-happy .cs__anim { animation: cs-jump 0.62s ease-in-out infinite; }
+.cs--mood-happy .cs__shadow { animation: cs-shadow-jump 0.62s ease-in-out infinite; }
+
+/* ── ăn mừng một nhịp (celebrateKey đổi) — ghi đè mood ─────── */
+.cs--celebrating .cs__anim { animation: cs-jump 0.7s ease-in-out 2; }
+.cs--celebrating .cs__shadow { animation: cs-shadow-jump 0.7s ease-in-out 2; }
+@keyframes cs-jump {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  30% { transform: translateY(2px) scale(1.03, 0.96); }
+  55% { transform: translateY(-17px) scale(0.99, 1.02); }
+  78% { transform: translateY(0) scale(1.02, 0.98); }
+}
+@keyframes cs-shadow-jump {
+  0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 1; }
+  30% { transform: translateX(-50%) scaleX(1.06); opacity: 1; }
+  55% { transform: translateX(-50%) scaleX(0.68); opacity: 0.6; }
+  78% { transform: translateX(-50%) scaleX(1.02); opacity: 0.95; }
+}
+
+/* ── mood: encourage — nghiêng đầu cổ vũ, không biểu cảm tiêu cực ── */
+.cs--mood-encourage .cs__anim {
+  animation: cs-encourage 2.6s ease-in-out infinite;
+  transform-origin: 50% 18%;
+}
+@keyframes cs-encourage {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  25% { transform: rotate(2.4deg) translateY(-2px); }
+  55% { transform: rotate(0deg) translateY(0); }
+  80% { transform: rotate(-1.6deg) translateY(-2px); }
+}
+
+/* ── giảm chuyển động theo cài đặt hệ thống ────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .cs__anim, .cs__shadow { animation: none !important; }
+  .cs__turn { transition: none; }
+}
