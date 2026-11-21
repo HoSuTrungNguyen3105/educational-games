@@ -21,6 +21,7 @@ import { usePet, moodLabel } from '../pet/petApi.js'
 import DailyGiftModal from '../components/home/DailyGiftModal.jsx'
 import CheckinCard from '../components/home/CheckinCard.jsx'
 import SeasonalEventBlock from '../components/home/SeasonalEventBlock.jsx'
+import HomeCharacter from '../components/home/HomeCharacter.jsx'
 import { useCheckin } from '../hooks/useCheckin.js'
 import { useKidSettings, ageBandLabel } from '../lib/kidSettings.js'
 import { useScrollLock } from '../hooks/useScrollLock.js'
@@ -395,6 +396,15 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
       setWalletLoaded(true);
     }
   }, []);
+
+  // Nhân vật của bé đứng ở hero: điểm danh xong là nhận thưởng NGAY trên
+  // trang (không chuyển trang như nút Chơi ngay/Bài học) → nhảy ăn mừng
+  // một nhịp. Các nút chơi điều hướng đi ngay nên không gắn ăn mừng ở đó.
+  const [charCelebrate, setCharCelebrate] = useState(0);
+  const handleCheckedInCheer = useCallback((result) => {
+    handleCheckedIn(result);
+    setCharCelebrate((k) => k + 1);
+  }, [handleCheckedIn]);
 
   // Sheet menu đang mở thì khoá cuộn trang nền (chuẩn chung của app;
   // hộp quà tự khoá trong DailyGiftModal, modal nhập mã qua Modal dùng chung).
@@ -1126,7 +1136,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
           {/* Điểm danh mỗi ngày — bản mobile (bản desktop nằm dưới playbar,
               dùng chung state checkinState). Chỉ học sinh. */}
           {userAuth?.user?.role === "student" && (
-            <CheckinCard state={checkinState} onCheckedIn={handleCheckedIn} className="gq-checkin--mobile" />
+            <CheckinCard state={checkinState} onCheckedIn={handleCheckedInCheer} className="gq-checkin--mobile" />
           )}
 
           {/* Sự kiện theo mùa (Đợt 3) — bản mobile, nằm trong .gq-mhome
@@ -1278,6 +1288,9 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
               )}
             </div>
           </div>
+          {/* Nhân vật của chính bé (body theo bộ đồ đã lưu) đứng cạnh
+              bong bóng chào — chỉ hiện khi đã đăng nhập. */}
+          <HomeCharacter userAuth={userAuth} celebrateKey={charCelebrate} />
         </section>
 
         {/* ─────────── BANNER CÀI APP ─────────── */}
@@ -1399,7 +1412,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             Ngay dưới khối hero/playbar, chỉ học sinh đã đăng nhập. Bản
             mobile nằm trong .gq-mhome; bản này ẩn ở ≤820px (CSS). */}
         {userAuth?.user?.role === "student" && (
-          <CheckinCard state={checkinState} onCheckedIn={handleCheckedIn} className="gq-checkin--desktop" />
+          <CheckinCard state={checkinState} onCheckedIn={handleCheckedInCheer} className="gq-checkin--desktop" />
         )}
 
         {/* ─────────── SỰ KIỆN THEO MÙA ───────────

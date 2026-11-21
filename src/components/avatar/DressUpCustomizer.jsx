@@ -9,13 +9,14 @@
  * `/api/auth/me` với `{ avatar }` hoặc `{ pet }`.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getDressUp, sanitizeFor, renderDressUpSvg,
   itemLabel, outfitKey, ensureDressUpCss, kidDefaultOutfit,
 } from "../../lib/dressUpAvatar.js";
 import { PrimaryButton, GhostButton } from "../ui";
-import { Ban, Dices, RotateCcw, Save, X } from "lucide-react";
+import { Ban, Dices, Rotate3d, RotateCcw, Save, X } from "lucide-react";
+import CharacterStage from "../character/CharacterStage.jsx";
 
 const SCOPES = {
   avatar: {
@@ -76,6 +77,34 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
+  /* ── Sân khấu nhân vật (chỉ avatar): mở modal thì vẫy chào rồi về
+   * idle; chọn Thân mới thì nhảy ăn mừng một nhịp; xoay giả 3D bằng
+   * nút xoay hoặc kéo ngang trên nhân vật (nhả ra là tự về chính diện). ── */
+  const [stageMood, setStageMood] = useState("wave");
+  const [turnX, setTurnX] = useState(0);
+  const [celebrateKey, setCelebrateKey] = useState(0);
+  const dragRef = useRef(null);
+  useEffect(() => {
+    if (kind !== "avatar") return undefined;
+    const t = setTimeout(() => setStageMood("idle"), 1900);
+    return () => clearTimeout(t);
+  }, [kind]);
+
+  function stagePointerDown(e) {
+    dragRef.current = { x: e.clientX, turn: turnX };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  }
+  function stagePointerMove(e) {
+    const d = dragRef.current;
+    if (!d) return;
+    const next = Math.max(-1, Math.min(1, d.turn + (e.clientX - d.x) / 130));
+    setTurnX(next);
+  }
+  function stagePointerUp() {
+    dragRef.current = null;
+    setTurnX(0);
+  }
+
   /* Modal vẽ SVG trực tiếp (không qua DressUpAvatar) → tự nạp CSS .eg-du svg. */
   useEffect(() => {
     ensureDressUpCss();
@@ -96,6 +125,7 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
      * giống nút preset bên admin; các lớp khác vẫn giữ đồ bé đang mặc. */
     if (kind === "avatar" && field === "body") {
       setDraft(getDressUp().applyBody(draft, id));
+      setCelebrateKey((k) => k + 1);
       return;
     }
     setDraft(cfg.sanitize({ ...draft, [field]: id || null }));
@@ -157,18 +187,51 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col md:flex-row">
-          {/* sân khấu — SVG có viewBox nên tự giữ tỉ lệ và canh giữa khung */}
-          <div
-            className="shrink-0 h-[30vh] sm:h-[36vh] md:h-auto md:w-[44%] md:max-w-md flex items-center justify-center p-3 md:p-5 md:border-r md:border-black/10"
-            style={{ background: "var(--bg)", borderBottom: "1px solid var(--line)" }}
-          >
+          {/* sân khấu — avatar dùng CharacterStage (nhân vật giả 3D: vẫy
+              chào khi mở, nhảy khi đổi Thân, xoay bằng nút/kéo ngang);
+              thú cưng giữ cách vẽ SVG trực tiếp như cũ. */}
+          {kind === "avatar" ? (
             <div
-              className="eg-du w-full h-full"
-              role="img"
-              aria-label={cfg.title}
-              dangerouslySetInnerHTML={{ __html: svg }}
-            />
-          </div>
+              className="relative shrink-0 h-[30vh] sm:h-[36vh] md:h-auto md:w-[44%] md:max-w-md p-3 md:p-5 md:border-r md:border-black/10 select-none"
+              style={{ background: "var(--bg)", borderBottom: "1px solid var(--line)", touchAction: "pan-y" }}
+              onPointerDown={stagePointerDown}
+              onPointerMove={stagePointerMove}
+              onPointerUp={stagePointerUp}
+              onPointerCancel={stagePointerUp}
+            >
+              <CharacterStage
+                bodyId={draft.body}
+                accessories={draft}
+                mood={stageMood}
+                turnX={turnX}
+                celebrateKey={celebrateKey}
+                label={cfg.title}
+              />
+              <button
+                type="button"
+                onClick={() => setTurnX((t) => (t === 0 ? 0.85 : 0))}
+                aria-label="Xoay nhân vật"
+                aria-pressed={turnX !== 0}
+                title="Xoay nhân vật (hoặc kéo ngang trên nhân vật)"
+                className="absolute left-3 bottom-3 w-11 h-11 rounded-2xl grid place-items-center text-white shadow-lg transition active:scale-95"
+                style={{ background: "rgba(29,43,82,0.85)" }}
+              >
+                <Rotate3d className="w-5 h-5" />
+              </button>
+            </div>
+          ) : (
+            <div
+              className="shrink-0 h-[30vh] sm:h-[36vh] md:h-auto md:w-[44%] md:max-w-md flex items-center justify-center p-3 md:p-5 md:border-r md:border-black/10"
+              style={{ background: "var(--bg)", borderBottom: "1px solid var(--line)" }}
+            >
+              <div
+                className="eg-du w-full h-full"
+                role="img"
+                aria-label={cfg.title}
+                dangerouslySetInnerHTML={{ __html: svg }}
+              />
+            </div>
+          )}
 
           <div className="flex-1 min-h-0 flex flex-col">
             {/* tab */}
