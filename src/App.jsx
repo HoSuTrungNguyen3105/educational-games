@@ -82,7 +82,7 @@ const LeaderboardPage = lazy(() => import("./pages/user/LeaderboardPage.jsx"));
 const AchievementsPage = lazy(() => import("./pages/user/AchievementsPage.jsx"));
 const RemindersPage = lazy(() => import("./pages/user/RemindersPage.jsx"));
 const AiLearningAnalysisPage = lazy(() => import("./pages/user/AiLearningAnalysisPage.jsx"));
-const ProfileScreen = lazy(() => import("./pages/user/ProfileScreen.jsx"));
+const KidDashboard = lazy(() => import("./pages/user/KidDashboard.jsx"));
 const MyCoins = lazy(() => import("./pages/user/MyCoins.jsx"));
 const FindFriendsScreen = lazy(() => import("./pages/user/FindFriendsScreen.jsx"));
 const DailyTasksPage = lazy(() => import("./pages/user/DailyTasksPage.jsx"));
@@ -245,9 +245,26 @@ function App() {
         <ConversationListScreen userAuth={userAuth} onLogout={handleLogout} />
       </RouteShell>
     ),
+    // Trang Hồ sơ cũ (/profile) đã GỘP vào trang Bé — render cùng component
+    // để link "Hồ sơ" ở trang chủ, BottomNav và Attendance không chết.
     profile: () => (
       <RouteShell toast={toast} showBack={false}>
-        <ProfileScreen userAuth={userAuth} onLogout={handleLogout} onBack={() => navigate("/")} showToast={showToast} />
+        <KidDashboard
+          userAuth={userAuth}
+          onLogout={handleLogout}
+          onUserLogin={() => setShowUserLogin(true)}
+          showToast={showToast}
+        />
+      </RouteShell>
+    ),
+    "kid-dashboard": () => (
+      <RouteShell toast={toast} showBack={false}>
+        <KidDashboard
+          userAuth={userAuth}
+          onLogout={handleLogout}
+          onUserLogin={() => setShowUserLogin(true)}
+          showToast={showToast}
+        />
       </RouteShell>
     ),
     "find-friends": () => (

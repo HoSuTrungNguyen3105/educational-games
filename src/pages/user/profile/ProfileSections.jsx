@@ -1,7 +1,6 @@
-// Các khối nội dung của trang Hồ sơ — DÙNG CHUNG cho cả bản desktop
-// (ProfileDesktop) và mobile (ProfileMobile): nội dung/handler lấy từ một
-// nguồn duy nhất là `vm` do ProfileScreen (container logic) truyền xuống,
-// hai bản chỉ khác khung trình bày bên ngoài.
+// Các khối nội dung của trang Hồ sơ — DÙNG CHUNG cho trang Bé
+// (KidDashboard, có sidebar trái trên desktop): nội dung/handler lấy từ một
+// nguồn duy nhất là `vm` do hook useProfileVm dựng lên.
 // LƯU Ý attendance: các import IconCalendar (ui), UserCheck (lucide),
 // hasUserPermission (roles) và navigate (router) đã gỡ khỏi file này vì
 // chỉ khối "Chấm công" ở ClassSection dùng — khối đó đang comment-out

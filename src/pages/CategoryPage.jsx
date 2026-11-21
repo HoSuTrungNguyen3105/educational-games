@@ -17,7 +17,6 @@ import GqGameCard from "../components/GqGameCard.jsx";
 import BottomNav from "../components/BottomNav.jsx";
 import useChatUnread from "../hooks/useChatUnread.js";
 import { EmptyState, ErrorState, Loader } from "../components/ui";
-import "./home-gq.css";
 import "./category-gq.css";
 
 /* ════════════════════════════════════════════════════════════════════

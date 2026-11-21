@@ -1,5 +1,4 @@
-import { ClipboardList, Gamepad2, House, Languages, LayoutGrid, MessageCircle } from "lucide-react";
-import { IconUser } from "./ui";
+import { ClipboardList, Gamepad2, House, Languages, LayoutGrid, MessageCircle, Smile } from "lucide-react";
 import { navigate } from "../lib/router.js";
 
 /* ════════════════════════════════════════════════════════════════════
@@ -11,7 +10,8 @@ import { navigate } from "../lib/router.js";
    bản — cấm copy markup sang trang khác.
 
    - Mục dạng "path": điều hướng thẳng (Trang chủ, Danh mục, Nhiệm vụ
-     → /daily-tasks, Tin nhắn → /chat, Cá nhân → /profile).
+     → /daily-tasks, Tin nhắn → /chat, Bé → /kid-dashboard — trang Bé đã
+     gộp luôn trang Hồ sơ cũ /profile).
    - Mục "Game" là dạng "scroll": trên trang chủ nó cuộn tới section
      game NGAY tại chỗ (HomeScreen truyền onItemClick riêng nên hành vi
      cũ giữ nguyên 100%). Từ trang khác, hành vi mặc định ở đây là ghi
@@ -30,7 +30,9 @@ export const BOTTOM_NAV_ITEMS = (userAuth) => [
   { key: "english-b1", icon: Languages, label: "Tiếng Anh B1", type: "path", path: "/english-b1", show: true },
   { key: "tasks", icon: ClipboardList, label: "Nhiệm vụ", type: "path", path: "/daily-tasks", show: !!userAuth?.user },
   { key: "chat", icon: MessageCircle, label: "Tin nhắn", type: "path", path: "/chat", show: !!userAuth?.user },
-  { key: "profile", icon: IconUser, label: "Cá nhân", type: "path", path: "/profile", show: !!userAuth?.user },
+  // "Bé" (kid-dashboard) ĐÃ GỘP cả trang Hồ sơ cũ (/profile) — một mục duy
+  // nhất dẫn tới trang tổng: nhiệm vụ hôm nay + sidebar hồ sơ.
+  { key: "kid-dashboard", icon: Smile, label: "Bé", type: "path", path: "/kid-dashboard", show: !!userAuth?.user },
 ];
 
 /* ─── Ý định cuộn sau điều hướng ─────────────────────────────────────

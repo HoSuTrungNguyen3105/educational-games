@@ -1,22 +1,41 @@
-import { IconNotification } from '../../components/ui/index.js';
-import { useEffect, useState, useMemo, useCallback } from "react";
-import { authService, classService, API_BASE, notificationService, userService, gameProgressService, walletService } from "../../services/api.js";
-import { useUserAuthStore } from "../../stores/userAuth.store.js";
-import { getLevelProgress } from "../../lib/utils.js";
-
-import { Apple, CircleX, Coins, Gamepad2, Share2, Sparkles, Star, User } from "lucide-react";
-import DressUpCustomizer from "../../components/avatar/DressUpCustomizer.jsx";
-import { resolveOutfit } from "../../lib/dressUpAvatar.js";
-import { useMediaQuery } from "../../lib/hooks.js";
-import ProfileDesktop from "./profile/ProfileDesktop.jsx";
-import ProfileMobile from "./profile/ProfileMobile.jsx";
-import { syncKidFromAccount } from "../../lib/ageCodes.js";
-import { useKidSettings } from "../../lib/kidSettings.js";
-import { getPushSupportStatus, requestNotificationPermission, onForegroundMessage } from "../../firebase/messaging.js";
-import { playVibration } from "../../lib/reminderUtils.js";
+/**
+ * useProfileVm (.jsx — chứa JSX trong mảng `wallet`) — Toàn bộ logic dữ liệu
+ * + handler của trang Hồ sơ, tách từ ProfileScreen.jsx cũ (2026-11-21) để
+ * TRANG BÉ (/kid-dashboard) dùng chung.
+ *
+ * Lý do tách: các khối ProfileSections nhận một object `vm`; trước đây chỉ
+ * ProfileScreen mới dựng được vm (nạp /auth/me, ví, danh sách game, sửa hồ
+ * sơ, PWA, push…). Nay `/profile` gộp vào KidDashboard nên đây là NGUỒN DUY
+ * NHẤT cho `vm` — trang nào cũng gọi hook này, không nhân bản logic.
+ *
+ * Trả về:
+ *   {
+ *     vm,                    // object đưa vào mọi khối ProfileSections
+ *     profile, showLoading, error,
+ *     fgToast, clearFgToast, // toast tin nhắn push khi app đang mở
+ *     showIosGuide, setShowIosGuide,
+ *     customizer, setCustomizer, outfit, handleSaveOutfit,
+ *     refreshProfile,        // nạp lại /auth/me (vd sau khi bé nhận thưởng)
+ *   }
+ */
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  API_BASE, authService, classService, gameProgressService,
+  notificationService, userService, walletService,
+} from "../../../services/api.js";
+import { useUserAuthStore } from "../../../stores/userAuth.store.js";
+import { getLevelProgress } from "../../../lib/utils.js";
+import { resolveOutfit } from "../../../lib/dressUpAvatar.js";
+import { useKidSettings } from "../../../lib/kidSettings.js";
+import { syncKidFromAccount } from "../../../lib/ageCodes.js";
+import {
+  getPushSupportStatus, onForegroundMessage, requestNotificationPermission,
+} from "../../../firebase/messaging.js";
+import { playVibration } from "../../../lib/reminderUtils.js";
+import { Coins, Gamepad2, Sparkles, Star } from "lucide-react";
 
 /** Lấy câu báo lỗi thân thiện nhất từ lỗi apiFetch (msg nằm ở .data.msg hoặc .message). */
-function apiErrorMessage(err) {
+export function apiErrorMessage(err) {
   return (
     err?.data?.msg ||
     err?.response?.data?.msg ||
@@ -26,7 +45,7 @@ function apiErrorMessage(err) {
   );
 }
 
-export default function ProfileScreen({ userAuth, onLogout, onBack, showToast }) {
+export default function useProfileVm({ userAuth, showToast, onBack, onLogout }) {
   const [profile, setProfile] = useState(null);
   const [walletStars, setWalletStars] = useState(null);
   const [error, setError] = useState(null);
@@ -36,13 +55,11 @@ export default function ProfileScreen({ userAuth, onLogout, onBack, showToast })
   // dưới dep theo `userId` này, KHÔNG dep theo cả object `userAuth`: vòng
   // refresh nền mỗi 20 giây xoay token mới → App tạo object userAuth mới
   // (memo theo [user, token]) dù vẫn là cùng một người. Dep theo object là
-  // gốc vụ "cứ gọi refresh/me/wallet/games là trang load lại": effect nạp
-  // lại dữ liệu liên tục và trang nháy như tải lại từ đầu.
+  // gốc vụ "cứ gọi refresh/me/wallet/games là trang load lại".
   const userId = userAuth?.user?.id ?? null;
 
   // Đổi tài khoản → xoá hồ sơ + lỗi của tài khoản cũ NGAY trong render
-  // (mẫu React khuyến nghị cho "reset state khi prop đổi", thay vì
-  // setState trong effect) để không chớp qua dữ liệu của người trước.
+  // (mẫu React khuyến nghị cho "reset state khi prop đổi").
   const [prevUserId, setPrevUserId] = useState(userId);
   if (prevUserId !== userId) {
     setPrevUserId(userId);
@@ -51,28 +68,25 @@ export default function ProfileScreen({ userAuth, onLogout, onBack, showToast })
   }
 
   // Loading toàn trang CHỈ suy ra, không có state riêng: chưa có hồ sơ và
-  // chưa có lỗi = đang nạp lần đầu. Đã có hồ sơ rồi thì mọi lần nạp lại
-  // đều chạy nền lặng — nội dung đang xem giữ nguyên, số liệu cập nhật
-  // tại chỗ, không bao giờ che trang bằng màn hình "Đang tải..." nữa.
+  // chưa có lỗi = đang nạp lần đầu. Đã có hồ sơ thì mọi lần nạp lại chạy
+  // nền lặng — nội dung đang xem giữ nguyên, không bao giờ che trang.
   const showLoading = !!userId && !profile && !error;
 
-  // Trên desktop danh sách trò chơi mở sẵn để cột phải không trống; mobile giữ kiểu thu gọn.
+  // Trên desktop danh sách trò chơi mở sẵn để cột phải không trống.
   const [showGames, setShowGames] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(min-width: 1024px)").matches;
   });
-  // Tiến độ từng game không còn nằm trong /auth/me (endpoint chỉ trả stats +
-  // permissions) → mục "Trò chơi" tự gọi GET /users/me/games.
   const [games, setGames] = useState([]);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
   const [copied, setCopied] = useState(null);
   const [customizer, setCustomizer] = useState(null); // null | "avatar" | "pet"
-  // Bản đang hiển thị — sửa tức thì khi modal lưu xong, không cần tải lại trang.
+  // Bản đang hiển thị — sửa tức thì khi modal lưu xong, không cần tải lại.
   const [outfitPatch, setOutfitPatch] = useState({});
 
-  // ── PWA states (theo hiweb/ProfileView.jsx, chuẩn PWA 2026) ──
+  // ── PWA states (chuẩn PWA 2026) ──
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -89,18 +103,16 @@ export default function ProfileScreen({ userAuth, onLogout, onBack, showToast })
   const [platformTab, setPlatformTab] = useState("android");
   const [showIosGuide, setShowIosGuide] = useState(false);
 
-  // ── Push notification states (theo hiweb + HomeScreen) ──
+  // ── Push notification states ──
   const [pushSupport, setPushSupport] = useState(() => getPushSupportStatus());
   const [pushLoading, setPushLoading] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
   const [pushMessage, setPushMessage] = useState("");
   const [fgToast, setFgToast] = useState(null);
 
-  // Avatar + thú cưng lấy thẳng từ hồ sơ (/api/auth/me), dựng SVG bằng đúng
-  // data mà 2 game "Tiệm thời trang cho Bé" / "Tiệm thay đồ thú cưng" dùng.
-  // `outfitPatch` là bản vừa sửa ở modal — chỉ ghi đè phần tương ứng.
-  // `kidGender` là phần DEP: hồ sơ chưa có bộ đồ nào thì avatar là bộ đồ mở
-  // màn THEO GIỚI TÍNH, đổi giới tính trong Cài đặt phải thấy đổi ngay.
+  // Avatar + thú cưng lấy thẳng từ hồ sơ (/api/auth/me). `outfitPatch` là
+  // bản vừa sửa ở modal — chỉ ghi đè phần tương ứng. `kidGender` là phần
+  // DEP: hồ sơ chưa có bộ đồ nào thì avatar là bộ đồ mở màn THEO GIỚI TÍNH.
   const kidGender = useKidSettings().gender;
   const outfit = useMemo(() => {
     const base = resolveOutfit(profile?.avatar, profile?.pet);
@@ -117,13 +129,22 @@ export default function ProfileScreen({ userAuth, onLogout, onBack, showToast })
     setProfile((prev) => (prev ? { ...prev, [kind]: updated?.[kind] ?? value } : prev));
   }, []);
 
+  /** Nạp lại hồ sơ (/auth/me) — ví dụ bé nhận thưởng nhiệm vụ thì số xu
+   *  ở sidebar/greeting cập nhật ngay mà không cần tải lại trang. */
+  const refreshProfile = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const updated = await authService.me();
+      setProfile(updated);
+      syncKidFromAccount(updated);
+    } catch { /* giữ bản cũ — số liệu phụ */ }
+  }, [userId]);
+
   /**
    * Lưu form "Thông tin cá nhân" (tên / email / lớp / giới tính) qua
-   * PUT /auth/me. Thành công: hồ sơ đang xem + auth store (header, các
-   * trang khác) + cài đặt của bé đều nhận giá trị mới NGAY, không tải
-   * lại trang. Lỗi (email trùng, sai định dạng, mã lớp lạ — server
-   * validate) thì toast + ném lại lỗi để form hiện tại chỗ và giữ
-   * nguyên nội dung đang sửa.
+   * PUT /auth/me. Thành công: hồ sơ + auth store + cài đặt bé nhận giá trị
+   * mới NGAY. Lỗi (email trùng, sai định dạng…) toast + ném lại lỗi để form
+   * giữ nguyên nội dung đang sửa.
    */
   const handleUpdateProfile = useCallback(async (values) => {
     try {
@@ -151,22 +172,17 @@ export default function ProfileScreen({ userAuth, onLogout, onBack, showToast })
       .then((userData) => {
         if (!alive) return;
         setProfile(userData);
-        // Hồ sơ trên server quyết định lớp + giới tính của bé (ageCode là mã
-        // opaque, tuổi thật chỉ client suy ra) → điền vào cài đặt máy này.
+        // Hồ sơ server quyết định lớp + giới tính của bé → điền vào cài đặt máy.
         syncKidFromAccount(userData);
         setError(null);
       })
-      // Lỗi nạp: chỉ thành màn hình lỗi khi CHƯA có hồ sơ nào để hiện
-      // (xem điều kiện render) — nạp lại nền mà lỗi thì giữ nguyên nội
-      // dung đang xem.
+      // Lỗi nạp: chỉ thành màn hình lỗi khi CHƯA có hồ sơ nào để hiện.
       .catch((e) => { if (alive) setError(e.message || "Lỗi tải profile"); });
     return () => { alive = false; };
   }, [userId]);
 
-  // Số sao PHẢI lấy từ ví (/auth/me/wallet) — cùng một nguồn sự thật với
-  // header trang chủ và Cửa hàng sao. Response của /auth/me không trả field
-  // "stars" nên trước đây trang này đọc user.stars → luôn hiện 0 sao dù ví
-  // có sao thật. Chỉ fallback về user.stars khi ví tải lỗi.
+  // Số sao PHẢI lấy từ ví (/auth/me/wallet) — cùng nguồn sự thật với header
+  // trang chủ và Cửa hàng sao. Chỉ fallback về user.stars khi ví tải lỗi.
   useEffect(() => {
     if (!userId) return;
     let alive = true;
@@ -186,14 +202,13 @@ export default function ProfileScreen({ userAuth, onLogout, onBack, showToast })
     return () => { alive = false; };
   }, [userId]);
 
-  // ── PWA detection giống hiweb_PROFILE ──
+  // ── PWA detection ──
   useEffect(() => {
     const ua = navigator.userAgent || "";
     const iOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream
       || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1 && /Safari/.test(ua));
     const android = /Android/.test(ua);
     setIsIOS(iOS);
-    // auto chọn tab theo platform thực
     if (iOS) setPlatformTab("ios");
     else if (android) setPlatformTab("android");
     else setPlatformTab("desktop");
@@ -235,19 +250,16 @@ export default function ProfileScreen({ userAuth, onLogout, onBack, showToast })
     setPushSupport(getPushSupportStatus());
   }, [pushMessage]);
 
-  // Lắng nghe foreground message — giống hiweb ProfileView + HomeScreen (Swal + Notification)
-  // Dep theo userId (không theo token): token xoay mỗi 20 giây mà đăng ký
-  // lại listener thì churn vô ích, listener chỉ cần theo tài khoản.
+  // Lắng nghe foreground message. Dep theo userId (không theo token): token
+  // xoay mỗi 20 giây mà đăng ký lại listener thì churn vô ích.
   useEffect(() => {
     if (!userId) return;
     const unsubscribe = onForegroundMessage((payload) => {
       const data = payload.data || {};
       const title = data.title || payload.notification?.title || "Thông báo";
       const body = data.body || payload.notification?.body || "";
-      // show in-app toast 5s
       setFgToast({ title, body });
       setTimeout(() => setFgToast(null), 5000);
-      // đồng thời bắn System Notification (nếu đã cấp quyền)
       try {
         if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
           new Notification(title, {
@@ -267,11 +279,6 @@ export default function ProfileScreen({ userAuth, onLogout, onBack, showToast })
   }, [userId]);
 
   const lv = useMemo(() => getLevelProgress(profile?.coins || 0), [profile?.coins]);
-
-  // Tách hẳn bản desktop / mobile theo breakpoint md (768px) như trang
-  // account mẫu. Chỉ render một bản tại một thời điểm để các id section
-  // (sec-outfit, sec-class...) không bị trùng trong DOM.
-  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   async function handleJoinClass(e) {
     e.preventDefault();
@@ -300,14 +307,6 @@ export default function ProfileScreen({ userAuth, onLogout, onBack, showToast })
     setTimeout(() => setCopied(null), 2000);
   }
 
-  /** Sidebar cuộn tới mục; danh sách game phải mở trước thì mới đúng vị trí. */
-  function jumpTo(id) {
-    if (id === "sec-games") setShowGames(true);
-    setTimeout(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 60);
-  }
-
   // ── PWA install handler ──
   async function handleInstallClick() {
     if (platformTab === "ios" || isIOS) {
@@ -325,7 +324,6 @@ export default function ProfileScreen({ userAuth, onLogout, onBack, showToast })
         setDeferredPrompt(null);
       } catch { /* ignore */ }
     } else {
-      // Đã cài hoặc trình duyệt chưa fire beforeinstallprompt -> hướng dẫn thủ công
       if (isInstalled) {
         setPushMessage("Ứng dụng đã được cài đặt rồi");
         setTimeout(() => setPushMessage(""), 2000);
@@ -336,7 +334,7 @@ export default function ProfileScreen({ userAuth, onLogout, onBack, showToast })
     }
   }
 
-  // ── Push handlers (chuẩn như hiweb) ──
+  // ── Push handlers ──
   async function handleEnablePush() {
     setPushLoading(true);
     setPushMessage("Đang xin quyền thông báo...");
@@ -407,116 +405,39 @@ export default function ProfileScreen({ userAuth, onLogout, onBack, showToast })
     }
   }
 
-  if (!userAuth?.user) {
-    return (
-      <div className="flex-1 flex items-center justify-center px-3">
-        <div className="text-center">
-          <User className="w-12 h-12 mx-auto mb-3 text-ink/30" />
-          <h2 className="font-display text-lg text-ink mb-2">Chưa đăng nhập</h2>
-          <p className="text-sm text-ink/50 mb-4">Bạn cần đăng nhập để xem profile</p>
-          <button onClick={onBack} className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-semibold">← Về trang chủ</button>
-        </div>
-      </div>
-    );
-  }
-
-  if (showLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center px-3">
-        <p className="text-sm text-ink/40 animate-pulse">Đang tải...</p>
-      </div>
-    );
-  }
-
-  if (!profile && error) {
-    return (
-      <div className="flex-1 flex items-center justify-center px-3">
-        <div className="text-center">
-          <p className="text-sm text-red-500 mb-3">{error}</p>
-          <button onClick={onBack} className="px-5 py-2 bg-gold text-white rounded-xl text-sm font-semibold">← Về trang chủ</button>
-        </div>
-      </div>
-    );
-  }
-
   const user = profile || {};
   const stats = user.stats || { totalPlays: 0, totalXP: 0, gamesPlayed: 0 };
   const className = user.className || null;
+  // Số dư dạng SỐ cho trang bé (hiện badge 🪙 ⭐, so sánh được) — mảng
+  // `wallet` bên dưới là bản đã format chuỗi cho các hàng của ProfileSections.
+  const coins = user.coins || 0;
+  const stars = walletStars ?? user.stars ?? 0;
 
   const wallet = [
-    { icon: <Coins className="w-3.5 h-3.5" />, label: "Xu", value: (user.coins || 0).toLocaleString() },
-    { icon: <Star className="w-3.5 h-3.5" />, label: "Sao", value: (walletStars ?? user.stars ?? 0).toLocaleString() },
+    { icon: <Coins className="w-3.5 h-3.5" />, label: "Xu", value: coins.toLocaleString() },
+    { icon: <Star className="w-3.5 h-3.5" />, label: "Sao", value: stars.toLocaleString() },
     { icon: <Gamepad2 className="w-3.5 h-3.5" />, label: "Lượt chơi", value: stats.totalPlays },
     { icon: <Sparkles className="w-3.5 h-3.5" />, label: "Điểm kinh nghiệm", value: (stats.totalXP || 0).toLocaleString() },
   ];
 
-  // View-model dùng chung cho cả hai bản trình bày (desktop/mobile):
-  // mọi state/handler/dữ liệu của trang gói vào một chỗ, hai bản chỉ
-  // khác khung — không lặp logic.
+  // View-model dùng chung cho mọi khối ProfileSections: mọi state/handler/
+  // dữ liệu của trang gói vào một chỗ, các khung trình bày chỉ lo markup.
   const vm = {
-    user, stats, className, wallet, lv, outfit, userAuth,
-    handleUpdateProfile, apiErrorMessage,
+    user, stats, className, wallet, coins, stars, lv, outfit, userAuth,
+    handleUpdateProfile, refreshProfile, apiErrorMessage,
     games, showGames, setShowGames,
     joinCode, setJoinCode, joinError, joining, handleJoinClass, copied, copyCode,
-    setCustomizer, jumpTo,
+    setCustomizer,
     isInstalled, platformTab, setPlatformTab, deferredPrompt, handleInstallClick, isIOS,
     pushSupport, setPushSupport, pushMessage, pushLoading, testingPush,
     handleEnablePush, handleTestPush, handleResetDevices,
     onBack, onLogout,
   };
 
-  return (
-    // Khung trang tách theo breakpoint: desktop = breadcrumb + sidebar
-    // 220px + cột thẻ; mobile = header tint + thẻ xếp dọc (ProfileDesktop /
-    // ProfileMobile). Logic và nội dung nằm ở container này và
-    // ProfileSections dùng chung.
-    <div className="flex-1 w-full px-3 py-3 lg:px-4 lg:py-4">
-      {/* foreground toast */}
-      {fgToast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm rounded-2xl shadow-xl border bg-white p-4 animate-[popIn_.25s_ease]" style={{ borderColor: "var(--line)" }}>
-          <div className="flex gap-3">
-            <div className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0"><IconNotification className="w-5 h-5" /></div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-ink truncate">{fgToast.title}</p>
-              <p className="text-xs text-ink/60 line-clamp-2">{fgToast.body}</p>
-            </div>
-            <button onClick={() => setFgToast(null)} className="text-ink/40 hover:text-ink"><CircleX className="w-5 h-5" /></button>
-          </div>
-        </div>
-      )}
-
-      {isDesktop ? <ProfileDesktop vm={vm} /> : <ProfileMobile vm={vm} />}
-
-      {/* iOS Guide Modal */}
-      {showIosGuide && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm" onClick={() => setShowIosGuide(false)}>
-          <div className="w-full max-w-sm rounded-2xl p-5 shadow-xl" style={{ background: "var(--card)", border: "1px solid var(--line)" }} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center"><Apple className="w-4 h-4" /></div>
-              <h3 className="font-display text-sm font-bold text-ink">Hướng dẫn cài đặt trên iOS</h3>
-            </div>
-            <div className="space-y-3 text-sm text-ink/70">
-              <p className="flex gap-2"><span className="font-bold text-ink">1.</span> Nhấn nút <Share2 className="w-4 h-4 inline text-violet-600" /> <b>Chia sẻ</b> ở thanh điều hướng Safari</p>
-              <p className="flex gap-2"><span className="font-bold text-ink">2.</span> Cuộn xuống và chọn <b>“Thêm vào Màn hình chính”</b></p>
-              <p className="flex gap-2"><span className="font-bold text-ink">3.</span> Nhấn <b>“Thêm”</b> ở góc trên phải để hoàn tất</p>
-            </div>
-            <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
-              Sau khi cài, mở EduPlay từ màn hình chính rồi vào lại đây để bật thông báo đẩy.
-            </div>
-            <button onClick={() => setShowIosGuide(false)} className="w-full mt-4 py-2.5 rounded-xl bg-ink text-white text-sm font-bold hover:bg-ink/90 transition">Đã hiểu</button>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Modal tùy chỉnh avatar / thú cưng ─── */}
-      {customizer && (
-        <DressUpCustomizer
-          kind={customizer}
-          initial={outfit[customizer].value}
-          onSave={handleSaveOutfit}
-          onClose={() => setCustomizer(null)}
-        />
-      )}
-    </div>
-  );
+  return {
+    vm, profile, showLoading, error,
+    fgToast, clearFgToast: () => setFgToast(null),
+    showIosGuide, setShowIosGuide,
+    customizer, setCustomizer, outfit, handleSaveOutfit,
+  };
 }

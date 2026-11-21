@@ -87,6 +87,7 @@ const ROUTES = [
   // ── User / Social ──
   { name: "chat",         pattern: "/chat" },
   { name: "profile",      pattern: "/profile" },
+  { name: "kid-dashboard", pattern: "/kid-dashboard" },
   { name: "pet",          pattern: "/pet" },
   { name: "pet-wardrobe", pattern: "/pet-wardrobe" },
   { name: "find-friends", pattern: "/find-friends" },
