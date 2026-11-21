@@ -1044,6 +1044,17 @@ export const heatmapService = {
   async getClassHeatmap(classId) { return apiFetch(`/heatmap/class/${classId}`); },
 };
 
+// Gói can thiệp 1 chạm (Đợt 2): xem trước số câu cơ bản cùng chủ đề và
+// tạo gói ôn tập đích danh từ Bản đồ nhiệt (server tự chặn phạm vi lớp).
+export const remediationService = {
+  async preview(classId, topic) {
+    return apiFetch(`/remediation/preview?classId=${encodeURIComponent(classId)}&topic=${encodeURIComponent(topic)}`);
+  },
+  async createPack({ classId, topic, studentIds }) {
+    return apiFetch("/remediation/packs", { method: "POST", body: { classId, topic, studentIds } });
+  },
+};
+
 export const assignmentService = {
   async list(classId, range) {
     const path = classId ? `/assignments?classId=${classId}` : "/assignments";

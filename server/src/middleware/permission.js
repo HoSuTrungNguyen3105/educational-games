@@ -116,6 +116,8 @@ const RULES = [
   { re: /^\/assignments/, m: "GET", perms: [PROFILE, "assignments.view"] },
   { re: /^\/assignments/, feature: "assignments" },
   { re: /^\/heatmap\//, perms: ["reports.view"] },                       // bản đồ nhiệt điểm mù — giáo viên/admin (route còn chặn requireRoles + phạm vi lớp)
+  { m: "GET", re: /^\/remediation\//, perms: ["reports.view"] },         // gói can thiệp 1 chạm: xem trước câu cơ bản cùng chủ đề
+  { m: "POST", re: /^\/remediation\//, perms: ["assignments.edit"] },    // gói can thiệp 1 chạm: tạo gói (route còn chặn requireRoles + phạm vi lớp)
 
   // ── Nhiệm vụ ngày / nhắc nhở / thông báo / chat ──────────────────────
   { re: /^\/daily-tasks\/admin\//, feature: "daily_tasks" },

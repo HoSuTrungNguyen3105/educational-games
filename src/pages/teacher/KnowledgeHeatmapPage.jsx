@@ -9,15 +9,17 @@
 // này không tự tính, không có số mẫu. Ô/câu chưa có dữ liệu thời gian thì
 // hiện "—" kèm chú thích, không suy diễn.
 //
-// Điểm nối Đợt 2 (Gói can thiệp 1 chạm): giáo viên tick chọn học sinh
-// (theo hàng hoặc chọn nhanh cả nhóm đỏ/vàng của một chủ đề) — danh sách
-// chọn giữ ở state `selectedIds` để đợt sau gắn thao tác tạo gói ôn tập.
-// Đợt này CHƯA có nút tạo gói (không đặt nút chết).
+// Đợt 2 (Gói can thiệp 1 chạm): giáo viên tick chọn học sinh (theo hàng
+// hoặc chọn nhanh cả nhóm đỏ/vàng của một chủ đề) + chọn chủ đề ôn tập →
+// nút "Tạo gói ôn tập 1 chạm" mở RemediationPackModal: server tự trích
+// câu cơ bản cùng chủ đề thành bài đích danh cho nhóm đã chọn, kèm thông
+// báo + nhắc lặp lại cách quãng +3/+7 ngày (POST /api/remediation/packs).
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Flame, Info } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Flame, Info, PackagePlus } from "lucide-react";
 import { Loader } from "../../components/ui";
 import { classService, heatmapService } from "../../services/api.js";
+import RemediationPackModal from "./RemediationPackModal.jsx";
 
 const LEVEL_META = {
   green: { label: "Thành thạo", cell: "bg-emerald-100 text-emerald-900 hover:bg-emerald-200", dot: "bg-emerald-500" },
@@ -37,6 +39,11 @@ export default function KnowledgeHeatmapPage({ showToast }) {
   const [errorClassId, setErrorClassId] = useState("");
   const [detail, setDetail] = useState(null); // { student, topic, cell }
   const [selectedIds, setSelectedIds] = useState(() => new Set());
+  // Đợt 2: chủ đề của gói ôn tập sắp tạo (đặt tự động khi chọn nhanh
+  // nhóm đỏ/vàng của một chủ đề; giáo viên đổi được ở thanh chọn).
+  const [packTopicKey, setPackTopicKey] = useState("");
+  const [packOpen, setPackOpen] = useState(false);
+  const [lastPack, setLastPack] = useState(null); // kết quả gói vừa tạo (để hiện link mở bài)
   // Đang tải = đã chọn lớp nhưng dữ liệu trả về chưa phải của lớp đó và
   // lớp đó chưa báo lỗi (trạng thái suy ra, không setState đồng bộ trong effect).
   const loading = !!classId && errorClassId !== classId && data?.class?.id !== classId;
@@ -76,6 +83,9 @@ export default function KnowledgeHeatmapPage({ showToast }) {
     setClassId(nextId);
     setDetail(null);
     setSelectedIds(new Set());
+    setPackTopicKey("");
+    setPackOpen(false);
+    setLastPack(null);
     setError("");
     setErrorClassId("");
   };
@@ -97,13 +107,32 @@ export default function KnowledgeHeatmapPage({ showToast }) {
     });
 
   // Chọn nhanh mọi học sinh đang ở một mức (đỏ/vàng) của một chủ đề —
-  // cấu trúc chọn nhóm sẵn cho Đợt 2.
+  // đồng thời ghi nhớ chủ đề đó làm chủ đề gói ôn tập (Đợt 2).
   const selectByTopicLevel = (topicKey, levels) => {
     const ids = (data?.cells || [])
       .filter((c) => c.topicKey === topicKey && levels.includes(c.level))
       .map((c) => c.studentId);
     setSelectedIds((prev) => new Set([...prev, ...ids]));
+    setPackTopicKey(topicKey);
     showToast?.(`Đã chọn ${ids.length} học sinh`, "success");
+  };
+
+  // Gói vừa tạo xong (từ RemediationPackModal): báo toast đúng nội dung
+  // đã giao + hiện thẻ kết quả có link mở bài, rồi dọn lựa chọn.
+  const handlePackCreated = (result) => {
+    setPackOpen(false);
+    setLastPack(result);
+    const dates = (result.remindDates || [])
+      .map((iso) => new Date(iso).toLocaleDateString("vi-VN"))
+      .join(" và ");
+    showToast?.(
+      `Đã giao bài ôn tập cho ${result.studentCount} học sinh (${result.questionCount} câu), nhắc ôn lại vào ngày ${dates}`,
+      "success",
+    );
+    if (result.warnings?.length) {
+      showToast?.(`Lưu ý: ${result.warnings[0]}`, "error");
+    }
+    setSelectedIds(new Set());
   };
 
   const topicQuestions = useMemo(() => {
@@ -188,15 +217,66 @@ export default function KnowledgeHeatmapPage({ showToast }) {
             </span>
           </div>
 
-          {/* ── Thanh chọn học sinh (điểm nối Đợt 2) ─────────────── */}
+          {/* ── Thanh chọn học sinh + tạo gói ôn tập (Đợt 2) ─────── */}
           {selectedIds.size > 0 && (
             <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-panel px-4 py-2.5 text-sm">
               <span className="font-medium text-ink">Đã chọn {selectedIds.size} học sinh:</span>
               <span className="text-ink-soft">
                 {data.students.filter((s) => selectedIds.has(s.id)).map((s) => s.name).join(", ")}
               </span>
-              <button type="button" className="ml-auto text-rose-600 hover:underline" onClick={() => setSelectedIds(new Set())}>
+              <label className="flex items-center gap-2 ml-auto text-ink-soft">
+                Chủ đề ôn tập:
+                <select
+                  className="rounded-xl border border-line bg-panel px-2.5 py-1.5 text-ink"
+                  value={packTopicKey}
+                  onChange={(e) => setPackTopicKey(e.target.value)}
+                  aria-label="Chủ đề của gói ôn tập"
+                >
+                  <option value="">— Chọn chủ đề —</option>
+                  {data.topics.map((t) => (
+                    <option key={t.key} value={t.key}>{t.label}</option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-1.5 font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+                onClick={() => setPackOpen(true)}
+                disabled={!packTopicKey}
+                title={packTopicKey ? "Tạo bài ôn tập đích danh cho nhóm học sinh đã chọn" : "Hãy chọn chủ đề ôn tập trước"}
+              >
+                <PackagePlus className="w-4 h-4" />
+                Tạo gói ôn tập 1 chạm
+              </button>
+              <button
+                type="button"
+                className="text-rose-600 hover:underline"
+                onClick={() => { setSelectedIds(new Set()); setPackTopicKey(""); }}
+              >
                 Bỏ chọn tất cả
+              </button>
+            </div>
+          )}
+
+          {/* ── Kết quả gói vừa tạo (link mở bài cho giáo viên) ────── */}
+          {lastPack && (
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              <CheckCircle2 className="w-5 h-5 shrink-0" />
+              <span>
+                Đã giao bài ôn tập cho <strong>{lastPack.studentCount} học sinh</strong> ({lastPack.questionCount} câu),
+                nhắc ôn lại vào ngày{" "}
+                {(lastPack.remindDates || []).map((iso) => new Date(iso).toLocaleDateString("vi-VN")).join(" và ")}.
+              </span>
+              <a
+                className="font-semibold underline"
+                href={`#/assignment/${lastPack.code}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Mở bài (mã {lastPack.code})
+              </a>
+              <button type="button" className="ml-auto hover:underline" onClick={() => setLastPack(null)}>
+                Đóng
               </button>
             </div>
           )}
@@ -331,6 +411,17 @@ export default function KnowledgeHeatmapPage({ showToast }) {
             </section>
           )}
         </>
+      )}
+
+      {/* ── Modal xác nhận tạo gói ôn tập (Đợt 2) ──────────────── */}
+      {packOpen && packTopicKey && data && (
+        <RemediationPackModal
+          classId={classId}
+          topic={packTopicKey}
+          students={data.students.filter((s) => selectedIds.has(s.id))}
+          onClose={() => setPackOpen(false)}
+          onCreated={handlePackCreated}
+        />
       )}
     </div>
   );

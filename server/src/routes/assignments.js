@@ -79,9 +79,14 @@ r.get("/", auth, async (req, res) => {
     } else {
       // Student: get assignments from their class
       const cls = await classService.getStudentClass(req.user.sub);
-      assignments = cls
+      const classAssignments = cls
         ? await assignmentService.listAssignments({ classId: cls.id, status: "ACTIVE" })
         : [];
+      // Bài đích danh (targetStudentIds khác rỗng — gói can thiệp) chỉ hiện
+      // với học sinh được giao; bài cả lớp (vắng/rỗng) hiện như cũ.
+      assignments = classAssignments.filter(
+        (a) => !a.targetStudentIds?.length || a.targetStudentIds.includes(req.user.sub),
+      );
     }
     // ?from=&to= (phân đoạn bản ghi cho dashboard) — không có thì giữ nguyên.
     if (respondWithRange(req, res, assignments)) return;
