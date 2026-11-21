@@ -341,7 +341,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <ManagementHeader subtitle="Quản lý nội dung" title="Trò chơi" />
         <div className="flex items-center gap-3">
-          <button
+          {/* <button
             onClick={handleSeed}
             disabled={seeding}
             title="Nạp template + trò chơi solo/coop mẫu từ server/data"
@@ -350,7 +350,7 @@ export default function GameLibraryManagement({ onCreate, onEdit, onResults, sho
           >
             <Database className={`w-4 h-4 ${seeding ? "animate-spin" : ""}`} />
             {seeding ? "Đang nạp..." : "Nạp dữ liệu mẫu"}
-          </button>
+          </button> */}
           <PrimaryButton onClick={onCreate}>+ Tạo trò chơi</PrimaryButton>
         </div>
       </div>

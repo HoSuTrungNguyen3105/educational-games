@@ -1,8 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Minh họa hội thoại tiếng Anh với các bong bóng thoại">
   <rect width="1200" height="675" rx="34" fill="#f5f3ff"/>
-  <circle cx="1066" cy="110" r="84" fill="#ddd6fe"/>
-  <circle cx="1130" cy="222" r="30" fill="#a5f3fc"/>
-  <text x="74" y="112" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#7c3aed" letter-spacing="3">LANGUAGE LEARNING</text>
+  <text x="74" y="112" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#7c3aed">LANGUAGE LEARNING</text>
   <text x="74" y="172" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#2e1065">Present Perfect</text>
   <text x="74" y="216" font-family="Arial, sans-serif" font-size="24" fill="#6d28d9">Nói về trải nghiệm và hành động đã hoàn thành</text>
 

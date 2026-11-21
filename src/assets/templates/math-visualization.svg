@@ -4,7 +4,7 @@
     <path d="M0 75h1200M0 150h1200M0 225h1200M0 300h1200M0 375h1200M0 450h1200M0 525h1200M0 600h1200"/>
     <path d="M75 0v675M150 0v675M225 0v675M300 0v675M375 0v675M450 0v675M525 0v675M600 0v675M675 0v675M750 0v675M825 0v675M900 0v675M975 0v675M1050 0v675M1125 0v675"/>
   </g>
-  <text x="72" y="106" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#4f46e5" letter-spacing="3">TOÁN HỌC TRỰC QUAN</text>
+  <text x="72" y="106" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#4f46e5">TOÁN HỌC TRỰC QUAN</text>
   <text x="72" y="166" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#1e1b4b">Hằng đẳng thức đáng nhớ</text>
 
   <rect x="96" y="248" width="300" height="300" rx="16" fill="#ffffff" stroke="#4f46e5" stroke-width="6"/>
@@ -28,5 +28,5 @@
   <rect x="814" y="414" width="302" height="134" rx="20" fill="#ffffff" stroke="#fcd34d" stroke-width="4"/>
   <text x="854" y="464" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#92400e">Mẹo nhớ</text>
   <text x="854" y="506" font-family="Arial, sans-serif" font-size="22" fill="#78350f">Bình phương + gấp đôi tích + bình phương</text>
-  <text x="98" y="618" font-family="Arial, sans-serif" font-size="22" fill="#6366f1">Biến công thức thành hình ảnh — hiểu sâu, nhớ lâu.</text>
+  <text x="98" y="618" font-family="Arial, sans-serif" font-size="22" fill="#6366f1">Hằng đẳng thức (a + b)² minh họa bằng diện tích hình vuông.</text>
 </svg>

@@ -2,7 +2,7 @@
   <rect width="1200" height="675" rx="34" fill="#ecfeff"/>
   <path d="M0 548c176-62 306-38 456 12 140 47 288 56 744-18v133H0Z" fill="#cffafe"/>
   <circle cx="1032" cy="108" r="72" fill="#fde68a"/>
-  <text x="76" y="116" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#0e7490" letter-spacing="3">KHOA HỌC · KHÁM PHÁ</text>
+  <text x="76" y="116" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#0e7490">KHOA HỌC · KHÁM PHÁ</text>
   <text x="76" y="176" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#083344">Quang hợp ở thực vật</text>
   <text x="76" y="220" font-family="Arial, sans-serif" font-size="24" fill="#475569">Ánh sáng mặt trời biến nước và khí carbonic thành chất hữu cơ</text>
 
@@ -24,5 +24,5 @@
     <text x="954" y="519" font-size="22" fill="#0e7490">sản phẩm</text>
   </g>
   <path d="M678 309h30M678 408h30M678 507h30" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
-  <text x="640" y="614" font-family="Arial, sans-serif" font-size="23" fill="#0e7490">Lá cây là nhà máy năng lượng nhỏ nhất của tự nhiên.</text>
+  <text x="640" y="614" font-family="Arial, sans-serif" font-size="23" fill="#0e7490">Lá cây dùng CO₂, nước và ánh sáng để tạo glucose và oxy.</text>
 </svg>

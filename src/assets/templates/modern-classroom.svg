@@ -1,10 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Minh họa lớp học hiện đại và bài toán chu vi">
   <rect width="1200" height="675" rx="34" fill="#eff6ff"/>
-  <circle cx="1030" cy="112" r="92" fill="#fde68a"/>
-  <circle cx="1088" cy="216" r="34" fill="#bfdbfe"/>
   <rect x="74" y="86" width="470" height="82" rx="22" fill="#1d4ed8"/>
   <text x="106" y="139" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#ffffff">LỚP HỌC HIỆN ĐẠI</text>
-  <text x="76" y="214" font-family="Arial, sans-serif" font-size="25" fill="#475569">Học qua hình ảnh, ví dụ và hoạt động nhóm</text>
+  <text x="76" y="214" font-family="Arial, sans-serif" font-size="25" fill="#475569">Tính chu vi hình chữ nhật: P = (dài + rộng) × 2</text>
 
   <rect x="112" y="286" width="512" height="284" rx="24" fill="#ffffff" stroke="#bfdbfe" stroke-width="4"/>
   <rect x="150" y="326" width="292" height="182" rx="12" fill="#dbeafe"/>

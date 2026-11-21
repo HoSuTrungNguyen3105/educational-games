@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Infographic vòng tuần hoàn của nước">
   <rect width="1200" height="675" rx="34" fill="#f0fdfa"/>
-  <text x="72" y="102" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#0f766e" letter-spacing="3">EDUCATIONAL INFOGRAPHIC</text>
+  <text x="72" y="102" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#0f766e">EDUCATIONAL INFOGRAPHIC</text>
   <text x="72" y="160" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#134e4a">Vòng tuần hoàn của nước</text>
-  <text x="72" y="202" font-family="Arial, sans-serif" font-size="23" fill="#0f766e">Nước không mất đi, nước chỉ chuyển từ thể này sang thể khác</text>
+  <text x="72" y="202" font-family="Arial, sans-serif" font-size="23" fill="#0f766e">Nước liên tục chuyển giữa thể rắn, lỏng và hơi trong tự nhiên</text>
 
   <circle cx="600" cy="402" r="210" fill="#ccfbf1"/>
   <path d="M430 470c40-54 108-72 166-44 48-62 142-54 176 18 62-4 98 38 92 86H430c-16-22-8-46 0-60Z" fill="#ffffff" stroke="#14b8a6" stroke-width="4"/>

@@ -330,7 +330,6 @@
 
 /* Nút chính (PrimaryButton dùng bg-ink) → xanh WP */
 .edu-admin button.bg-ink {
-  padding: 4px 10px;
   border: 1px solid var(--edu-blue);
   border-radius: 4px;
   background-color: var(--edu-blue);

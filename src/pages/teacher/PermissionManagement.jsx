@@ -186,12 +186,12 @@ export default function PermissionManagement({ user, showToast }) {
         <ManagementHeader subtitle="Hệ thống" title="Quyền hạn" />
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput value={keyword} onChange={setKeyword} placeholder="Tìm quyền hạn" className="w-48" />
-          {isAdmin && (
+          {/* {isAdmin && (
             <PrimaryButton onClick={seedAll} disabled={seeding} className="!px-4 !py-2 text-sm flex items-center gap-1.5" title="Tạo các quyền <module>_all (toàn quyền, chỉ admin tổng có)">
               <Wand2 className="w-4 h-4" />
               {seeding ? "Đang tạo..." : "Tạo quyền _all"}
             </PrimaryButton>
-          )}
+          )} */}
           <button
             type="button"
             onClick={exportCsv}
@@ -223,7 +223,7 @@ export default function PermissionManagement({ user, showToast }) {
         </div>
       </div>
 
-      <p className="note-card p-3 text-xs leading-relaxed text-[#8A7C63] font-body">
+      {/* <p className="note-card p-3 text-xs leading-relaxed text-[#8A7C63] font-body">
         Danh mục quyền do <span className="font-semibold text-ink">hệ thống định nghĩa sẵn</span> — trang này
         chỉ để xem và tra cứu, không thêm/sửa/xóa quyền tại đây. Muốn cấp hoặc thu quyền cho từng vai trò,
         dùng trang{" "}
@@ -231,7 +231,7 @@ export default function PermissionManagement({ user, showToast }) {
           Vai trò
         </button>
         (mở "Ma trận quyền" từ cột Số quyền).
-      </p>
+      </p> */}
 
       {error && rows === null ? (
         <ErrorState subtitle={error} onRetry={load} />

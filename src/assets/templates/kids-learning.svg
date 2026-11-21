@@ -1,11 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Minh họa các thẻ từ chỉ sự vật cho học sinh tiểu học">
   <rect width="1200" height="675" rx="34" fill="#fff7ed"/>
-  <circle cx="1080" cy="98" r="72" fill="#fde68a"/>
-  <circle cx="1128" cy="210" r="28" fill="#fdba74"/>
-  <circle cx="82" cy="584" r="54" fill="#fecdd3"/>
-  <text x="76" y="122" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#c2410c" letter-spacing="3">TIẾNG VIỆT · LỚP 2</text>
+  <text x="76" y="122" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#c2410c">TIẾNG VIỆT · LỚP 2</text>
   <text x="76" y="184" font-family="Arial, sans-serif" font-size="46" font-weight="700" fill="#7c2d12">Từ chỉ sự vật</text>
-  <text x="76" y="228" font-family="Arial, sans-serif" font-size="24" fill="#9a3412">Cùng bé nhận biết thế giới qua những từ ngữ gần gũi</text>
+  <text x="76" y="228" font-family="Arial, sans-serif" font-size="24" fill="#9a3412">Ba từ chỉ sự vật: cái bàn, con mèo, bông hoa</text>
 
   <g font-family="Arial, sans-serif">
     <rect x="92" y="292" width="272" height="260" rx="28" fill="#ffffff" stroke="#fdba74" stroke-width="5"/>

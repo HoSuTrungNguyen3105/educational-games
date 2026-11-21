@@ -182,7 +182,7 @@ export default function AiChatHistoryPage({ showToast }) {
           <Input type="date" value={from} onChange={setFrom} />
           <Input type="date" value={to} onChange={setTo} />
           <PrimaryButton onClick={applyFilters} disabled={loading} className="!px-4 !py-2 text-sm rounded-lg">
-            <Search className="w-4 h-4 mr-1.5" />Tìm
+            <Search className="w-4 h-4 mr-1.5 mt-1" />Tìm
           </PrimaryButton>
         </div>
         <p className="text-[11px] text-[#8A7C63] mt-2">{deleteHint}</p>
