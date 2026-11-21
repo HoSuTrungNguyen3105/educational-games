@@ -20,7 +20,7 @@ import "../../styles/svgAvatarMotion.css";
 
 const STEP = 26;
 const WALK_MS = 560;
-const JUMP_MS = 650;
+const JUMP_MS = 700;
 const STROLL_MS = 620;
 
 export default function MovableSvgAvatar({
@@ -41,6 +41,7 @@ export default function MovableSvgAvatar({
   const strollDir = useRef(1);
   const posRef = useRef(0);
   const facingRef = useRef(1);
+  const strollingRef = useRef(false);
   const lastJumpSignal = useRef(jumpSignal);
 
   /* Biên an toàn: đo khung chứa, chừa lề để nhân vật không tràn ra ngoài. */
@@ -66,7 +67,12 @@ export default function MovableSvgAvatar({
   const flashMotion = useCallback((next, ms) => {
     setMotion(next);
     if (motionTimer.current) window.clearTimeout(motionTimer.current);
-    motionTimer.current = window.setTimeout(() => setMotion("idle"), ms);
+    /* Hết nhịp thì về trạng thái TRƯỚC đó: đang tự đi dạo thì về walk,
+     * đứng yên thì về idle. */
+    motionTimer.current = window.setTimeout(
+      () => setMotion(strollingRef.current ? "walk" : "idle"),
+      ms
+    );
   }, []);
 
   const applyPos = useCallback(
@@ -105,6 +111,7 @@ export default function MovableSvgAvatar({
 
   /* Tự đi dạo: bước qua lại trong biên, tới biên thì quay đầu. */
   useEffect(() => {
+    strollingRef.current = strolling;
     if (!strolling) return undefined;
     const id = window.setInterval(() => {
       let dir = strollDir.current;
@@ -171,9 +178,9 @@ export default function MovableSvgAvatar({
         aria-hidden="true"
         style={{
           transform: `translateX(calc(-50% + ${posX}px)) scale(${
-            motion === "jump" ? 0.72 : 1
+            motion === "jump" ? 0.58 : 1
           })`,
-          opacity: motion === "jump" ? 0.55 : 1,
+          opacity: motion === "jump" ? 0.45 : 1,
         }}
       />
       <div
