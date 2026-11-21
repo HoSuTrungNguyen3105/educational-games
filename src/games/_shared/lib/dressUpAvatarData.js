@@ -1697,35 +1697,58 @@
    *  (Robot, Người tuyết, Ma Halloween) khai báo slots hẹp theo cơ chế hiện tại.
    * ===================================================================== */
 
-  /** Thân mặc đồ kín: tay → tay áo → cổ → đầu → thân → chân → giày. */
+  /** Thân mặc đồ kín: tay → tay áo → cổ → đầu → thân → chân → giày.
+   *  Trả về PARTS { main, legL, legR } thay vì một chuỗi phẳng: chân (path
+   *  LEG/FOOT chuẩn + chi tiết thuộc hẳn một bên chân trong torsoDetail /
+   *  legDetail / footDetail — vd ống bốt lông của Ông già Noel nằm ở
+   *  torsoDetail) được tách sẵn theo cấu trúc để renderKid cho vào nhóm
+   *  khớp chân, nhờ đó thân bộ đồ BƯỚC được như thân người thường. Thứ tự
+   *  vẽ tương đối trong từng phía giữ nguyên bản phẳng cũ. */
   function costumeFrame(sv, o) {
-    return groundShadow()
-      + limbs(o.arm)
-      + (o.armDetail || '')
-      + neck(sv, o.neck || o.torso)
-      + head(sv, o.head || 'url(#kidSkin)')
-      + '<path d="' + TORSO + '" fill="' + o.torso + '" filter="url(#kidShadow)"/>'
-      + (o.torsoDetail || '')
-      + '<path d="' + LEG_L + '" fill="' + o.leg + '" filter="url(#kidShadow)"/>'
-      + '<path d="' + LEG_R + '" fill="' + o.leg + '" filter="url(#kidShadow)"/>'
-      + (o.legDetail || '')
-      + '<path d="' + FOOT_L + '" fill="' + o.foot + '" filter="url(#kidShadow)"/>'
-      + '<path d="' + FOOT_R + '" fill="' + o.foot + '" filter="url(#kidShadow)"/>'
-      + (o.footDetail || '');
+    /* torsoDetail là chi tiết của THÂN (huy hiệu, thắt lưng, túi hông):
+     * chỉ phần nào nằm sâu hẳn xuống chân (y ≥ 540 — vd viền lông ống
+     * bốt của Ông già Noel) mới theo chân; chi tiết ngang hông (túi áo
+     * của Cảnh sát ở y 484) ở lại lớp thân như cũ. */
+    var torsoD = splitLegFragment(o.torsoDetail || '', 540);
+    var legD = splitLegFragment(o.legDetail || '');
+    var footD = splitLegFragment(o.footDetail || '');
+    var legPathL = '<path d="' + LEG_L + '" fill="' + o.leg + '" filter="url(#kidShadow)"/>';
+    var legPathR = '<path d="' + LEG_R + '" fill="' + o.leg + '" filter="url(#kidShadow)"/>';
+    var footPathL = '<path d="' + FOOT_L + '" fill="' + o.foot + '" filter="url(#kidShadow)"/>';
+    var footPathR = '<path d="' + FOOT_R + '" fill="' + o.foot + '" filter="url(#kidShadow)"/>';
+    return {
+      main: groundShadow()
+        + limbs(o.arm)
+        + (o.armDetail || '')
+        + neck(sv, o.neck || o.torso)
+        + head(sv, o.head || 'url(#kidSkin)')
+        + '<path d="' + TORSO + '" fill="' + o.torso + '" filter="url(#kidShadow)"/>'
+        + torsoD.main + legD.main + footD.main,
+      legL: torsoD.l + legPathL + legD.l + footPathL + footD.l,
+      legR: torsoD.r + legPathR + legD.r + footPathR + footD.r
+    };
   }
 
-  /** Thân mặc váy dài: chân vẽ TRƯỚC váy để chỉ lộ phần dưới gấu. */
+  /** Thân mặc váy dài: chân vẽ TRƯỚC váy để chỉ lộ phần dưới gấu.
+   *  Cũng trả PARTS như costumeFrame, kèm cờ `under`: renderKid đặt nhóm
+   *  chân trong nhóm thân trên, ngay trước váy — chân bước dưới gấu váy
+   *  đúng như bản vẽ gốc. (legDetail/footDetail không được gownFrame dùng
+   *  từ trước tới nay — giữ nguyên hành vi đó.) */
   function gownFrame(sv, o) {
-    return groundShadow()
-      + limbs(o.arm)
-      + (o.armDetail || '')
-      + neck(sv, o.neck || o.dress)
-      + head(sv, o.head || 'url(#kidSkin)')
-      + (o.leg ? '<path d="' + LEG_L + '" fill="' + o.leg + '"/>' + '<path d="' + LEG_R + '" fill="' + o.leg + '"/>' : '')
-      + '<path d="' + DRESS_BODY + '" fill="' + o.dress + '" filter="url(#kidShadow)"/>'
-      + (o.dressDetail || '')
-      + '<path d="' + FOOT_L + '" fill="' + o.foot + '" filter="url(#kidShadow)"/>'
-      + '<path d="' + FOOT_R + '" fill="' + o.foot + '" filter="url(#kidShadow)"/>';
+    return {
+      under: true,
+      main: groundShadow()
+        + limbs(o.arm)
+        + (o.armDetail || '')
+        + neck(sv, o.neck || o.dress)
+        + head(sv, o.head || 'url(#kidSkin)')
+        + '<path d="' + DRESS_BODY + '" fill="' + o.dress + '" filter="url(#kidShadow)"/>'
+        + (o.dressDetail || ''),
+      legL: (o.leg ? '<path d="' + LEG_L + '" fill="' + o.leg + '"/>' : '')
+        + '<path d="' + FOOT_L + '" fill="' + o.foot + '" filter="url(#kidShadow)"/>',
+      legR: (o.leg ? '<path d="' + LEG_R + '" fill="' + o.leg + '"/>' : '')
+        + '<path d="' + FOOT_R + '" fill="' + o.foot + '" filter="url(#kidShadow)"/>'
+    };
   }
 
   function belt(band, buckle, edge) {
@@ -2683,7 +2706,7 @@
 
   function werewolfBody(sv) {
     var rsv = { light: WOLF.furLight, dark: WOLF.furDark, shadow: WOLF.furDark, ear: WOLF.furDark };
-    return costumeFrame(rsv, {
+    var frame = costumeFrame(rsv, {
       torso: WOLF.fur, arm: WOLF.fur, neck: WOLF.fur, leg: WOLF.furDark, foot: WOLF.furDark, head: WOLF.fur,
       armDetail: '<g fill="' + WOLF.claw + '" stroke="' + WOLF.furDark + '" stroke-width="3" stroke-linejoin="round">'
         + '<path d="M164 474 L156 496 L174 486 Z"/><path d="M178 480 L176 502 L190 488 Z"/><path d="M192 478 L198 498 L204 486 Z"/>'
@@ -2698,9 +2721,10 @@
         + '<path d="M180 660 L162 654 L178 676 Z"/><path d="M198 664 L188 650 L204 676 Z"/><path d="M218 666 L216 650 L232 676 Z"/>'
         + '<path d="M332 660 L350 654 L334 676 Z"/><path d="M314 664 L324 650 L308 676 Z"/><path d="M294 666 L296 650 L280 676 Z"/>'
         + '</g>'
-    })
-      /* mõm sói + mắt vàng + nanh, vẽ sau cùng để không bị tóc che */
-      + '<ellipse cx="256" cy="248" rx="44" ry="31" fill="' + WOLF.belly + '" stroke="' + WOLF.furDark + '" stroke-width="4"/>'
+    });
+    /* Mõm sói + mắt vàng + nanh cộng vào main của frame (vùng đầu, không
+     * chồng lấp chân) — giữ nguyên vai trò "vẽ sau cùng" trong thân. */
+    frame.main += '<ellipse cx="256" cy="248" rx="44" ry="31" fill="' + WOLF.belly + '" stroke="' + WOLF.furDark + '" stroke-width="4"/>'
       + '<ellipse cx="256" cy="228" rx="14" ry="10" fill="' + WOLF.nose + '"/>'
       + '<path d="M232 258 Q256 278 280 258" stroke="' + WOLF.nose + '" stroke-width="6" fill="none" stroke-linecap="round"/>'
       + '<path d="M238 266 L244 280 L250 266 M262 266 L268 280 L274 266" fill="' + WOLF.claw + '" stroke="' + WOLF.furDark + '" stroke-width="2" stroke-linejoin="round"/>'
@@ -2709,6 +2733,7 @@
       + '<ellipse cx="226" cy="204" rx="7" ry="13" fill="' + WOLF.nose + '"/><ellipse cx="290" cy="204" rx="7" ry="13" fill="' + WOLF.nose + '"/>'
       + '<circle cx="221" cy="197" r="4" fill="#FFFFFF"/><circle cx="285" cy="197" r="4" fill="#FFFFFF"/>'
       + '<path d="M200 176 Q224 164 246 176 M266 176 Q288 164 312 176" stroke="' + WOLF.furDark + '" stroke-width="7" fill="none" stroke-linecap="round"/>';
+    return frame;
   }
 
   function werewolfTop() {
@@ -3220,7 +3245,11 @@
 
   function bodySvg(sv, body) {
     var suit = HERO_SUITS[body];
-    if (suit) return suit.body(sv);
+    if (suit) {
+      var raw = suit.body(sv);
+      /* Thân dùng frame trả parts — ghép phẳng lại cho nơi cần chuỗi. */
+      return typeof raw === 'string' ? raw : raw.main + raw.legL + raw.legR;
+    }
     return body === 'body_girl_01' ? femaleBody(sv) : humanBody(sv);
   }
 
@@ -3251,6 +3280,329 @@
   }
 
   var GROUND_SHADOW = groundShadow();
+
+  /* ===================================================================== *
+   *  TÁCH CHÂN CỦA THÂN BỘ ĐỒ (suit) RA NHÓM KHỚP CHÂN
+   *
+   *  Thân người thường (body_01 / body_girl_01) bước được vì quần/giày/chân
+   *  trần của chúng vốn nằm trong #avatar-leg-left/right. Thân bộ đồ thì
+   *  ngược lại: suit.body() trả MỘT chuỗi phẳng (chân vẽ lẫn trong thân)
+   *  nên trước đây toàn bộ chui vào #avatar-upper-body — khi đi bộ chỉ có
+   *  thân nhún (av-walk-bob), hai chân đứng yên → "cứng chân".
+   *
+   *  Bộ tách dưới đây KHÔNG sửa nét vẽ của từng thân: nó đọc chuỗi SVG của
+   *  suit.body()/suit.top(), đo khung bao (bbox) của từng phần tử rồi dời
+   *  những phần tử thuộc hẳn một bên chân (nằm dưới khớp hông, lệch hẳn
+   *  sang trái/phải) sang nhóm khớp chân tương ứng — giữ nguyên thứ tự vẽ
+   *  tương đối. Phần tử vắt qua trục giữa (thắt lưng, váy liền, đuôi…) ở
+   *  lại thân trên. Hình đứng yên không đổi: chỉ thay NHÓM CHA của phần tử.
+   * ===================================================================== */
+
+  /* Thân không có hai chân tách được (vải bay / người tuyết / đuôi cá /
+   * đuôi khói): giữ nguyên cơ chế lướt + nhún của nhóm thân trên. */
+  var NO_LEG_SPLIT_BODIES = {
+    body_ghost_01: 1, body_ghost_halloween_01: 1, body_snowman_01: 1,
+    body_mermaid_01: 1, body_genie_01: 1
+  };
+
+  /* Thân tự vẽ (không qua frame) mà chân phải nằm DƯỚI một lớp thân vẽ
+   * sau như bản gốc — khủng long (thân vẽ đè lên chân), vũ công (tutu vẽ
+   * đè lên tất) → nhóm chân của chúng đặt ngay trong nhóm thân trên,
+   * ngay trước phần thân còn lại, thay vì sau nhóm thân trên. Thân mặc
+   * váy qua gownFrame tự mang cờ `under` trong parts nên không nằm ở đây. */
+  var UNDER_LEG_STRING_BODIES = {
+    body_dino_01: 1, body_ballerina_01: 1
+  };
+
+  /* Vùng chân: chỉ xét phần tử bắt đầu từ y >= 480 (chân chuẩn bắt đầu ở
+   * 492, chân khủng long 520, xương hông bộ xương 512) — mọi chi tiết tay
+   * (găng, móng tay, vòng tay đều kết thúc <= 478) nằm ngoài vùng này. */
+  var LEG_ZONE_TOP = 480;
+
+  /** Tách fragment SVG thành các phần tử top-level (giữ nguyên chuỗi). */
+  function svgTopElements(frag) {
+    var out = [];
+    var i = 0, n = frag.length;
+    while (i < n) {
+      var lt = frag.indexOf('<', i);
+      if (lt < 0) break;
+      if (frag.substr(i, lt - i).replace(/\s+/g, '')) out.push({ tag: '#text', raw: frag.slice(i, lt) });
+      if (frag.substr(lt, 4) === '<!--') {
+        var ce = frag.indexOf('-->', lt);
+        i = ce < 0 ? n : ce + 3;
+        continue;
+      }
+      var gt = frag.indexOf('>', lt);
+      if (gt < 0) break;
+      var openTag = frag.slice(lt, gt + 1);
+      var m = openTag.match(/^<\/?\s*([a-zA-Z][\w-]*)/);
+      if (!m) { i = gt + 1; continue; }
+      var tag = m[1];
+      if (openTag.charAt(1) === '/') { i = gt + 1; continue; }
+      if (openTag.slice(-2) === '/>') {
+        out.push({ tag: tag, raw: openTag, openTag: openTag, selfClose: true });
+        i = gt + 1;
+        continue;
+      }
+      var depth = 1, j = gt + 1, closeEnd = -1;
+      var re = new RegExp('<\\/?\\s*' + tag + '(?=[\\s/>])', 'g');
+      re.lastIndex = j;
+      var mm;
+      while ((mm = re.exec(frag))) {
+        var tEnd = frag.indexOf('>', mm.index);
+        if (tEnd < 0) break;
+        if (frag.charAt(mm.index + 1) === '/') {
+          depth--;
+          if (depth === 0) { closeEnd = tEnd + 1; break; }
+        } else if (frag.slice(mm.index, tEnd + 1).slice(-2) !== '/>') depth++;
+        re.lastIndex = tEnd + 1;
+      }
+      if (closeEnd < 0) { out.push({ tag: tag, raw: frag.slice(lt), openTag: openTag }); break; }
+      out.push({ tag: tag, raw: frag.slice(lt, closeEnd), openTag: openTag });
+      i = closeEnd;
+    }
+    return out;
+  }
+
+  function svgElInner(el) {
+    if (el.selfClose) return '';
+    var gt = el.raw.indexOf('>');
+    var lt = el.raw.lastIndexOf('</');
+    return el.raw.slice(gt + 1, lt);
+  }
+
+  function svgElAttrs(el) {
+    var s = el.openTag || el.raw;
+    var o = {};
+    var re = /([\w-]+)\s*=\s*"([^"]*)"/g, m;
+    while ((m = re.exec(s))) o[m[1]] = m[2];
+    return o;
+  }
+
+  /** BBox của path data — tính cả điểm điều khiển (superset của bbox thật,
+   *  đủ chính xác để phân loại vùng chân và tính tâm xoay). */
+  function svgPathBBox(d) {
+    var toks = d.match(/[a-zA-Z]|-?\d*\.?\d+(?:e[-+]?\d+)?/g) || [];
+    var i = 0, cmd = null, cx = 0, cy = 0, sx = 0, sy = 0;
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    function pt(x, y) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    function num() { return parseFloat(toks[i++]); }
+    while (i < toks.length) {
+      if (/^[a-zA-Z]$/.test(toks[i])) cmd = toks[i++];
+      if (!cmd) break;
+      var rel = cmd === cmd.toLowerCase();
+      var C = cmd.toUpperCase();
+      var X = function (v) { return rel ? cx + v : v; };
+      var Y = function (v) { return rel ? cy + v : v; };
+      if (C === 'Z') { cx = sx; cy = sy; cmd = null; continue; }
+      if (C === 'M') {
+        var mx = X(num()), my = Y(num());
+        cx = mx; cy = my; sx = mx; sy = my; pt(mx, my);
+        cmd = rel ? 'l' : 'L';
+        continue;
+      }
+      if (C === 'L') { var lx = X(num()), ly = Y(num()); cx = lx; cy = ly; pt(lx, ly); continue; }
+      if (C === 'H') { cx = X(num()); pt(cx, cy); continue; }
+      if (C === 'V') { cy = Y(num()); pt(cx, cy); continue; }
+      if (C === 'C') {
+        var x1 = X(num()), y1 = Y(num()), x2 = X(num()), y2 = Y(num()), ex = X(num()), ey = Y(num());
+        pt(x1, y1); pt(x2, y2); pt(ex, ey); cx = ex; cy = ey; continue;
+      }
+      if (C === 'S' || C === 'Q') {
+        var qx = X(num()), qy = Y(num()), qex = X(num()), qey = Y(num());
+        pt(qx, qy); pt(qex, qey); cx = qex; cy = qey; continue;
+      }
+      if (C === 'T') { var tx = X(num()), ty = Y(num()); pt(tx, ty); cx = tx; cy = ty; continue; }
+      if (C === 'A') {
+        num(); num(); num(); num(); num();
+        var ax = X(num()), ay = Y(num());
+        pt(ax, ay); cx = ax; cy = ay; continue;
+      }
+      break;
+    }
+    return minX > maxX ? null : { x0: minX, y0: minY, x1: maxX, y1: maxY };
+  }
+
+  function svgUnionBBox(a, b) {
+    if (!a) return b;
+    if (!b) return a;
+    return {
+      x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0),
+      x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1)
+    };
+  }
+
+  function svgElBBox(el) {
+    var a = svgElAttrs(el);
+    if (el.tag === 'path') return a.d ? svgPathBBox(a.d) : null;
+    if (el.tag === 'rect') {
+      var rx = parseFloat(a.x) || 0, ry = parseFloat(a.y) || 0;
+      return { x0: rx, y0: ry, x1: rx + (parseFloat(a.width) || 0), y1: ry + (parseFloat(a.height) || 0) };
+    }
+    if (el.tag === 'circle') {
+      var ccx = parseFloat(a.cx) || 0, ccy = parseFloat(a.cy) || 0, cr = parseFloat(a.r) || 0;
+      return { x0: ccx - cr, y0: ccy - cr, x1: ccx + cr, y1: ccy + cr };
+    }
+    if (el.tag === 'ellipse') {
+      var ecx = parseFloat(a.cx) || 0, ecy = parseFloat(a.cy) || 0;
+      var erx = parseFloat(a.rx) || 0, ery = parseFloat(a.ry) || 0;
+      return { x0: ecx - erx, y0: ecy - ery, x1: ecx + erx, y1: ecy + ery };
+    }
+    if (el.tag === 'polygon' || el.tag === 'polyline') {
+      var nums = (a.points || '').match(/-?\d*\.?\d+/g) || [];
+      if (!nums.length) return null;
+      var bb = null;
+      for (var k = 0; k + 1 < nums.length; k += 2) {
+        bb = svgUnionBBox(bb, {
+          x0: parseFloat(nums[k]), y0: parseFloat(nums[k + 1]),
+          x1: parseFloat(nums[k]), y1: parseFloat(nums[k + 1])
+        });
+      }
+      return bb;
+    }
+    if (el.tag === 'g') return svgFragBBox(svgElInner(el));
+    return null;
+  }
+
+  function svgFragBBox(frag) {
+    var els = svgTopElements(frag), u = null;
+    for (var i = 0; i < els.length; i++) u = svgUnionBBox(u, svgElBBox(els[i]));
+    return u;
+  }
+
+  /** 'l' / 'r' nếu bbox nằm hẳn trong vùng một bên chân, ngược lại null.
+   *  Biên ngoài nới tới 152/360 để móng chân (x bắt đầu 162, kết thúc 350)
+   *  vẫn theo chân; đuôi/vật thể vươn xa hơn (đuôi khủng long tới x 430)
+   *  thì ở lại thân trên. */
+  function svgLegSide(bb, minTop) {
+    if (!bb || bb.y0 < (minTop || LEG_ZONE_TOP)) return null;
+    /* Mẩu quá ngắn mà kết thúc ngay dưới đường hông thì không phải
+     * chân — vd đốt ngón tay của Bộ xương buông thõng cạnh hông (cao
+     * ~10px, kết thúc ở y<500): để ở thân, tránh bị chân kéo vung theo.
+     * (Đường viền ngang ống bốt ở y~550 vẫn là chi tiết của chân.) */
+    if (bb.y1 - bb.y0 < 24 && bb.y1 < 520) return null;
+    var cx = (bb.x0 + bb.x1) / 2;
+    if (cx < 250 && bb.x0 >= 152 && bb.x1 <= 272) return 'l';
+    if (cx > 262 && bb.x0 >= 240 && bb.x1 <= 360) return 'r';
+    return null;
+  }
+
+  /** Tách path nhiều subpath (nhiều lệnh M) thành từng subpath — cắt trên
+   *  chuỗi gốc nên định dạng số/khoảng trắng của từng subpath giữ nguyên. */
+  function svgSplitSubpaths(d) {
+    var subs = [];
+    var re = /[Mm](?=[\s\d.-])/g, m, last = -1;
+    while ((m = re.exec(d))) {
+      if (last >= 0) subs.push(d.slice(last, m.index).replace(/\s+$/, ''));
+      last = m.index;
+    }
+    if (last >= 0) subs.push(d.slice(last));
+    return subs.length ? subs : [d];
+  }
+
+  function svgPathWithD(raw, d) {
+    return raw.replace(/d="[^"]*"/, 'd="' + d + '"');
+  }
+
+  /** Tách fragment thành { main, l, r }: phần tử thuộc chân trái/phải được
+   *  dời sang l/r (giữ thứ tự gốc), phần còn lại giữ nguyên ở main. Nhóm
+   *  <g> thường được tách đệ quy và bọc lại bằng chính thẻ mở của nó ở mỗi
+   *  phía có phần tử; riêng <g> có filter/transform là HÌNH GHÉP nguyên
+   *  khối (bóng đổ tính theo silhouette chung — vd nhóm xương chậu của Bộ
+   *  xương, đầu có filter) nên giữ nguyên khối, không tách lẻ bên trong. */
+  function splitLegFragment(frag, minTop) {
+    var res = { main: '', l: '', r: '' };
+    var els = svgTopElements(frag);
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      var elAttrs = el.tag === 'g' ? svgElAttrs(el) : null;
+      if (el.tag === 'g' && !el.selfClose && !elAttrs.transform && !elAttrs.filter) {
+        var inner = splitLegFragment(svgElInner(el), minTop);
+        if (inner.l || inner.r) {
+          var open = el.openTag, close = '</' + el.tag + '>';
+          if (inner.main) res.main += open + inner.main + close;
+          if (inner.l) res.l += open + inner.l + close;
+          if (inner.r) res.r += open + inner.r + close;
+          continue;
+        }
+        res.main += el.raw;
+        continue;
+      }
+      if (el.tag === 'path') {
+        var dAttr = svgElAttrs(el).d || '';
+        var subs = svgSplitSubpaths(dAttr);
+        /* Chỉ tách khi mọi subpath bắt đầu bằng M tuyệt đối — subpath 'm'
+         * tương đối tách ra đứng một mình sẽ sai toạ độ. */
+        var allAbs = subs.length > 1;
+        for (var q = 0; q < subs.length; q++) if (subs[q].charAt(0) !== 'M') allAbs = false;
+        if (allAbs) {
+          var buckets = { main: [], l: [], r: [] };
+          var moved = false;
+          for (var s = 0; s < subs.length; s++) {
+            var side = svgLegSide(svgPathBBox(subs[s]), minTop);
+            if (side) moved = true;
+            buckets[side || 'main'].push(subs[s]);
+          }
+          if (moved) {
+            if (buckets.main.length) res.main += svgPathWithD(el.raw, buckets.main.join(' '));
+            if (buckets.l.length) res.l += svgPathWithD(el.raw, buckets.l.join(' '));
+            if (buckets.r.length) res.r += svgPathWithD(el.raw, buckets.r.join(' '));
+            continue;
+          }
+        }
+        var pSide = svgLegSide(svgElBBox(el), minTop);
+        if (pSide) { res[pSide] += el.raw; continue; }
+        res.main += el.raw;
+        continue;
+      }
+      var side2 = svgLegSide(svgElBBox(el), minTop);
+      if (side2) { res[side2] += el.raw; continue; }
+      res.main += el.raw;
+    }
+    return res;
+  }
+
+  /** Tâm xoay khớp hông của một nhóm chân, theo đúng công thức CSS hiện tại
+   *  (.av-leg: transform-box fill-box, transform-origin 50% 5%). */
+  function legPivotOf(frag) {
+    var bb = svgFragBBox(frag);
+    if (!bb) return null;
+    return { x: bb.x0 + (bb.x1 - bb.x0) / 2, y: bb.y0 + (bb.y1 - bb.y0) * 0.05 };
+  }
+
+  /** Cụm "transform-origin:X% Y%" (theo transform-box: fill-box) để một
+   *  nhóm có bbox `bb` xoay quanh ĐÚNG điểm khớp hông `pivot` của nhóm
+   *  chân chính. Trả null khi không tính được. */
+  function originPctFor(bb, pivot) {
+    if (!bb || !pivot) return null;
+    var w = bb.x1 - bb.x0, h = bb.y1 - bb.y0;
+    if (w <= 0 || h <= 0) return null;
+    return ((pivot.x - bb.x0) / w * 100).toFixed(2) + '% ' + ((pivot.y - bb.y0) / h * 100).toFixed(2) + '%';
+  }
+
+  /** Thuộc tính style transform-origin cho một nhóm chân phụ có nội dung
+   *  `frag`, quy tâm xoay về khớp hông của nhóm chân chính. */
+  function legGroupOriginStyle(frag, pivot) {
+    var pct = originPctFor(svgFragBBox(frag), pivot);
+    return pct ? ' style="transform-origin:' + pct + '"' : '';
+  }
+
+  /** Bọc một mẩu chân tách từ suit.top() (bốt vẽ đè sau giày) thành nhóm
+   *  khớp chân phụ: cùng keyframes với nhóm chân chính, và tâm xoay nội
+   *  tuyến quy về ĐÚNG khớp hông của nhóm chân chính (tính theo bbox của
+   *  mẩu) để bốt không trượt khỏi chân khi bước. Không tính được thì trả
+   *  null — nơi gọi giữ mẩu đó ở vị trí cũ cho an toàn. */
+  function legTopSegment(seg, side, pivot) {
+    var pct = originPctFor(svgFragBBox(seg), pivot);
+    if (!pct) return null;
+    return '<g class="av-joint av-leg av-leg-' + side + '" style="transform-origin:' + pct + '">'
+      + seg + '</g>';
+  }
 
   function renderKid(raw) {
     var s = sanitizeKid(raw);
@@ -3285,13 +3637,44 @@
     var parts = null;
     var bodyMain = '';
     var shadow = GROUND_SHADOW;
+    /* Chân tách ra từ suit.body(): { l, r, under } — under = chân nằm
+     * dưới một lớp thân (váy liền / thân khủng long / tutu), nhóm chân
+     * đặt trong nhóm thân trên ngay trước phần thân còn lại. Thân dùng
+     * frame (costumeFrame/gownFrame) trả sẵn parts đã tách theo cấu
+     * trúc; thân tự vẽ trả chuỗi phẳng thì tách bằng splitLegFragment.
+     * Thân không tách được chân thì giữ null. */
+    var suitLegs = null;
     if (suit) {
-      bodyMain = suit.body(sv);
-      var shadowAt = bodyMain.indexOf(GROUND_SHADOW);
-      if (shadowAt >= 0) {
-        bodyMain = bodyMain.slice(0, shadowAt) + bodyMain.slice(shadowAt + GROUND_SHADOW.length);
+      var rawBody = suit.body(sv);
+      if (typeof rawBody === 'string') {
+        bodyMain = rawBody;
+        var shadowAtS = bodyMain.indexOf(GROUND_SHADOW);
+        if (shadowAtS >= 0) {
+          bodyMain = bodyMain.slice(0, shadowAtS) + bodyMain.slice(shadowAtS + GROUND_SHADOW.length);
+        } else {
+          shadow = '';
+        }
+        if (!NO_LEG_SPLIT_BODIES[s.body]) {
+          var bodySplit = splitLegFragment(bodyMain);
+          if (bodySplit.l || bodySplit.r) {
+            bodyMain = bodySplit.main;
+            suitLegs = {
+              l: bodySplit.l, r: bodySplit.r,
+              under: !!UNDER_LEG_STRING_BODIES[s.body]
+            };
+          }
+        }
       } else {
-        shadow = '';
+        bodyMain = rawBody.main;
+        var shadowAtP = bodyMain.indexOf(GROUND_SHADOW);
+        if (shadowAtP >= 0) {
+          bodyMain = bodyMain.slice(0, shadowAtP) + bodyMain.slice(shadowAtP + GROUND_SHADOW.length);
+        } else {
+          shadow = '';
+        }
+        if (rawBody.legL || rawBody.legR) {
+          suitLegs = { l: rawBody.legL || '', r: rawBody.legR || '', under: !!rawBody.under };
+        }
       }
     } else {
       parts = humanBodyParts(sv);
@@ -3325,6 +3708,15 @@
       if (girl) o += girlTorsoSkin();
       o += parts.neck;
     } else {
+      /* Thân mặc váy liền: chân của thân nằm dưới gấu váy như bản vẽ gốc
+       * nên nhóm chân của thân đặt ngay trước phần thân còn lại, vẫn
+       * trong nhóm thân trên. Quần/giày người chơi mặc thêm vẫn ở nhóm
+       * chân chuẩn phía sau (vẽ đè lên váy như thân bé gái) — nhóm đó
+       * được cộng transform-origin quy về khớp hông này ở dưới. */
+      if (suitLegs && suitLegs.under) {
+        o += '<g id="avatar-leg-left" class="av-joint av-leg av-leg-l">' + suitLegs.l + '</g>';
+        o += '<g id="avatar-leg-right" class="av-joint av-leg av-leg-r">' + suitLegs.r + '</g>';
+      }
       o += bodyMain;
     }
     if (s.dress) o += dressLayer(s);
@@ -3333,13 +3725,26 @@
     if (!suit && acc && acc.f) o += acc.f;
     o += '</g>';
 
-    /* Chân: chân trần (bé gái) + ống quần + giày của đúng chân đó */
-    o += '<g id="avatar-leg-left" class="av-joint av-leg av-leg-l">'
+    /* Chân: chân của thân bộ đồ (nếu tách được và không phải thân váy
+     * liền — chân của thân váy liền đã phát trong nhóm thân trên) + chân
+     * trần (bé gái) + ống quần + giày của đúng chân đó. Mọi lớp của một
+     * chân nằm chung một nhóm nên dùng chung tâm xoay khớp hông; riêng
+     * thân váy liền có hai nhóm (chân thân ở trong, quần/giày ở đây) thì
+     * nhóm ngoài được cộng transform-origin nội tuyến quy về ĐÚNG khớp
+     * hông của nhóm chân thân để hai nhóm không trượt khỏi nhau. */
+    var legStyleL = '', legStyleR = '';
+    if (suitLegs && suitLegs.under) {
+      legStyleL = legGroupOriginStyle((pants ? pants.l : '') + (shoes ? shoes.l : ''), legPivotOf(suitLegs.l));
+      legStyleR = legGroupOriginStyle((pants ? pants.r : '') + (shoes ? shoes.r : ''), legPivotOf(suitLegs.r));
+    }
+    o += '<g id="avatar-leg-left" class="av-joint av-leg av-leg-l"' + legStyleL + '>'
+      + (suitLegs && !suitLegs.under ? suitLegs.l : '')
       + (parts && girl ? girlLegL() : '')
       + (pants ? pants.l : '')
       + (shoes ? shoes.l : '')
       + '</g>';
-    o += '<g id="avatar-leg-right" class="av-joint av-leg av-leg-r">'
+    o += '<g id="avatar-leg-right" class="av-joint av-leg av-leg-r"' + legStyleR + '>'
+      + (suitLegs && !suitLegs.under ? suitLegs.r : '')
       + (parts && girl ? girlLegR() : '')
       + (pants ? pants.r : '')
       + (shoes ? shoes.r : '')
@@ -3362,7 +3767,26 @@
 
     /* Chi tiết bộ đồ đè lên áo quần (mũ có sẵn, thắt lưng, phù hiệu, bốt) */
     if (suit) {
-      o += suit.top();
+      var topRaw = suit.top();
+      /* Bốt/bàn chân nằm trong top() (Kamen Rider, Superman) phải bước
+       * CÙNG chân: tách chúng ra nhóm khớp chân phụ đặt đúng vị trí vẽ
+       * của top() (vẫn đè lên giày như cũ), tâm xoay quy về khớp hông
+       * của nhóm chân chính. Tách không được thì giữ nguyên vị trí cũ. */
+      if (suitLegs && topRaw) {
+        var topSplit = splitLegFragment(topRaw);
+        if (topSplit.l || topSplit.r) {
+          var topOut = topSplit.main;
+          var pivL = legPivotOf(suitLegs.l + (pants ? pants.l : '') + (shoes ? shoes.l : ''));
+          var pivR = legPivotOf(suitLegs.r + (pants ? pants.r : '') + (shoes ? shoes.r : ''));
+          var segL = topSplit.l ? legTopSegment(topSplit.l, 'l', pivL) : '';
+          var segR = topSplit.r ? legTopSegment(topSplit.r, 'r', pivR) : '';
+          if (topSplit.l && !segL) topOut += topSplit.l;
+          if (topSplit.r && !segR) topOut += topSplit.r;
+          topOut += segL + segR;
+          topRaw = topOut;
+        }
+      }
+      o += topRaw;
       if (acc && acc.f) o += acc.f;
     }
 
