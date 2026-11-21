@@ -122,6 +122,44 @@ body{ height:100%; max-width:100%; overflow-x:hidden; overflow-x:clip; backgroun
 
 @media (prefers-reduced-motion: reduce){ .anim-pop, .float-slow, .marquee-lights, .wheel-spinning, .bob-hero, .run-cycle, .shake-hit, .animate-blob, .animate-float, .animate-gradient, .animate-fade-in-up, .animate-bounce-slow, .animate-sparkle{ animation:none !important; } }
 
+/* ============================================================
+   Thanh tiến trình "máy chủ đang khởi động" (ServerWakeBanner)
+   - Cố định ở đỉnh màn hình, KHÔNG chặn thao tác (pointer-events
+     tắt; chỉ nút "Thử lại" ở trạng thái lỗi nhận bấm) và không xô
+     lệch layout vì nằm ngoài luồng (position:fixed).
+   - Màu lấy từ biến chủ đề (--accent/--card/--line/--text-dark)
+     nên tự khớp cả chế độ Sáng lẫn Tối.
+   - Pha "completing": opacity mờ dần nhưng delay .3s để người
+     dùng kịp thấy thanh chạy đủ 100% trước khi biến mất.
+   ============================================================ */
+.server-wake{
+  position:fixed; top:var(--sat, 0px); left:0; right:0; z-index:9990;
+  pointer-events:none; opacity:1; transition:opacity .35s ease;
+}
+.server-wake--completing{ opacity:0; transition-delay:.3s; }
+.server-wake__track{
+  height:4px; width:100%;
+  background:rgba(27,153,139,.16);
+  background:color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.server-wake__fill{
+  height:100%; border-radius:0 9999px 9999px 0;
+  box-shadow:0 0 8px 0 currentColor;
+  transition:width .25s ease, background-color .3s ease;
+}
+.server-wake__label{ display:flex; justify-content:center; padding:6px 12px 0; }
+.server-wake__pill{
+  display:flex; align-items:flex-start; gap:.5rem;
+  max-width:36rem; border:1px solid; border-radius:9999px;
+  padding:.35rem .85rem; font-size:.8rem;
+  box-shadow:0 4px 14px rgba(29,46,74,.14);
+}
+.server-wake__retry{ pointer-events:auto; }
+@media (prefers-reduced-motion: reduce){
+  .server-wake, .server-wake__fill{ transition:none !important; }
+  .server-wake .animate-pulse{ animation:none !important; }
+}
+
 input:focus, button:focus, select:focus, textarea:focus{ outline: 3px solid #FF6F9155; outline-offset: 2px; }
 
 /* === KIDS-FRIENDLY ANIMATIONS === */
