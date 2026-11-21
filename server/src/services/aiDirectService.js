@@ -1127,36 +1127,106 @@ function buildSummaryPage(summary) {
   };
 }
 
+/** Giá trị của trường đầu tiên có mặt trong `fields` (undefined = vắng). */
+function firstField(node, fields) {
+  if (node == null || typeof node !== "object") return undefined;
+  for (const f of fields) {
+    if (node[f] !== undefined && node[f] !== null) return node[f];
+  }
+  return undefined;
+}
+
+/**
+ * Đọc một giá trị "văn bản lỏng" từ model: chuỗi giữ nguyên; số/boolean ép
+ * chuỗi; mảng chuỗi nối bằng xuống dòng; object thì lấy trường văn bản
+ * bên trong (text/content/value/title/name). Rỗng/không đọc được → null.
+ * Dùng cho các trường bài học vì model hay trả sai kiểu nhẹ (objectives
+ * dạng mảng object {text}, content dạng mảng dòng…).
+ */
+function looseTextValue(value, max) {
+  if (value == null) return null;
+  if (typeof value === "string") return cleanText(value, max) || null;
+  if (typeof value === "number" || typeof value === "boolean") return cleanText(String(value), max) || null;
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((v) => (typeof v === "string" || typeof v === "number" ? String(v).trim() : ""))
+      .filter(Boolean);
+    return parts.length ? cleanText(parts.join("\n"), max) || null : null;
+  }
+  if (typeof value === "object") {
+    for (const f of ["text", "content", "value", "title", "name"]) {
+      const inner = looseTextValue(value[f], max);
+      if (inner) return inner;
+    }
+  }
+  return null;
+}
+
+/** looseTextValue trên trường đầu tiên có mặt trong `fields`. */
+function looseFieldText(node, fields, max) {
+  return looseTextValue(firstField(node, fields), max);
+}
+
+/** Bỏ tiền tố nhãn phương án kiểu "A. "/"B) " mà model hay chép vào options/đáp án. */
+function stripOptionPrefix(text) {
+  return text.replace(/^\s*[A-Ja-j]\s*[.)]\s+/, "").trim();
+}
+
 /**
  * correct_answer của đặc tả là VĂN BẢN đáp án — khớp về id của option theo
  * đúng 3 tầng như pipeline quiz (nguyên văn → thường → squeeze). Không khớp
  * đúng một option → null (câu bị loại, đếm vào meta.droppedQuestions).
+ * CHỊU LỖI thêm: model hay trả đáp án đúng dạng SỐ (chỉ số 0-based của
+ * phương án; riêng giá trị bằng đúng số phương án thì hiểu là 1-based vì
+ * 0-based không tới được), dạng CHỮ CÁI ("B" = phương án thứ hai), hoặc
+ * chuỗi số ("1" — hiểu theo cách đánh số của người: phương án 1). Tên
+ * trường cũng nhận các biến thể correctAnswer/answer/correct.
  */
 function resolveLessonCorrectOption(node, options) {
-  const answer = jsonText(node, "correct_answer");
-  if (answer == null || answer.trim() === "") return null;
-  let found = options.filter((o) => o.content === answer);
+  const raw = firstField(node, ["correct_answer", "correctAnswer", "answer", "correct", "correct_index", "correctIndex"]);
+  if (raw == null) return null;
+  const byIndex = (idx) => (Number.isInteger(idx) && idx >= 0 && idx < options.length ? options[idx].id : null);
+  if (typeof raw === "number") {
+    if (Number.isInteger(raw) && raw >= 0 && raw < options.length) return options[raw].id;
+    if (Number.isInteger(raw) && raw === options.length) return options[raw - 1].id;
+    return null;
+  }
+  const answer = looseTextValue(raw, 500);
+  if (answer == null || answer === "") return null;
+  const stripped = stripOptionPrefix(answer);
+  let found = options.filter((o) => o.content === stripped);
   if (found.length === 0) {
-    const lower = answer.toLowerCase();
+    const lower = stripped.toLowerCase();
     found = options.filter((o) => o.content.toLowerCase() === lower);
   }
   if (found.length === 0) {
-    const squeezed = squeeze(answer);
+    const squeezed = squeeze(stripped);
     found = options.filter((o) => squeeze(o.content) === squeezed);
   }
-  return found.length === 1 ? found[0].id : null;
+  if (found.length === 1) return found[0].id;
+  if (found.length > 1) return null;
+  // Không khớp văn bản: thử hiểu là chữ cái / chuỗi số chỉ phương án.
+  if (/^[A-Ja-j]$/.test(stripped)) return byIndex(stripped.toUpperCase().charCodeAt(0) - 65);
+  if (/^\d+$/.test(stripped)) {
+    const n = Number.parseInt(stripped, 10);
+    if (n === 0) return byIndex(0);
+    return byIndex(n - 1);
+  }
+  return null;
 }
 
 /** Một node quick_quiz → props của phần tử question THẬT, hoặc null nếu câu không dùng được. */
 function convertQuizQuestion(node) {
   if (node == null || typeof node !== "object" || Array.isArray(node)) return null;
-  const prompt = cleanText(jsonText(node, "question"), 1000);
+  const prompt = looseFieldText(node, ["question", "prompt", "text", "content"], 1000);
   if (!prompt) return null;
-  const rawOptions = Array.isArray(node.options) ? node.options : [];
+  const rawOptionsValue = firstField(node, ["options", "choices", "answers", "selections"]);
+  const rawOptions = Array.isArray(rawOptionsValue) ? rawOptionsValue : [];
   const texts = [];
   const seen = new Set();
   for (const raw of rawOptions) {
-    const text = cleanText(raw == null ? "" : String(raw), 500);
+    const loose = looseTextValue(raw, 500);
+    const text = loose ? stripOptionPrefix(loose) : "";
     if (!text) continue;
     // Đáp án trùng nhau (sau squeeze) làm đáp án đúng mơ hồ — loại cả câu,
     // cùng quy tắc với validateGeneratedQuestion của pipeline quiz.
@@ -1169,7 +1239,7 @@ function convertQuizQuestion(node) {
   const correctAnswer = resolveLessonCorrectOption(node, options);
   if (correctAnswer == null) return null;
   const props = { prompt, qtype: "single", options, correctAnswer, points: 10 };
-  const explanation = cleanText(jsonText(node, "explanation"), 1000);
+  const explanation = looseFieldText(node, ["explanation", "giai_thich"], 1000);
   if (explanation) props.explanation = explanation;
   return props;
 }
@@ -1196,33 +1266,241 @@ function buildQuizPages(questionPropsList) {
   return pages;
 }
 
+// ─────────── Trích JSON chịu lỗi (chỉ cho generate-lesson) ───────────
+// extractJsonPayload (dùng chung chat/quiz/analysis) cố ý giữ nghiêm:
+// chỉ JSON.parse trên văn bản đã bóc fence hoặc đoạn ngoặc cân bằng đầu
+// tiên. Ngoài production, model họ gpt-oss/qwen hay trả JSON "gần đúng"
+// khiến đường nghiêm đó trả null dù nội dung bài có thật:
+//   · JSON CỤT vì hết token đầu ra (bài dài: sections + simulation +
+//     quiz) — ngoặc không bao giờ cân bằng nên không trích được gì.
+//   · Thừa dấu phẩy cuối, xuống dòng THẬT trong chuỗi, nháy đơn, khoá
+//     trần, comment — JSON.parse bác toàn bộ.
+// Lớp chịu lỗi dưới đây chỉ chạy SAU khi đường nghiêm thất bại: sửa các
+// lỗi cú pháp nhẹ phổ biến, và với JSON cụt thì cắt ở phần tử hoàn chỉnh
+// cuối cùng rồi đóng ngoặc còn thiếu (mất tối đa phần tử cuối đang dở).
+// Phần tử nào vẫn không dùng được thì normalize phía dưới bỏ riêng phần
+// tử đó — không bỏ cả bài.
+
+function tryParseJson(text) {
+  try {
+    const node = JSON.parse(text);
+    return node == null ? null : node;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Validate + chuẩn hoá JSON thô của model về cấu trúc trung gian. Trả null
- * khi thiếu trường bắt buộc cốt lõi (tiêu đề / không có section nào dùng
- * được) — caller ném lỗi thân thiện, tuyệt đối không trả dữ liệu rác.
+ * Sửa các lỗi cú pháp JSON nhẹ bằng một lượt quét có ý thức chuỗi:
+ * bỏ comment // và /* *\/ ngoài chuỗi; nháy đơn → nháy đôi (thoát nháy
+ * đôi bên trong); thoát ký tự điều khiển thô (xuống dòng/tab) trong
+ * chuỗi; bỏ dấu phẩy thừa ngay trước } hoặc ]; sau cùng mới dùng regex
+ * để đóng nháy cho khoá trần và đổi undefined/NaN thành null.
  */
-function normalizeAiLesson(root) {
+function repairJsonText(input) {
+  const src = String(input ?? "").replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+  let out = "";
+  let i = 0;
+  let inString = false;
+  let quote = "";
+  while (i < src.length) {
+    const c = src[i];
+    if (inString) {
+      if (c === "\\") { out += c + (src[i + 1] ?? ""); i += 2; continue; }
+      if (c === quote) { out += '"'; inString = false; i += 1; continue; }
+      if (quote === "'" && c === '"') { out += '\\"'; i += 1; continue; }
+      const code = c.charCodeAt(0);
+      if (code < 0x20) {
+        out += c === "\n" ? "\\n" : c === "\r" ? "\\r" : c === "\t" ? "\\t" : "";
+        i += 1; continue;
+      }
+      out += c; i += 1; continue;
+    }
+    if (c === "/" && src[i + 1] === "/") { while (i < src.length && src[i] !== "\n") i += 1; continue; }
+    if (c === "/" && src[i + 1] === "*") {
+      const end = src.indexOf("*/", i + 2);
+      i = end < 0 ? src.length : end + 2;
+      continue;
+    }
+    if (c === '"' || c === "'") { inString = true; quote = c; out += '"'; i += 1; continue; }
+    if (c === ",") {
+      let j = i + 1;
+      while (j < src.length && /\s/.test(src[j])) j += 1;
+      if (src[j] === "}" || src[j] === "]") { i += 1; continue; }
+    }
+    out += c; i += 1;
+  }
+  return out
+    .replace(/([{,]\s*)([A-Za-z_$][\w$-]*)(\s*:)/g, '$1"$2"$3')
+    .replace(/\bundefined\b/g, "null")
+    .replace(/\bNaN\b/g, "null")
+    .replace(/-?\bInfinity\b/g, "null");
+}
+
+/** Quét một đoạn văn bản JSON: trả { stack, inString } tại điểm cuối đoạn. */
+function scanJsonStack(text) {
+  const stack = [];
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (c === "\\") escaped = true;
+      else if (c === '"') inString = false;
+      continue;
+    }
+    if (c === '"') inString = true;
+    else if (c === "{" || c === "[") stack.push(c);
+    else if (c === "}" || c === "]") stack.pop();
+  }
+  return { stack, inString };
+}
+
+/**
+ * Cứu JSON bị cụt: tìm các vị trí ngay sau một } hoặc ] đóng một phần tử
+ * (gốc vẫn còn mở), thử từ vị trí muộn nhất ngược về — cắt tại đó, đóng
+ * các ngoặc còn thiếu, parse. Trả object/array đầu tiên parse được.
+ */
+function salvageTruncatedJson(text) {
+  const cuts = [];
+  const stack = [];
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (c === "\\") escaped = true;
+      else if (c === '"') inString = false;
+      continue;
+    }
+    if (c === '"') inString = true;
+    else if (c === "{" || c === "[") stack.push(c);
+    else if (c === "}" || c === "]") {
+      stack.pop();
+      if (stack.length >= 1) cuts.push(i + 1);
+    }
+  }
+  const maxTries = 80;
+  for (let k = cuts.length - 1; k >= 0 && cuts.length - k <= maxTries; k -= 1) {
+    const prefix = text.slice(0, cuts[k]);
+    const state = scanJsonStack(prefix);
+    if (state.inString) continue;
+    const closers = state.stack.slice().reverse().map((o) => (o === "{" ? "}" : "]")).join("");
+    const node = tryParseJson(prefix + closers);
+    if (node != null) return node;
+  }
+  return null;
+}
+
+// Tên trường bài học + các biến thể model hay dùng thay cho tên của đặc tả.
+const LESSON_TITLE_FIELDS = ["title", "lesson_title", "lessonTitle", "name", "ten_bai", "tieu_de"];
+const LESSON_SECTIONS_FIELDS = ["sections", "section", "parts", "chapters", "units", "content_sections", "lesson_sections"];
+const LESSON_QUIZ_FIELDS = ["quick_quiz", "quiz", "questions", "check_questions"];
+const LESSON_WRAPPER_FIELDS = ["lesson", "data", "result", "output", "bai_hoc"];
+
+/** Node có "trông như bài học" ở chính tầng này không (có tiêu đề hoặc mảng sections). */
+function looksLikeLessonHere(node) {
+  if (node == null || typeof node !== "object" || Array.isArray(node)) return false;
+  return firstField(node, LESSON_TITLE_FIELDS) != null
+    || Array.isArray(firstField(node, LESSON_SECTIONS_FIELDS));
+}
+
+/** Node có trông như bài học không, tính cả khi bị bọc trong wrapper (tối đa 2 lớp). */
+function looksLikeLessonRoot(node, depth = 0) {
+  if (looksLikeLessonHere(node)) return true;
+  if (node == null || typeof node !== "object" || Array.isArray(node) || depth >= 2) return false;
+  return LESSON_WRAPPER_FIELDS.some((f) => looksLikeLessonRoot(node[f], depth + 1));
+}
+
+/**
+ * Trích object gốc của bài học từ văn bản model trả về, CHỊU LỖI theo
+ * từng nấc: (1) đường nghiêm extractJsonPayload như cũ; (2) sửa cú pháp
+ * nhẹ rồi parse; (3) cứu JSON cụt. Ưu tiên kết quả "trông như bài học";
+ * không nấc nào ra được thì trả kết quả object cuối cùng tìm thấy (để
+ * normalize quyết định) hoặc null khi thật sự không có gì trích được.
+ */
+function parseLessonRootTolerant(raw) {
+  if (raw == null || String(raw).trim() === "") return null;
+  let lastResort = null;
+  const accept = (node) => {
+    if (node == null || typeof node !== "object") return null;
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        if (item != null && typeof item === "object" && !Array.isArray(item) && looksLikeLessonRoot(item)) return item;
+      }
+      return null;
+    }
+    if (looksLikeLessonRoot(node)) return node;
+    if (lastResort == null) lastResort = node;
+    return null;
+  };
+  const strict = accept(extractJsonPayload(raw));
+  if (strict) return strict;
+
+  const text = String(raw);
+  const start = text.indexOf("{");
+  if (start < 0) return lastResort;
+  const end = text.lastIndexOf("}");
+  const candidates = [];
+  if (end > start) candidates.push(text.slice(start, end + 1));
+  candidates.push(text.slice(start));
+  for (const candidate of candidates) {
+    const repaired = repairJsonText(candidate);
+    for (const attemptText of [candidate, repaired]) {
+      const hit = accept(tryParseJson(attemptText));
+      if (hit) return hit;
+    }
+    for (const attemptText of [repaired, candidate]) {
+      const hit = accept(salvageTruncatedJson(attemptText));
+      if (hit) return hit;
+    }
+  }
+  return lastResort;
+}
+
+/**
+ * Validate + chuẩn hoá JSON thô của model về cấu trúc trung gian. CHỊU
+ * LỖI tên trường/lớp bọc/kiểu nhẹ: gỡ wrapper {"lesson": …}, nhận các
+ * biến thể tên trường phổ biến, section dạng chuỗi thuần coi là nội
+ * dung, tiêu đề thiếu thì lấy tiêu đề section đầu (hoặc mặc định từ
+ * request). Chỉ trả null khi KHÔNG có section nào dùng được — caller
+ * ném lỗi thân thiện, tuyệt đối không trả dữ liệu rác.
+ */
+function normalizeAiLesson(rawRoot, { fallbackTitle = "" } = {}) {
+  let root = rawRoot;
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (root == null || typeof root !== "object" || Array.isArray(root)) return null;
+    if (looksLikeLessonHere(root)) break;
+    const wrapped = LESSON_WRAPPER_FIELDS
+      .map((f) => root[f])
+      .find((v) => v != null && typeof v === "object" && !Array.isArray(v));
+    if (!wrapped) break;
+    root = wrapped;
+  }
   if (root == null || typeof root !== "object" || Array.isArray(root)) return null;
-  const title = cleanText(jsonText(root, "title"), LESSON_LIMITS.maxTitleLength);
-  if (!title) return null;
 
   const sections = [];
   let droppedSimulations = 0;
   let simulationCount = 0;
-  const rawSections = Array.isArray(root.sections) ? root.sections : [];
-  for (const node of rawSections) {
+  const rawSectionsValue = firstField(root, LESSON_SECTIONS_FIELDS);
+  const rawSections = Array.isArray(rawSectionsValue) ? rawSectionsValue : [];
+  for (const rawNode of rawSections) {
     if (sections.length >= LESSON_LIMITS.maxSections) break;
+    // Section dạng chuỗi thuần = một phần chỉ có nội dung.
+    const node = typeof rawNode === "string" ? { content: rawNode } : rawNode;
     if (node == null || typeof node !== "object" || Array.isArray(node)) continue;
-    const heading = cleanText(jsonText(node, "heading"), LESSON_LIMITS.maxSectionHeadingLength);
-    const content = cleanText(jsonText(node, "content"), LESSON_LIMITS.maxTextLength);
+    const heading = looseFieldText(node, ["heading", "title", "name"], LESSON_LIMITS.maxSectionHeadingLength);
+    const content = looseFieldText(node, ["content", "body", "text", "description", "detail"], LESSON_LIMITS.maxTextLength);
     if (!heading && !content) continue;
     const section = {
       heading: heading || `Phần ${sections.length + 1}`,
-      hook: cleanText(jsonText(node, "hook"), 300),
+      hook: looseFieldText(node, ["hook", "intro", "introduction", "lead"], 300) || "",
       emoji: validLessonEmoji(node.emoji),
-      content,
-      example: cleanText(jsonText(node, "example"), LESSON_LIMITS.maxTextLength),
-      keyTakeaway: cleanText(jsonText(node, "key_takeaway"), 1000),
+      content: content || "",
+      example: looseFieldText(node, ["example", "examples", "sample"], LESSON_LIMITS.maxTextLength) || "",
+      keyTakeaway: looseFieldText(node, ["key_takeaway", "keyTakeaway", "takeaway", "key_point"], 1000) || "",
       simulation: null,
     };
     // simulation: chỉ giữ tối đa LESSON_MAX_SIMULATIONS mô phỏng mỗi bài;
@@ -1240,16 +1518,23 @@ function normalizeAiLesson(root) {
   }
   if (sections.length === 0) return null;
 
-  let rawObjectives = root.objectives;
+  // Tiêu đề: trường của model → tiêu đề section đầu → mặc định từ request.
+  const title = looseFieldText(root, LESSON_TITLE_FIELDS, LESSON_LIMITS.maxTitleLength)
+    || cleanText(sections[0].heading, LESSON_LIMITS.maxTitleLength)
+    || cleanText(fallbackTitle, LESSON_LIMITS.maxTitleLength);
+  if (!title) return null;
+
+  let rawObjectives = firstField(root, ["objectives", "goals", "objectives_list"]);
   if (typeof rawObjectives === "string") rawObjectives = [rawObjectives];
   const objectives = (Array.isArray(rawObjectives) ? rawObjectives : [])
-    .map((o) => cleanText(o == null ? "" : String(o), LESSON_LIMITS.maxObjectiveLength))
+    .map((o) => looseTextValue(o, LESSON_LIMITS.maxObjectiveLength))
     .filter(Boolean)
     .slice(0, LESSON_LIMITS.maxObjectives);
 
   const quizProps = [];
   let droppedQuestions = 0;
-  const rawQuiz = Array.isArray(root.quick_quiz) ? root.quick_quiz : [];
+  const rawQuizValue = firstField(root, LESSON_QUIZ_FIELDS);
+  const rawQuiz = Array.isArray(rawQuizValue) ? rawQuizValue : [];
   for (const node of rawQuiz) {
     if (quizProps.length >= LESSON_LIMITS.maxQuizQuestions) break;
     const props = convertQuizQuestion(node);
@@ -1260,8 +1545,8 @@ function normalizeAiLesson(root) {
   return {
     title,
     objectives,
-    estimatedTime: cleanText(jsonText(root, "estimated_time"), 100),
-    summary: cleanText(jsonText(root, "summary"), LESSON_LIMITS.maxTextLength),
+    estimatedTime: looseFieldText(root, ["estimated_time", "estimatedTime", "duration", "time"], 100) || "",
+    summary: looseFieldText(root, ["summary", "conclusion"], LESSON_LIMITS.maxTextLength) || "",
     sections,
     quizProps,
     droppedQuestions,
@@ -1283,12 +1568,21 @@ const LESSON_JSON_ONLY_SUFFIX =
   "\n\nLƯU Ý BẮT BUỘC: Chỉ trả về ĐÚNG MỘT đối tượng JSON hợp lệ theo đúng cấu trúc đã mô tả ở trên. "
   + "Không thêm bất kỳ chữ nào ngoài JSON: không lời giải thích, không câu chào, không khối markdown.";
 
+/** Chỉ thị nhắc định dạng cho lượt thử lại sau khi lượt trước không trích được JSON. */
+const LESSON_FORMAT_REMINDER =
+  "\n\nLƯU Ý QUAN TRỌNG: Lượt trả lời trước không đọc được thành dữ liệu bài học. "
+  + "Lần này CHỈ trả về đúng MỘT đối tượng JSON hợp lệ theo cấu trúc đã mô tả: "
+  + "không markdown, không lời dẫn hay giải thích ngoài JSON, không dấu phẩy thừa ở cuối mảng/đối tượng.";
+
 /**
  * Lấy object JSON gốc của bài học từ model — trả object, hoặc null khi mọi
- * lượt đều không parse được (caller ném thông điệp lỗi thân thiện như cũ).
+ * lượt đều không trích được nội dung bài nào (caller ném thông điệp lỗi
+ * đúng bản chất).
  *
- * Đường chính: JSON mode (llmCompleteJson); nội dung trả về mà không parse
- * được object thì thử lại đúng 1 lượt như trước đây.
+ * Đường chính: JSON mode (llmCompleteJson); nội dung trả về được trích
+ * bằng parseLessonRootTolerant (đường nghiêm như cũ → sửa cú pháp nhẹ →
+ * cứu JSON cụt). Vẫn không trích được thì thử lại đúng 1 lượt, kèm chỉ
+ * thị nhắc định dạng trong prompt.
  *
  * FALLBACK (sửa lỗi production sau PR #132): prompt v2 — schema JSON lồng
  * nhau (sections + hook + simulation{steps, visual{…}} + quick_quiz) —
@@ -1297,9 +1591,10 @@ const LESSON_JSON_ONLY_SUFFIX =
  * parse ở trên không bao giờ cứu được, trong khi chat thường (không JSON
  * mode) và sinh câu hỏi (JSON đơn giản hơn) vẫn khỏe cùng lúc. Khi lượt
  * JSON mode throw lỗi gateway, chuyển sang completion THƯỜNG với cùng
- * prompt + chỉ thị ép JSON rồi trích JSON từ văn bản trả về bằng
- * extractJsonPayload (bỏ fence markdown, lấy object JSON đầu tiên parse
- * được) — đưa vào đúng pipeline validate/chuyển đổi phía sau.
+ * prompt + chỉ thị ép JSON rồi trích JSON từ văn bản trả về — đưa vào
+ * đúng pipeline validate/chuyển đổi phía sau. Đường fallback cũng được
+ * dùng khi JSON mode trả nội dung mà cả bộ trích chịu lỗi vẫn không cứu
+ * được, nếu ngân sách lượt gọi còn.
  *
  * Ngân sách lượt gọi model — trần cứng 3 cho MỘT lần sinh bài: mỗi đường
  * (JSON mode / fallback thường) tối đa `1 + jsonRetryAttempts` lượt như
@@ -1315,18 +1610,19 @@ async function fetchLessonRoot(userPrompt) {
   const attemptsPerPath = LESSON_LIMITS.jsonRetryAttempts + 1;
   const MAX_TOTAL_CALLS = 3;
   let calls = 0;
-  const parseRoot = (raw) => {
-    const parsed = extractJsonPayload(raw);
-    return parsed != null && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
-  };
+  const parseRoot = (raw) => parseLessonRootTolerant(raw);
   const describe = (e) => `${e?.kind || "error"}${e?.providerStatus ? `/HTTP ${e.providerStatus}` : ""}: ${e?.message || e}`;
 
   let gatewayError = null;
+  let parseFailed = false;
   for (let attempt = 0; attempt < attemptsPerPath && calls < MAX_TOTAL_CALLS; attempt += 1) {
     calls += 1;
     let raw;
     try {
-      raw = await llmCompleteJson(system, [{ role: "user", content: userPrompt }]);
+      raw = await llmCompleteJson(system, [{
+        role: "user",
+        content: attempt === 0 ? userPrompt : userPrompt + LESSON_FORMAT_REMINDER,
+      }]);
     } catch (e) {
       if (isProviderRateLimit(e)) throw e;
       gatewayError = e;
@@ -1336,17 +1632,23 @@ async function fetchLessonRoot(userPrompt) {
     }
     const root = parseRoot(raw);
     if (root != null) return root;
-    console.warn(`[ai] generate-lesson: JSON không hợp lệ ở lượt ${attempt + 1}, thử lại.`);
+    parseFailed = true;
+    console.warn(`[ai] generate-lesson: không trích được JSON ở lượt ${attempt + 1}, thử lại.`);
   }
-  if (gatewayError == null) return null;
 
+  // Fallback completion thường: JSON mode throw (như cũ) hoặc JSON mode
+  // trả nội dung không cứu được mà ngân sách vẫn còn (tối đa 1 lượt nữa).
+  const fallbackAttempts = gatewayError != null ? attemptsPerPath : MAX_TOTAL_CALLS - calls;
   let lastFallbackError = null;
   let fallbackSawContent = false;
-  for (let attempt = 0; attempt < attemptsPerPath && calls < MAX_TOTAL_CALLS; attempt += 1) {
+  for (let attempt = 0; attempt < fallbackAttempts && calls < MAX_TOTAL_CALLS; attempt += 1) {
     calls += 1;
     let raw;
     try {
-      raw = await llmComplete(system, [{ role: "user", content: userPrompt + LESSON_JSON_ONLY_SUFFIX }]);
+      raw = await llmComplete(system, [{
+        role: "user",
+        content: userPrompt + LESSON_JSON_ONLY_SUFFIX + (parseFailed || attempt > 0 ? LESSON_FORMAT_REMINDER : ""),
+      }]);
     } catch (e) {
       if (isProviderRateLimit(e)) throw e;
       lastFallbackError = e;
@@ -1389,14 +1691,14 @@ async function directGenerateLesson(body) {
   const root = await fetchLessonRoot(userPrompt);
   if (root == null) {
     throw new AiBackendError(
-      "AI trả về dữ liệu không đúng định dạng bài học. Hãy thử lại, hoặc viết yêu cầu soạn bài cụ thể hơn.",
+      "AI trả về nội dung không trích xuất được bài học nào (rỗng hoặc không phải dữ liệu bài học). Hãy thử lại, hoặc viết yêu cầu soạn bài cụ thể hơn.",
       { httpCode: 502, kind: "badResponse" });
   }
 
-  const normalized = normalizeAiLesson(root);
+  const normalized = normalizeAiLesson(root, { fallbackTitle: `Bài học ${subject} lớp ${grade}` });
   if (normalized == null) {
     throw new AiBackendError(
-      "AI chưa soạn được bài học đúng cấu trúc (thiếu tiêu đề hoặc phần nội dung). Hãy thử lại với yêu cầu rõ ràng hơn.",
+      "AI chưa soạn được phần nội dung nào dùng được cho bài học (các phần trả về đều trống hoặc thiếu nội dung). Hãy thử lại với yêu cầu rõ ràng hơn.",
       { httpCode: 502, kind: "badResponse" });
   }
 
