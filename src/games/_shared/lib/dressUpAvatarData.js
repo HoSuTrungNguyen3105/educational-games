@@ -523,14 +523,29 @@
       n: 'Chỏm nhọn chiến binh',
       back: '<path d="M150 224 L136 148 L168 168 L158 92 L196 126 L204 46 L234 104 L256 24 L280 104 L308 46 L320 126 L354 92 L344 168 L376 148 L362 224 L328 246 L184 246 Z"/>'
         + '<path d="M206 122 L196 172 M306 122 L316 172" stroke="#000000" stroke-opacity=".15" stroke-width="8" stroke-linecap="round"/>',
-      front: '<path d="M166 172 L184 114 L202 158 L220 100 L238 152 L256 94 L274 152 L292 102 L308 158 L326 118 L346 174 L328 200 L304 168 L286 202 L260 170 L236 204 L214 170 L190 200 L176 194 Z"/>'
+      /* Mảng nền phủ kín da đầu (cùng mảng các tóc cũ đang đúng dùng)
+       * PHẢI vẽ trước dải chỏm: dải chỏm zigzag hai biên nên thung lũng
+       * biên trên của nó (y≈152–174) thấp hơn đỉnh đầu (y≈91) tới
+       * 60–80px — không có mảng nền thì da đầu hở trắng giữa các chỏm
+       * như hói (ảnh Nguyên chụp 2026-11-21). Lớp sau nằm sau đầu nên
+       * không cứu được vùng này. Dải chỏm vẽ đè lên mảng nền: răng mái
+       * nhọn của nó (tới y≈204) vẫn là nét cá tính của kiểu này. */
+      front: '<path d="M170 165 C165 127 186 94 220 83 C245 74 278 78 303 91 C332 106 347 136 342 168 L320 153 L303 176 L285 148 L262 173 L240 145 L214 175 L195 150 Z"/>'
+        + '<path d="M166 172 L184 114 L202 158 L220 100 L238 152 L256 94 L274 152 L292 102 L308 158 L326 118 L346 174 L328 200 L304 168 L286 202 L260 170 L236 204 L214 170 L190 200 L176 194 Z"/>'
         + '<path d="M226 108 L218 140 M286 110 L294 142" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity="0.22"/>'
     },
     hair_08: {
       n: 'Hoàng tử dựng ngược',
       back: '<path d="M172 207 C145 180 151 124 184 99 C204 83 230 77 256 78 C291 77 322 91 340 116 C365 151 359 193 337 216 L310 234 L201 230 Z"/>'
-        + '<path d="M232 84 L252 16 L263 64 L284 24 L284 86 C267 75 249 75 232 84 Z"/>',
-      front: '<path d="M170 168 C166 124 190 90 228 80 L220 116 L246 82 L250 114 L274 78 L284 116 L308 90 C336 106 348 138 343 170 L318 148 L300 178 L282 144 L258 176 L238 142 L214 176 L196 146 Z"/>'
+        + '<path d="M230 86 L250 14 L262 58 L288 20 L298 88 C270 73 248 73 230 86 Z"/>',
+      /* Mảng nền phủ kín da đầu vẽ trước (như hair_07): đoạn cung đỉnh
+       * của front bị thay bằng zigzag chỏm dựng (thung lũng y≈114–116,
+       * dưới đỉnh đầu y≈91) nên không có mảng nền là hở hai nêm da giữa
+       * các răng chỏm ở đỉnh giữa đầu. Chỏm sau cũng sửa: bản cũ có cạnh
+       * phải thẳng đứng x=284 từ y24 xuống y86 trông như bị cắt; nay
+       * chân chỏm xoè rộng, cạnh ngoài nghiêng theo hướng dựng ngược. */
+      front: '<path d="M170 165 C165 127 186 94 220 83 C245 74 278 78 303 91 C332 106 347 136 342 168 L320 153 L303 176 L285 148 L262 173 L240 145 L214 175 L195 150 Z"/>'
+        + '<path d="M170 168 C166 124 190 90 228 80 L220 116 L246 82 L250 114 L274 78 L284 116 L308 90 C336 106 348 138 343 170 L318 148 L300 178 L282 144 L258 176 L238 142 L214 176 L196 146 Z"/>'
         + '<path d="M232 96 C246 84 262 82 274 88" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity="0.22"/>'
     },
     hair_09: {
