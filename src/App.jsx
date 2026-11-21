@@ -16,6 +16,7 @@ import { startKidProfileSync } from "./lib/kidProfileSync.js";
 import PageLoading from "./components/PageLoading.jsx";
 import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
 import MaintenanceBanner from "./components/MaintenanceBanner.jsx";
+import ServerWakeBanner from "./components/ServerWakeBanner.jsx";
 import { GameVersionProvider } from "./components/GameVersionProvider.jsx";
 import { loadSiteConfig } from "./lib/siteConfig.js";
 import LearningPlatformWithAITutor from "./components/LearningPlatformWithAITutor.jsx";
@@ -502,6 +503,9 @@ function App() {
   return (
     <GameVersionProvider>
       <MaintenanceBanner />
+      {/* Thanh tiến trình ngang khi máy chủ (Render free) đang thức giấc
+          lúc mở app — cố định trên đỉnh, không chặn thao tác. */}
+      <ServerWakeBanner />
       {needOnboarding && !user ? (
         /* Onboarding là TRANG RIÊNG toàn màn hình (carousel giới thiệu +
          * wizard từng bước) thay cho nội dung chính khi khách chưa onboard —
