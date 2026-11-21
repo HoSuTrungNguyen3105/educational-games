@@ -1038,6 +1038,12 @@ export const classService = {
   async removeStudent(classId, studentId) { return apiFetch(`/classes/${classId}/students/${studentId}`, { method: "DELETE" }); },
 };
 
+// Bản đồ nhiệt điểm mù: tổng hợp học sinh × chủ đề cho giáo viên
+// (GET /api/heatmap/class/:classId — server tự chặn phạm vi lớp).
+export const heatmapService = {
+  async getClassHeatmap(classId) { return apiFetch(`/heatmap/class/${classId}`); },
+};
+
 export const assignmentService = {
   async list(classId, range) {
     const path = classId ? `/assignments?classId=${classId}` : "/assignments";
