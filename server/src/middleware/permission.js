@@ -115,6 +115,7 @@ const RULES = [
   { re: /^\/assignments\/[^/]+\/(stats|submissions)$/, perms: ["assignments.view", "reports.view"] },
   { re: /^\/assignments/, m: "GET", perms: [PROFILE, "assignments.view"] },
   { re: /^\/assignments/, feature: "assignments" },
+  { re: /^\/heatmap\//, perms: ["reports.view"] },                       // bản đồ nhiệt điểm mù — giáo viên/admin (route còn chặn requireRoles + phạm vi lớp)
 
   // ── Nhiệm vụ ngày / nhắc nhở / thông báo / chat ──────────────────────
   { re: /^\/daily-tasks\/admin\//, feature: "daily_tasks" },

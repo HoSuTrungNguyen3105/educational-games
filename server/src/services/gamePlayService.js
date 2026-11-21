@@ -134,6 +134,26 @@ export async function completePlay(p) {
   const accuracy = graded.accuracy;
   const completionTime = Math.max(0, Math.round(Number(timeUsed) || 0));
 
+  // Lưu thêm breakdown TỪNG CÂU cho các ván được server chấm thật (verified)
+  // để Bản đồ nhiệt điểm mù (heatmapService) có thống kê theo câu hỏi.
+  // Trước đây breakdown bị bỏ sau khi chấm nên results chỉ còn số tổng hợp;
+  // field này optional — document cũ không có vẫn hợp lệ, heatmap tự hiểu
+  // là "ván cũ chỉ có số tổng". timeSpent lấy từ answers gốc của client.
+  let breakdown;
+  if (verified && Array.isArray(graded.breakdown) && graded.breakdown.length) {
+    const timeByQuestion = new Map();
+    for (const a of answerList) {
+      if (a?.questionId != null && Number.isFinite(Number(a.timeSpent))) {
+        timeByQuestion.set(a.questionId, Number(a.timeSpent));
+      }
+    }
+    breakdown = graded.breakdown.map((b) => ({
+      questionId: b.questionId,
+      isCorrect: !!b.isCorrect,
+      ...(timeByQuestion.has(b.questionId) ? { timeSpent: timeByQuestion.get(b.questionId) } : {}),
+    }));
+  }
+
   // --- XP: chỉ cấp cho ván đã được server chấm; chặn spam theo số ván/ngày ---
   const rawXp = verified
     ? calcXp({
@@ -167,6 +187,7 @@ export async function completePlay(p) {
     coinGained: 0,
     verified,
     source: "html-game",
+    ...(breakdown ? { breakdown } : {}),
     createdAt: new Date().toISOString(),
   };
 
