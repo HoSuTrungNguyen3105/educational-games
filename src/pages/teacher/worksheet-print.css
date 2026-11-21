@@ -2,16 +2,70 @@
    Vùng phiếu (.ws-sheet) render qua portal ở body; khi in, ẩn toàn bộ app
    (#root và thanh công cụ .ws-noprint), chỉ hiện phiếu, nền trắng chữ đen. */
 
+/* Lưới 2 trang cạnh nhau: giáo viên (trái) | học sinh (phải) */
+.ws-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: stretch;
+  max-width: 1320px;
+  margin: 24px auto 48px;
+  padding: 0 16px;
+}
+
+.ws-grid > .ws-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #555;
+  padding: 32px 0;
+  background: #fff;
+  border-radius: 12px;
+}
+
+@media (max-width: 900px) {
+  .ws-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
 .ws-sheet {
   background: #fff;
   color: #111;
-  max-width: 820px;
-  margin: 24px auto 48px;
+  margin: 0;
   padding: 44px 48px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
   font-family: "Segoe UI", Arial, Helvetica, sans-serif;
   font-size: 15px;
   line-height: 1.55;
+  /* Giấy A4 (210×297mm) ở 96dpi ≈ 794×1123px — full chiều cao, không bị bóp */
+  min-height: 1123px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Nhãn phân biệt giáo viên / học sinh */
+.ws-ribbon {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 999px;
+  margin-bottom: 16px;
+}
+
+.ws-sheet-teacher .ws-ribbon {
+  background: #e0f2fe;
+  color: #075985;
+  border: 1px solid #7dd3fc;
+}
+
+.ws-sheet-student .ws-ribbon {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
 }
 
 .ws-empty {
@@ -166,45 +220,56 @@
 }
 
 @media print {
-  /* Ẩn toàn bộ app + thanh công cụ, chỉ in vùng phiếu */
-  body * {
-    visibility: hidden;
-  }
-  .ws-sheet,
-  .ws-sheet * {
-    visibility: visible;
-  }
+  /* Ẩn hẳn app gốc bằng display:none (không dùng visibility:hidden vì
+     visibility vẫn giữ chỗ trong layout → sinh trang trắng khi in). */
+  #root,
   .ws-noprint {
     display: none !important;
   }
 
-  /* Gỡ khung cuộn của overlay để phiếu chảy đủ nhiều trang */
+  html,
+  body {
+    background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Gỡ khung cuộn/cố định của overlay để phiếu chảy đủ nhiều trang */
   .ws-overlay {
     position: static !important;
+    inset: auto !important;
     overflow: visible !important;
     background: none !important;
+    height: auto !important;
+  }
+
+  /* Xếp 2 trang theo chiều dọc, mỗi trang 1 tờ A4 riêng */
+  .ws-grid {
+    display: block;
+    max-width: none;
+    margin: 0;
+    padding: 0;
   }
   .ws-sheet {
-    position: absolute;
-    left: 0;
-    top: 0;
+    position: static;
     width: 100%;
     max-width: none;
     margin: 0;
     padding: 0;
+    min-height: 0;
     box-shadow: none;
   }
-
-  /* Trang đáp án luôn bắt đầu ở trang mới */
-  .ws-answer-key {
-    break-before: page;
-    border-top: none;
-    margin-top: 0;
-    padding-top: 0;
+  .ws-sheet-teacher {
+    break-after: page;
+    page-break-after: always;
+  }
+  .ws-ribbon {
+    display: none;
   }
 
   /* Không cắt ngang một câu hỏi giữa hai trang */
   .ws-q {
     break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

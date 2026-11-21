@@ -75,7 +75,7 @@ export default function AssignmentWorksheet({ assignment, questions, totalQuesti
         <div className="min-w-0">
           <p className="font-display text-base text-ink truncate">Phiếu bài tập — {assignment.title}</p>
           <p className="text-xs font-body text-ink/50">
-            Trang đáp án ở cuối sẽ tự sang trang riêng khi in. Chọn máy in hoặc "Lưu thành PDF" trong hộp thoại in.
+            Hiển thị 2 trang cạnh nhau: bên trái cho giáo viên (có đáp án), bên phải cho học sinh (không đáp án). Chọn máy in hoặc "Lưu thành PDF" trong hộp thoại in.
           </p>
           {missing > 0 && (
             <p className="text-xs font-body text-red-600 mt-0.5">
@@ -100,79 +100,106 @@ export default function AssignmentWorksheet({ assignment, questions, totalQuesti
         </div>
       </div>
 
-      {/* Vùng phiếu — phần duy nhất được in */}
-      <div className="ws-sheet">
+      {/* Vùng phiếu — hai trang cạnh nhau: giáo viên (có đáp án) | học sinh (không đáp án) */}
+      <div className="ws-grid">
         {loadError ? (
           <p className="ws-empty">Không tải được câu hỏi của bài tập. Vui lòng thử lại.</p>
         ) : questions.length === 0 ? (
           <p className="ws-empty">Bài tập này chưa có câu hỏi nào để in.</p>
         ) : (
           <>
-            <header className="ws-head">
-              <h1 className="ws-title">{assignment.title}</h1>
-              <p className="ws-meta">
-                Mã bài: {assignment.code || '—'} · {questions.length} câu
-                {assignment.isExam && assignment.examDuration ? ` · Thời gian làm bài: ${assignment.examDuration} phút` : ''}
-              </p>
-              <div className="ws-info">
-                <span className="ws-info-item ws-info-grow">Họ và tên: <i className="ws-blank" /></span>
-                <span className="ws-info-item">Lớp: <i className="ws-blank ws-blank-sm" /></span>
-                <span className="ws-info-item">Ngày: <i className="ws-blank ws-blank-sm" /></span>
-              </div>
-              <p className="ws-guide">
-                Hướng dẫn: Em đọc kĩ từng câu hỏi. Câu trắc nghiệm: em tô hoặc khoanh tròn vào chữ cái của đáp án đúng nhất.
-                Câu điền từ: em viết đáp án ngắn gọn vào dòng kẻ.
-              </p>
-            </header>
+            {/* TRANG GIÁO VIÊN — có đáp án */}
+            <WorksheetSheet
+              variant="teacher"
+              assignment={assignment}
+              questions={questions}
+            />
 
-            <div className="ws-questions">
-              {questions.map((q, i) => (
-                <div key={q.id || i} className="ws-q">
-                  <p className="ws-q-text">
-                    <strong>Câu {i + 1}.</strong>{' '}
-                    {q.icon ? `${q.icon} ` : ''}{questionText(q)}
-                  </p>
-                  {isFillIn(q) ? (
-                    <div className="ws-write" aria-hidden="true">
-                      <span className="ws-write-line" />
-                      <span className="ws-write-line" />
-                    </div>
-                  ) : (
-                    <ul className="ws-opts">
-                      {questionOptions(q).map((opt, j) => (
-                        <li key={j} className="ws-opt">
-                          <span className="ws-circle" aria-hidden="true" />
-                          <span><strong>{LETTERS[j] || j + 1}.</strong> {optionText(opt)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Trang đáp án — page-break tách riêng, chỉ dành cho giáo viên */}
-            <section className="ws-answer-key">
-              <h2 className="ws-answer-title">ĐÁP ÁN</h2>
-              <p className="ws-answer-note">
-                Trang đáp án — chỉ dành cho giáo viên, không phát cho học sinh. Bài tập: {assignment.title}
-                {assignment.code ? ` (mã ${assignment.code})` : ''}
-              </p>
-              <ol className="ws-answer-list">
-                {questions.map((q, i) => (
-                  <li key={q.id || i} className="ws-answer-item">
-                    <strong>Câu {i + 1}:</strong> {resolveCorrectAnswer(q)}
-                    {q.explanation && (
-                      <span className="ws-answer-explain"> — Giải thích: {q.explanation}</span>
-                    )}
-                  </li>
-                ))}
-              </ol>
-            </section>
+            {/* TRANG HỌC SINH — không có đáp án */}
+            <WorksheetSheet
+              variant="student"
+              assignment={assignment}
+              questions={questions}
+            />
           </>
         )}
       </div>
     </div>,
     document.body,
+  );
+}
+
+function WorksheetSheet({ variant, assignment, questions }) {
+  const showAnswers = variant === 'teacher';
+
+  return (
+    <section className={showAnswers ? 'ws-sheet ws-sheet-teacher' : 'ws-sheet ws-sheet-student'}>
+      <div className="ws-ribbon">
+        {showAnswers ? 'GIÁO VIÊN — CÓ ĐÁP ÁN' : 'HỌC SINH — KHÔNG ĐÁP ÁN'}
+      </div>
+      <header className="ws-head">
+        <h1 className="ws-title">{assignment.title}</h1>
+        <p className="ws-meta">
+          Mã bài: {assignment.code || '—'} · {questions.length} câu
+          {assignment.isExam && assignment.examDuration ? ` · Thời gian làm bài: ${assignment.examDuration} phút` : ''}
+        </p>
+        <div className="ws-info">
+          <span className="ws-info-item ws-info-grow">Họ và tên: <i className="ws-blank" /></span>
+          <span className="ws-info-item">Lớp: <i className="ws-blank ws-blank-sm" /></span>
+          <span className="ws-info-item">Ngày: <i className="ws-blank ws-blank-sm" /></span>
+        </div>
+        <p className="ws-guide">
+          Hướng dẫn: Em đọc kĩ từng câu hỏi. Câu trắc nghiệm: em tô hoặc khoanh tròn vào chữ cái của đáp án đúng nhất.
+          Câu điền từ: em viết đáp án ngắn gọn vào dòng kẻ.
+        </p>
+      </header>
+
+      <div className="ws-questions">
+        {questions.map((q, i) => (
+          <div key={q.id || i} className="ws-q">
+            <p className="ws-q-text">
+              <strong>Câu {i + 1}.</strong>{' '}
+              {q.icon ? `${q.icon} ` : ''}{questionText(q)}
+            </p>
+            {isFillIn(q) ? (
+              <div className="ws-write" aria-hidden="true">
+                <span className="ws-write-line" />
+                <span className="ws-write-line" />
+              </div>
+            ) : (
+              <ul className="ws-opts">
+                {questionOptions(q).map((opt, j) => (
+                  <li key={j} className="ws-opt">
+                    <span className="ws-circle" aria-hidden="true" />
+                    <span><strong>{LETTERS[j] || j + 1}.</strong> {optionText(opt)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Đáp án — chỉ hiện ở trang giáo viên */}
+      {showAnswers && (
+        <section className="ws-answer-key">
+          <h2 className="ws-answer-title">ĐÁP ÁN</h2>
+          <p className="ws-answer-note">
+            Trang đáp án — chỉ dành cho giáo viên, không phát cho học sinh. Bài tập: {assignment.title}
+            {assignment.code ? ` (mã ${assignment.code})` : ''}
+          </p>
+          <ol className="ws-answer-list">
+            {questions.map((q, i) => (
+              <li key={q.id || i} className="ws-answer-item">
+                <strong>Câu {i + 1}:</strong> {resolveCorrectAnswer(q)}
+                {q.explanation && (
+                  <span className="ws-answer-explain"> — Giải thích: {q.explanation}</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+    </section>
   );
 }
