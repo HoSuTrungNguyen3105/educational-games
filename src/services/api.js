@@ -1200,8 +1200,35 @@ export const supportService = {
 };
 
 export const permissionService = {
-  async features() { return apiFetch("/permissions/features") || []; },
-  async catalog() { return apiFetch("/permissions/catalog") || []; },
+  // Permission Catalog chuẩn hoá (refactor Role & Permission): bản ghi
+  // PHẲNG từng quyền từ collection `permissions`, phân trang phía server.
+  // (Endpoint /permissions/features cũ đã bị loại bỏ cùng đợt này.)
+  async catalog(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch(`/permissions/catalog${qs ? `?${qs}` : ""}`, { _withPagination: true });
+  },
+  /** Toàn bộ catalog một lần (danh mục ~140 bản ghi) cho modal gán quyền. */
+  async catalogAll() {
+    const res = await this.catalog({ from: 1, to: 1000 });
+    return res?.data || [];
+  },
+  // ── Role Permissions: quyền đã gán cho từng vai trò ──────────────────
+  /** Danh sách quyền của MỘT vai trò (role_id: id số / slug / id document). */
+  async listRolePermissions(roleRef, params = {}) {
+    const qs = new URLSearchParams({ role_id: roleRef, per_page: 500, ...params }).toString();
+    const res = await apiFetch(`/rolePermissions?${qs}`, { _withPagination: true });
+    return res?.data || [];
+  },
+  async grantRolePermissions(roleRef, permissionIds) {
+    return apiFetch("/rolePermissions", { method: "POST", body: { role_id: roleRef, permission_ids: permissionIds } });
+  },
+  /** Đồng bộ toàn bộ tập quyền của vai trò theo danh sách id gửi lên. */
+  async syncRolePermissions(roleRef, permissionIds) {
+    return apiFetch(`/rolePermissions/${encodeURIComponent(roleRef)}`, { method: "PUT", body: { permission_ids: permissionIds } });
+  },
+  async revokeRolePermissions(roleRef, permissionIds) {
+    return apiFetch("/rolePermissions", { method: "DELETE", body: { role_id: roleRef, permission_ids: permissionIds } });
+  },
   async listRoles(range) {
     if (hasRange(range)) {
       const { items } = await fetchRangedList("/permissions/roles", range);
@@ -1219,8 +1246,10 @@ export const permissionService = {
     return apiFetch(`/roles${qs ? `?${qs}` : ""}`, { _withPagination: true });
   },
   async permissionsPaged(params = {}) {
+    // Trang Quyền đọc từ Permission Catalog chuẩn hoá (cùng dữ liệu với
+    // GET /api/permissions, vốn giữ lại làm alias tương thích).
     const qs = new URLSearchParams(params).toString();
-    return apiFetch(`/permissions${qs ? `?${qs}` : ""}`, { _withPagination: true });
+    return apiFetch(`/permissions/catalog${qs ? `?${qs}` : ""}`, { _withPagination: true });
   },
   /** POST /api/permissions/all — seed các quyền `<module>_all` (chỉ admin). */
   async createAllPermissions() {

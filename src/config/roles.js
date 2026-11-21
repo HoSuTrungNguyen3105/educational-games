@@ -3,37 +3,43 @@
 //  - Backend API: seed collection `roles`, ma trận quyền /api/permissions/*
 // Khi đổi quyền ở đây, bump ROLES_SEED_VERSION để API seed lại dữ liệu cũ.
 
-// Cột của ma trận quyền trong API (GET /api/permissions/features).
-// Mỗi trang quản trị có 3 ô riêng: xem / sửa / xóa.
+// Metadata các mô-đun (nhóm chức năng) của hệ thống phân quyền.
+// CHỈ còn là metadata nhãn — KHÔNG còn object `permissions: {view, edit,
+// delete}`: từ đợt refactor Role & Permission, mỗi quyền là MỘT bản ghi
+// khai báo riêng trong PERMISSION_CATALOG (cấu trúc phẳng), và gán quyền
+// cho vai trò đi qua collection `role_permissions` (xem permissionService).
 export const FEATURES = [
-  { key: "games", label: "Trò chơi", name_en: "Games", permissions: { view: "games.view", edit: "games.edit", delete: "games.delete" } },
-  { key: "game_config", label: "Cấu hình game", name_en: "Game config", permissions: { view: "game_config.view", edit: "game_config.edit", delete: "game_config.delete" } },
-  { key: "questions", label: "Câu hỏi", name_en: "Questions", permissions: { view: "questions.view", edit: "questions.edit", delete: "questions.delete" } },
-  { key: "question_bank", label: "Ngân hàng câu hỏi", name_en: "Question bank", permissions: { view: "question_bank.view", edit: "question_bank.edit", delete: "question_bank.delete" } },
-  { key: "subjects", label: "Môn học", name_en: "Subjects", permissions: { view: "subjects.view", edit: "subjects.edit", delete: "subjects.delete" } },
-  { key: "categories", label: "Danh mục", name_en: "Categories", permissions: { view: "categories.view", edit: "categories.edit", delete: "categories.delete" } },
-  { key: "templates", label: "Templates", name_en: "Templates", permissions: { view: "templates.view", edit: "templates.edit", delete: "templates.delete" } },
-  { key: "users", label: "Người dùng", name_en: "Users", permissions: { view: "users.view", edit: "users.edit", delete: "users.delete" } },
-  { key: "roles", label: "Phân quyền", name_en: "Roles", permissions: { view: "roles.view", edit: "roles.edit", delete: "roles.delete" } },
-  { key: "classes", label: "Lớp học", name_en: "Classes", permissions: { view: "classes.view", edit: "classes.edit", delete: "classes.delete" } },
-  { key: "assignments", label: "Bài tập", name_en: "Assignments", permissions: { view: "assignments.view", edit: "assignments.edit", delete: "assignments.delete" } },
-  { key: "reports", label: "Báo cáo & thống kê", name_en: "Reports & statistics", permissions: { view: "reports.view", edit: "reports.edit", delete: "reports.delete" } },
-  { key: "coins", label: "Coin & Progress", name_en: "Coins & progress", permissions: { view: "coins.view", edit: "coins.edit", delete: "coins.delete" } },
-  { key: "daily_tasks", label: "Nhiệm vụ ngày", name_en: "Daily tasks", permissions: { view: "daily_tasks.view", edit: "daily_tasks.edit", delete: "daily_tasks.delete" } },
-  { key: "events", label: "Sự kiện theo mùa", name_en: "Seasonal events", permissions: { view: "events.view", edit: "events.edit", delete: "events.delete" } },
-  { key: "reminders", label: "Nhắc nhở", name_en: "Reminders", permissions: { view: "reminders.view", edit: "reminders.edit", delete: "reminders.delete" } },
-  { key: "chat", label: "Tin nhắn", name_en: "Messages", permissions: { view: "chat.view", edit: "chat.edit", delete: "chat.delete" } },
-  { key: "attendance", label: "Chấm công", name_en: "Attendance", permissions: { view: "attendance.view", edit: "attendance.edit", delete: "attendance.delete" } },
-  { key: "images", label: "Thư viện ảnh", name_en: "Image library", permissions: { view: "images.view", edit: "images.edit", delete: "images.delete" } },
-  { key: "upload_items", label: "Trích xuất Items", name_en: "Item extraction", permissions: { view: "upload_items.view", edit: "upload_items.edit", delete: "upload_items.delete" } },
-  { key: "avatar_items", label: "Avatar Items", name_en: "Avatar items", permissions: { view: "avatar_items.view", edit: "avatar_items.edit", delete: "avatar_items.delete" } },
-  { key: "avatar_templates", label: "Avatar Template", name_en: "Avatar templates", permissions: { view: "avatar_templates.view", edit: "avatar_templates.edit", delete: "avatar_templates.delete" } },
-  { key: "pet_catalog", label: "Danh mục Pet", name_en: "Pet catalog", permissions: { view: "pet_catalog.view", edit: "pet_catalog.edit", delete: "pet_catalog.delete" } },
-  { key: "body_custom", label: "Thân Avatar", name_en: "Avatar bodies", permissions: { view: "body_custom.view", edit: "body_custom.edit", delete: "body_custom.delete" } },
-  { key: "plant_types", label: "Loại cây (Garden)", name_en: "Garden plant types", permissions: { view: "plant_types.view", edit: "plant_types.edit", delete: "plant_types.delete" } },
-  { key: "support", label: "Hỗ trợ", name_en: "Support", permissions: { view: "support.view", edit: "support.edit", delete: "support.delete" } },
-  { key: "settings", label: "Cài đặt hệ thống", name_en: "System settings", permissions: { view: "settings.view", edit: "settings.edit", delete: "settings.delete" } },
+  { key: "games", label: "Trò chơi", name_en: "Games" },
+  { key: "game_config", label: "Cấu hình game", name_en: "Game config" },
+  { key: "questions", label: "Câu hỏi", name_en: "Questions" },
+  { key: "question_bank", label: "Ngân hàng câu hỏi", name_en: "Question bank" },
+  { key: "subjects", label: "Môn học", name_en: "Subjects" },
+  { key: "categories", label: "Danh mục", name_en: "Categories" },
+  { key: "templates", label: "Templates", name_en: "Templates" },
+  { key: "users", label: "Người dùng", name_en: "Users" },
+  { key: "roles", label: "Phân quyền", name_en: "Roles" },
+  { key: "classes", label: "Lớp học", name_en: "Classes" },
+  { key: "assignments", label: "Bài tập", name_en: "Assignments" },
+  { key: "reports", label: "Báo cáo & thống kê", name_en: "Reports & statistics" },
+  { key: "coins", label: "Coin & Progress", name_en: "Coins & progress" },
+  { key: "daily_tasks", label: "Nhiệm vụ ngày", name_en: "Daily tasks" },
+  { key: "events", label: "Sự kiện theo mùa", name_en: "Seasonal events" },
+  { key: "reminders", label: "Nhắc nhở", name_en: "Reminders" },
+  { key: "chat", label: "Tin nhắn", name_en: "Messages" },
+  { key: "attendance", label: "Chấm công", name_en: "Attendance" },
+  { key: "images", label: "Thư viện ảnh", name_en: "Image library" },
+  { key: "upload_items", label: "Trích xuất Items", name_en: "Item extraction" },
+  { key: "avatar_items", label: "Avatar Items", name_en: "Avatar items" },
+  { key: "avatar_templates", label: "Avatar Template", name_en: "Avatar templates" },
+  { key: "pet_catalog", label: "Danh mục Pet", name_en: "Pet catalog" },
+  { key: "body_custom", label: "Thân Avatar", name_en: "Avatar bodies" },
+  { key: "plant_types", label: "Loại cây (Garden)", name_en: "Garden plant types" },
+  { key: "support", label: "Hỗ trợ", name_en: "Support" },
+  { key: "settings", label: "Cài đặt hệ thống", name_en: "System settings" },
 ];
+
+/** Tra metadata mô-đun theo key: { key, label (VI), name_en }. */
+export const MODULE_META = Object.fromEntries(FEATURES.map((f) => [f.key, f]));
 
 // Quyền "_all" — TOÀN QUYỀN trên một mô-đun (xem hết của mọi người, không bị
 // lọc theo lớp/người được gán). Chỉ admin tổng được seed sẵn; teacher KHÔNG có.
@@ -93,12 +99,49 @@ export const BASE_PERMISSION_META = {
   "daily-tasks": { name_vi: "Nhiệm vụ ngày", name_en: "Daily tasks", module: "daily_tasks", module_vi: "Nhiệm vụ ngày", module_en: "Daily tasks" },
 };
 
+// Nhãn riêng cho các quyền NGOÀI bộ ba xem/sửa/xóa của mô-đun — các quyền
+// kiểu cũ mà middleware/route vẫn kiểm tra trực tiếp (alias `*.manage`,
+// `games.play`, `attendance.checkin`, `setup.manage`). Từ đợt refactor,
+// mỗi quyền này cũng là MỘT bản ghi khai báo riêng trong catalog (trước
+// đây chúng chỉ tồn tại ngầm trong mảng quyền hiệu lực, không có bản ghi).
+export const LEGACY_PERMISSION_META = {
+  "games.play": { name_vi: "Trò chơi - Chơi game", name_en: "Games - Play", module: "games" },
+  "games.manage": { name_vi: "Trò chơi - Quản lý", name_en: "Games - Manage", module: "games" },
+  "game-config.manage": { name_vi: "Cấu hình game - Quản lý", name_en: "Game config - Manage", module: "game_config" },
+  "questions.manage": { name_vi: "Câu hỏi - Quản lý", name_en: "Questions - Manage", module: "questions" },
+  "question-bank.manage": { name_vi: "Ngân hàng câu hỏi - Quản lý", name_en: "Question bank - Manage", module: "question_bank" },
+  "subjects.manage": { name_vi: "Môn học - Quản lý", name_en: "Subjects - Manage", module: "subjects" },
+  "categories.manage": { name_vi: "Danh mục - Quản lý", name_en: "Categories - Manage", module: "categories" },
+  "templates.manage": { name_vi: "Templates - Quản lý", name_en: "Templates - Manage", module: "templates" },
+  "users.manage": { name_vi: "Người dùng - Quản lý", name_en: "Users - Manage", module: "users" },
+  "roles.manage": { name_vi: "Phân quyền - Quản lý", name_en: "Roles - Manage", module: "roles" },
+  "classes.manage": { name_vi: "Lớp học - Quản lý", name_en: "Classes - Manage", module: "classes" },
+  "assignments.manage": { name_vi: "Bài tập - Quản lý", name_en: "Assignments - Manage", module: "assignments" },
+  "reports.manage": { name_vi: "Báo cáo & thống kê - Quản lý", name_en: "Reports & statistics - Manage", module: "reports" },
+  "coins.manage": { name_vi: "Coin & Progress - Quản lý", name_en: "Coins & progress - Manage", module: "coins" },
+  "daily-tasks.manage": { name_vi: "Nhiệm vụ ngày - Quản lý", name_en: "Daily tasks - Manage", module: "daily_tasks" },
+  "events.manage": { name_vi: "Sự kiện theo mùa - Quản lý", name_en: "Seasonal events - Manage", module: "events" },
+  "reminders.manage": { name_vi: "Nhắc nhở - Quản lý", name_en: "Reminders - Manage", module: "reminders" },
+  "images.manage": { name_vi: "Thư viện ảnh - Quản lý", name_en: "Image library - Manage", module: "images" },
+  "upload-items.manage": { name_vi: "Trích xuất Items - Quản lý", name_en: "Item extraction - Manage", module: "upload_items" },
+  "avatar-items.manage": { name_vi: "Avatar Items - Quản lý", name_en: "Avatar items - Manage", module: "avatar_items" },
+  "avatar-templates.manage": { name_vi: "Avatar Template - Quản lý", name_en: "Avatar templates - Manage", module: "avatar_templates" },
+  "pet-catalog.manage": { name_vi: "Danh mục Pet - Quản lý", name_en: "Pet catalog - Manage", module: "pet_catalog" },
+  "body-custom.manage": { name_vi: "Thân Avatar - Quản lý", name_en: "Avatar bodies - Manage", module: "body_custom" },
+  "plant-types.manage": { name_vi: "Loại cây (Garden) - Quản lý", name_en: "Garden plant types - Manage", module: "plant_types" },
+  "setup.manage": { name_vi: "Cài đặt hệ thống - Quản lý", name_en: "System settings - Manage", module: "settings" },
+  "attendance.checkin": { name_vi: "Chấm công - Điểm danh", name_en: "Attendance - Check in", module: "attendance" },
+};
+
 // Danh mục phẳng để API / UI hiển thị đúng cấu trúc:
-// quyền hạn · tên VI · tên EN · mô-đun.
+// quyền hạn · tên VI · tên EN · mô-đun. Mỗi quyền là một bản ghi riêng —
+// bộ ba xem/sửa/xóa của một mô-đun là BA bản ghi độc lập (không còn
+// object permissions {view, edit, delete} ở bất kỳ đâu).
 export const PERMISSION_CATALOG = (() => {
   const items = [];
   for (const feature of FEATURES) {
-    for (const [action, slug] of Object.entries(feature.permissions)) {
+    for (const action of ["view", "edit", "delete"]) {
+      const slug = `${feature.key}.${action}`;
       const actionMeta = PERMISSION_ACTIONS[action] || { name_vi: action, name_en: action };
       items.push({
         id: slug,
@@ -150,14 +193,38 @@ export const PERMISSION_CATALOG = (() => {
     });
   }
 
+  // Quyền kiểu cũ (alias) — mỗi slug một bản ghi riêng như mọi quyền khác.
+  for (const [slug, meta] of Object.entries(LEGACY_PERMISSION_META)) {
+    if (items.some((item) => item.slug === slug)) continue;
+    const feature = MODULE_META[meta.module];
+    items.push({
+      id: slug,
+      slug,
+      name_vi: meta.name_vi,
+      name_en: meta.name_en,
+      module: meta.module,
+      module_vi: feature?.label || meta.name_vi,
+      module_en: feature?.name_en || meta.name_en,
+      feature_key: null,
+      action: null,
+      is_base: BASE_PERMISSIONS.includes(slug),
+      is_alias: true,
+    });
+  }
+
   return items;
 })();
+
+/** Slug quyền của một ô (mô-đun, hành động) — tra trong catalog phẳng. */
+export function featurePermissionSlug(featureKey, action) {
+  return `${featureKey}.${action}`;
+}
 
 // permission string -> [featureKey, action]
 const CELL_BY_PERMISSION = (() => {
   const map = {};
-  for (const f of FEATURES) {
-    for (const [action, perm] of Object.entries(f.permissions)) map[perm] = [f.key, action];
+  for (const item of PERMISSION_CATALOG) {
+    if (item.feature_key && item.action) map[item.slug] = [item.feature_key, item.action];
   }
   for (const [perm, cell] of Object.entries(LEGACY_CELLS)) map[perm] = cell;
   return map;
@@ -300,9 +367,9 @@ export function matrixToPermissions(matrix = {}) {
   const perms = [];
   for (const f of FEATURES) {
     const m = matrix?.[f.key] || {};
-    if (m.view) perms.push(f.permissions.view);
-    if (m.edit) perms.push(f.permissions.edit);
-    if (m.delete) perms.push(f.permissions.delete);
+    if (m.view) perms.push(featurePermissionSlug(f.key, "view"));
+    if (m.edit) perms.push(featurePermissionSlug(f.key, "edit"));
+    if (m.delete) perms.push(featurePermissionSlug(f.key, "delete"));
   }
   // Alias kiểu cũ (sidebar / client cũ)
   if (matrix?.games?.view || matrix?.games?.edit || matrix?.games?.delete) perms.push("games.play");

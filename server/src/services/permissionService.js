@@ -6,6 +6,7 @@ import {
   ROLES_SEED_VERSION,
   ROLE_KEYS,
   ALL_ACCESS_PERMISSIONS,
+  BASE_PERMISSIONS,
   getRoleIdentity as getStaticRoleIdentity,
   permissionsToMatrix,
   matrixToPermissions,
@@ -109,10 +110,24 @@ function roleIdentity(role) {
   };
 }
 
-function toApi(role, counts = {}, { withPermissions = false } = {}) {
-  const matrix = normalizeMatrix(role.matrix);
-  const permissions = mergePermissions(matrixToPermissions(matrix), role.extraPermissions);
+/**
+ * Tập quyền hiệu lực của một role doc theo cách lưu CŨ (matrix + extra).
+ * Chỉ còn dùng cho migration sang `role_permissions` và cho các đường ghi
+ * kiểu cũ (updateRole nhận matrix/permissions) — nguồn sự thật sau
+ * migration là collection `role_permissions`.
+ */
+function legacyEffectivePermissions(role) {
+  return mergePermissions(matrixToPermissions(normalizeMatrix(role.matrix)), role.extraPermissions);
+}
+
+function toApi(role, counts = {}, { withPermissions = false, slugs = null } = {}) {
+  // Sau migration, quyền đọc từ role_permissions (slugs truyền vào); chưa có
+  // thì suy từ cách lưu cũ để response không bao giờ rỗng oan.
+  const permissions = slugs ?? legacyEffectivePermissions(role);
   const permissionDetails = permissionDetailsFromPermissions(permissions);
+  // Matrix trong response là BẢN SUY RA từ tập quyền thật (chỉ để tương
+  // thích client cũ) — không còn là nơi lưu trữ.
+  const matrix = permissionsToMatrix(permissions);
 
   return {
     id: role.id,
@@ -134,25 +149,27 @@ function toApi(role, counts = {}, { withPermissions = false } = {}) {
 }
 
 export async function listRoles() {
-  await ensureSeeded();
+  await ensureRolePermissionsMigrated();
   const counts = await countByRole();
   const roles = await getCollection(COLLECTION).find({}).toArray();
+  const slugMap = await loadRolePermissionSlugs(roles);
   // Built-in roles follow the config order (admin -> teacher -> student), custom ones after
   const rank = (r) => {
     const i = r.isBuiltIn ? ROLE_KEYS.indexOf(r.key) : -1;
     return i >= 0 ? i : ROLE_KEYS.length;
   };
   roles.sort((a, b) => rank(a) - rank(b) || String(a.label).localeCompare(String(b.label), "vi"));
-  return roles.map((r) => toApi(r, counts));
+  return roles.map((r) => toApi(r, counts, { slugs: slugMap.get(r.id) ?? [] }));
 }
 
 export async function getRole(keyOrId) {
-  await ensureSeeded();
+  await ensureRolePermissionsMigrated();
   const col = getCollection(COLLECTION);
   const role = await col.findOne({ $or: [{ key: keyOrId }, { id: keyOrId }] });
   if (!role) return null;
   const counts = await countByRole();
-  return toApi(role, counts, { withPermissions: true });
+  const slugMap = await loadRolePermissionSlugs([role]);
+  return toApi(role, counts, { withPermissions: true, slugs: slugMap.get(role.id) ?? [] });
 }
 
 /**
@@ -195,12 +212,14 @@ export async function createRole({ key, label, name_en, description, dashboardAc
     dashboardAccess: !!dashboardAccess,
     matrix: buildMatrix({ matrix, permissions }),
     extraPermissions: sanitizeExtraPermissions(extraPermissions),
+    rpMigrated: true,
     createdAt: new Date().toISOString(),
   };
   await col.insertOne(doc);
+  const slugs = await setRolePermissions(doc, legacyEffectivePermissions(doc));
   invalidateRolePermissions(k);
   const counts = await countByRole();
-  return toApi(doc, counts, { withPermissions: true });
+  return toApi(doc, counts, { withPermissions: true, slugs });
 }
 
 export async function updateRole(keyOrId, { label, name_en, description, dashboardAccess, matrix, permissions, extraPermissions }) {
@@ -218,17 +237,44 @@ export async function updateRole(keyOrId, { label, name_en, description, dashboa
   if (name_en != null) updates.name_en = String(name_en).trim();
   if (description != null) updates.description = String(description).trim();
   if (dashboardAccess != null) updates.dashboardAccess = !!dashboardAccess;
-  if (matrix != null || permissions != null) {
-    updates.matrix = buildMatrix({ matrix: matrix ?? role.matrix, permissions });
+  // Đường ghi kiểu cũ (matrix / permissions / extraPermissions): chuyển
+  // thành tập slug đích rồi đồng bộ vào `role_permissions` — nguồn sự thật.
+  let targetSlugs = null;
+  if (permissions != null) {
+    targetSlugs = [...permissions];
+    // Không gửi extraPermissions → giữ nguyên các quyền `_all` hiện có
+    // (đúng hành vi cũ: field nào không gửi thì không đổi).
+    const currentAll = extraPermissions != null
+      ? sanitizeExtraPermissions(extraPermissions)
+      : (role.extraPermissions || []).filter((s) => ALL_ACCESS_PERMISSIONS.includes(s));
+    targetSlugs = mergePermissions(targetSlugs, currentAll);
+  } else if (matrix != null) {
+    targetSlugs = mergePermissions(
+      matrixToPermissions(buildMatrix({ matrix })),
+      sanitizeExtraPermissions(extraPermissions ?? role.extraPermissions)
+    );
+  } else if (extraPermissions != null) {
+    const current = await loadRolePermissionSlugs([role]);
+    const kept = (current.get(role.id) || []).filter((s) => !ALL_ACCESS_PERMISSIONS.includes(s));
+    targetSlugs = mergePermissions(kept, sanitizeExtraPermissions(extraPermissions));
   }
-  if (extraPermissions != null) updates.extraPermissions = sanitizeExtraPermissions(extraPermissions);
+  if (targetSlugs) {
+    updates.matrix = permissionsToMatrix(targetSlugs);
+    updates.extraPermissions = targetSlugs.filter((s) => ALL_ACCESS_PERMISSIONS.includes(s));
+  }
   updates.updatedAt = new Date().toISOString();
 
   await col.updateOne({ id: role.id }, { $set: updates });
-  invalidateRolePermissions(role.key);
   const updated = await col.findOne({ id: role.id });
+  let slugs;
+  if (targetSlugs) slugs = await setRolePermissions(updated, targetSlugs);
+  else {
+    const map = await loadRolePermissionSlugs([updated]);
+    slugs = map.get(updated.id) ?? [];
+  }
+  invalidateRolePermissions(role.key);
   const counts = await countByRole();
-  return toApi(updated, counts, { withPermissions: true });
+  return toApi(updated, counts, { withPermissions: true, slugs });
 }
 
 export async function deleteRole(keyOrId) {
@@ -243,6 +289,7 @@ export async function deleteRole(keyOrId) {
     throw new Error(`Còn ${inUse} tài khoản đang dùng vai trò này — hãy chuyển họ sang vai trò khác trước`);
   }
   await col.deleteOne({ id: role.id });
+  await getCollection(ROLE_PERMISSIONS_COLLECTION).deleteMany({ role_id: role.id });
   invalidateRolePermissions(role.key);
   return { ok: true, key: role.key };
 }
@@ -304,11 +351,287 @@ export async function getRolePermissions(roleKey) {
       await ensureSeeded();
       doc = await col.findOne(q);
     }
-    if (doc) return mergePermissions(matrixToPermissions(normalizeMatrix(doc.matrix)), doc.extraPermissions);
+    if (doc) {
+      // Nguồn sự thật: collection `role_permissions`. Vai trò chưa qua
+      // migration thì migrate ngay từ matrix/extra cũ (idempotent).
+      if (!isRoleMigrated(doc)) await migrateRolePermissions(doc);
+      const rows = await getCollection(ROLE_PERMISSIONS_COLLECTION)
+        .find({ role_id: doc.id }, { projection: { permission_slug: 1 } })
+        .toArray();
+      return [...new Set(rows.map((r) => r.permission_slug).filter(Boolean))];
+    }
   } catch {
     /* DB lỗi/collections trống → dùng cấu hình tĩnh bên dưới */
   }
   return [...(ROLES[key]?.permissions || [])];
+}
+
+// ── role_permissions: bảng gán quyền cho từng vai trò ──────────────────
+// Từ đợt refactor Role & Permission, đây là NGUỒN SỰ THẬT duy nhất về
+// "vai trò X có quyền gì": mỗi bản ghi là một cặp (role_id, permission_id)
+// — role_id là `id` (chuỗi) của document vai trò, permission_id là id số
+// của catalog `permissions`; role_key/permission_slug được ghi kèm
+// (denormalized) để middleware đọc thẳng slug mà không cần join mỗi
+// request. Cặp (role_id, permission_id) có unique index chống trùng.
+const ROLE_PERMISSIONS_COLLECTION = "role_permissions";
+
+/** Vai trò đã qua migration sang role_permissions chưa? */
+function isRoleMigrated(role) {
+  if (!role) return false;
+  return role.isBuiltIn ? role.rpSeedVersion === ROLES_SEED_VERSION : role.rpMigrated === true;
+}
+
+/** Map role_id → mảng slug quyền đã gán (một query cho nhiều vai trò). */
+export async function loadRolePermissionSlugs(roleDocs) {
+  const map = new Map();
+  const ids = (roleDocs || []).map((r) => r.id).filter(Boolean);
+  if (!ids.length) return map;
+  const rows = await getCollection(ROLE_PERMISSIONS_COLLECTION)
+    .find({ role_id: { $in: ids } }, { projection: { role_id: 1, permission_slug: 1 } })
+    .toArray();
+  for (const row of rows) {
+    if (!row.permission_slug) continue;
+    if (!map.has(row.role_id)) map.set(row.role_id, []);
+    map.get(row.role_id).push(row.permission_slug);
+  }
+  for (const [k, v] of map) map.set(k, [...new Set(v)]);
+  return map;
+}
+
+/**
+ * Đồng bộ role_permissions của MỘT vai trò về đúng tập slug đích (thêm
+ * phần thiếu, gỡ phần thừa). Quyền cơ bản (BASE_PERMISSIONS) luôn được
+ * giữ — đúng bất biến cũ của matrixToPermissions (mọi vai trò đều có
+ * chat/hồ sơ/bạn bè…). Slug không có trong catalog thì bỏ qua. Trả về
+ * tập slug thực tế sau đồng bộ.
+ */
+export async function setRolePermissions(roleDoc, slugs) {
+  await ensurePermissionsSeeded();
+  const wanted = [...new Set([...(Array.isArray(slugs) ? slugs : []), ...BASE_PERMISSIONS])];
+  const catDocs = await getCollection(PERMISSIONS_COLLECTION)
+    .find({ slug: { $in: wanted } }, { projection: { id: 1, slug: 1 } })
+    .toArray();
+  const target = new Map(catDocs.map((d) => [d.id, d.slug]));
+  const rpCol = getCollection(ROLE_PERMISSIONS_COLLECTION);
+  const existing = await rpCol.find({ role_id: roleDoc.id }, { projection: { id: 1, permission_id: 1 } }).toArray();
+  const existingIds = new Set(existing.map((r) => r.permission_id));
+  const now = new Date().toISOString();
+  const ops = [];
+  for (const [pid, slug] of target) {
+    if (!existingIds.has(pid)) {
+      ops.push({
+        insertOne: {
+          document: {
+            id: uid("rp"), role_id: roleDoc.id, permission_id: pid,
+            role_key: roleDoc.key, permission_slug: slug, createdAt: now,
+          },
+        },
+      });
+    }
+  }
+  for (const r of existing) {
+    if (!target.has(r.permission_id)) ops.push({ deleteOne: { filter: { id: r.id } } });
+  }
+  if (ops.length) {
+    try {
+      await rpCol.bulkWrite(ops, { ordered: false });
+    } catch (e) {
+      // Hai tiến trình migrate/gán đồng thời có thể đụng unique index — phần
+      // ghi còn lại vẫn đúng, lần đọc sau sẽ khớp. Chỉ nuốt lỗi trùng khóa.
+      if (e?.code !== 11000 && !/duplicate key/i.test(String(e?.message || ""))) throw e;
+    }
+  }
+  invalidateRolePermissions(roleDoc.key);
+  return [...target.values()];
+}
+
+/** Migrate MỘT vai trò: dựng role_permissions từ matrix/extra cũ + đặt cờ. */
+async function migrateRolePermissions(roleDoc) {
+  const slugs = await setRolePermissions(roleDoc, legacyEffectivePermissions(roleDoc));
+  await getCollection(COLLECTION).updateOne(
+    { id: roleDoc.id },
+    { $set: roleDoc.isBuiltIn ? { rpSeedVersion: ROLES_SEED_VERSION, rpMigrated: true } : { rpMigrated: true } }
+  );
+  return slugs;
+}
+
+/**
+ * Migration idempotent toàn cục: seed roles + catalog, rồi vai trò nào
+ * chưa chuyển thì dựng role_permissions từ dữ liệu gán hiện tại của nó.
+ * Chạy lại không nhân đôi (unique index + diff theo tập slug), không hồi
+ * sinh quyền admin đã thu hồi sau migration (cờ rpMigrated/rpSeedVersion
+ * đã đặt thì bỏ qua).
+ */
+export async function ensureRolePermissionsMigrated() {
+  await ensureSeeded();
+  await ensurePermissionsSeeded();
+  const roles = await getCollection(COLLECTION).find({}).toArray();
+  for (const role of roles) {
+    if (!isRoleMigrated(role)) await migrateRolePermissions(role);
+  }
+}
+
+/**
+ * Resolve tham chiếu vai trò từ API: chấp nhận id số (seq như GET
+ * /api/roles), `id` document, hoặc slug/key. Không thấy → null.
+ */
+export async function resolveRoleRef(ref) {
+  await ensureSeeded();
+  const col = getCollection(COLLECTION);
+  const raw = String(ref ?? "").trim();
+  if (!raw) return null;
+  let role = await col.findOne({ $or: [{ key: raw }, { id: raw }] });
+  if (role) return role;
+  if (/^\d+$/.test(raw)) {
+    // seq được gán lười trong listRolesPaged — gọi một lần để bảo đảm có.
+    await listRolesPaged({});
+    role = await col.findOne({ seq: Number(raw) });
+  }
+  return role || null;
+}
+
+function httpError(message, statusCode) {
+  const e = new Error(message);
+  e.statusCode = statusCode;
+  return e;
+}
+
+/** Chuẩn hoá + validate danh sách permission_ids theo catalog thật. */
+async function validatePermissionIds(permissionIds) {
+  if (!Array.isArray(permissionIds)) throw httpError("permission_ids phải là một mảng", 400);
+  const ids = [...new Set(permissionIds.map((v) => Number(v)).filter((n) => Number.isSafeInteger(n) && n >= 1))];
+  if (ids.length !== new Set(permissionIds.map((v) => Number(v))).size && permissionIds.some((v) => !Number.isSafeInteger(Number(v)) || Number(v) < 1)) {
+    throw httpError("permission_ids chứa giá trị không hợp lệ", 400);
+  }
+  await ensurePermissionsSeeded();
+  const docs = await getCollection(PERMISSIONS_COLLECTION).find({ id: { $in: ids } }).toArray();
+  if (docs.length !== ids.length) {
+    const found = new Set(docs.map((d) => d.id));
+    const missing = ids.filter((id) => !found.has(id));
+    throw httpError(`permission_ids không tồn tại trong catalog: ${missing.join(", ")}`, 400);
+  }
+  return docs;
+}
+
+function rolePermissionRow(role, rpRow, permDoc) {
+  const identity = roleIdentity(role);
+  return {
+    id: rpRow.id,
+    role_id: role.seq ?? null,
+    permission_id: rpRow.permission_id,
+    role_slug: role.key,
+    role_name_vi: identity.name_vi,
+    role_name_en: identity.name_en,
+    permission_slug: permDoc?.slug || rpRow.permission_slug,
+    permission_name_vi: permDoc?.name_vi || rpRow.permission_slug,
+    permission_name_en: permDoc?.name_en || rpRow.permission_slug,
+    module: permDoc?.module || null,
+  };
+}
+
+/**
+ * GET /api/rolePermissions — chỉ quyền của đúng vai trò được hỏi, kèm
+ * thông tin vai trò + quyền + module, phân trang page/per_page.
+ */
+export async function listRolePermissions(ref, query = {}) {
+  const role = await resolveRoleRef(ref);
+  if (!role) throw httpError("Không tìm thấy vai trò", 404);
+  if (!isRoleMigrated(role)) await migrateRolePermissions(role);
+  const page = Math.max(1, Number(query.page) || 1);
+  const perPage = Math.min(500, Math.max(1, Number(query.per_page ?? query.perPage) || 50));
+  const rpCol = getCollection(ROLE_PERMISSIONS_COLLECTION);
+  const total = await rpCol.countDocuments({ role_id: role.id });
+  const rows = await rpCol
+    .find({ role_id: role.id })
+    .sort({ permission_id: 1 })
+    .skip((page - 1) * perPage)
+    .limit(perPage)
+    .toArray();
+  const permDocs = await getCollection(PERMISSIONS_COLLECTION)
+    .find({ id: { $in: rows.map((r) => r.permission_id) } })
+    .toArray();
+  const byId = new Map(permDocs.map((d) => [d.id, d]));
+  return {
+    role: { id: role.seq ?? null, slug: role.key, ...roleIdentity(role) },
+    data: rows.map((r) => rolePermissionRow(role, r, byId.get(r.permission_id))),
+    total,
+    page,
+    perPage,
+  };
+}
+
+/** POST /api/rolePermissions — gán thêm quyền (đã có thì bỏ qua, không trùng). */
+export async function grantRolePermissions(ref, permissionIds) {
+  const role = await resolveRoleRef(ref);
+  if (!role) throw httpError("Không tìm thấy vai trò", 404);
+  const docs = await validatePermissionIds(permissionIds);
+  if (!isRoleMigrated(role)) await migrateRolePermissions(role);
+  const rpCol = getCollection(ROLE_PERMISSIONS_COLLECTION);
+  const existing = new Set(
+    (await rpCol.find({ role_id: role.id }, { projection: { permission_id: 1 } }).toArray()).map((r) => r.permission_id)
+  );
+  const now = new Date().toISOString();
+  const toAdd = docs.filter((d) => !existing.has(d.id));
+  if (toAdd.length) {
+    try {
+      await rpCol.insertMany(toAdd.map((d) => ({
+        id: uid("rp"), role_id: role.id, permission_id: d.id,
+        role_key: role.key, permission_slug: d.slug, createdAt: now,
+      })), { ordered: false });
+    } catch (e) {
+      if (e?.code !== 11000 && !/duplicate key/i.test(String(e?.message || ""))) throw e;
+    }
+  }
+  invalidateRolePermissions(role.key);
+  const total = await rpCol.countDocuments({ role_id: role.id });
+  return { role_id: role.seq ?? null, role_slug: role.key, added: toAdd.length, total_permissions: total };
+}
+
+/** PUT /api/rolePermissions/:roleId — đồng bộ TOÀN BỘ tập quyền của vai trò. */
+export async function syncRolePermissions(ref, permissionIds) {
+  const role = await resolveRoleRef(ref);
+  if (!role) throw httpError("Không tìm thấy vai trò", 404);
+  const docs = await validatePermissionIds(permissionIds);
+  const before = new Set(
+    (await getCollection(ROLE_PERMISSIONS_COLLECTION)
+      .find({ role_id: role.id }, { projection: { permission_id: 1 } }).toArray()).map((r) => r.permission_id)
+  );
+  const slugs = await setRolePermissions(role, docs.map((d) => d.slug));
+  const after = new Set(
+    (await getCollection(ROLE_PERMISSIONS_COLLECTION)
+      .find({ role_id: role.id }, { projection: { permission_id: 1 } }).toArray()).map((r) => r.permission_id)
+  );
+  const added = [...after].filter((id) => !before.has(id)).length;
+  const removed = [...before].filter((id) => !after.has(id)).length;
+  return { role_id: role.seq ?? null, role_slug: role.key, added, removed, total_permissions: slugs.length };
+}
+
+/**
+ * DELETE /api/rolePermissions — thu hồi quyền. Quyền cơ bản
+ * (BASE_PERMISSIONS) không thu hồi được (mọi vai trò đều phải có, đúng
+ * bất biến cũ) — chúng bị bỏ qua và báo ở `skipped_base`.
+ */
+export async function revokeRolePermissions(ref, permissionIds) {
+  const role = await resolveRoleRef(ref);
+  if (!role) throw httpError("Không tìm thấy vai trò", 404);
+  const docs = await validatePermissionIds(permissionIds);
+  const baseIds = new Set(
+    (await getCollection(PERMISSIONS_COLLECTION)
+      .find({ slug: { $in: BASE_PERMISSIONS } }, { projection: { id: 1 } }).toArray()).map((d) => d.id)
+  );
+  const revocable = docs.filter((d) => !baseIds.has(d.id));
+  const skippedBase = docs.length - revocable.length;
+  let removed = 0;
+  if (revocable.length) {
+    const r = await getCollection(ROLE_PERMISSIONS_COLLECTION).deleteMany({
+      role_id: role.id,
+      permission_id: { $in: revocable.map((d) => d.id) },
+    });
+    removed = r.deletedCount || 0;
+  }
+  invalidateRolePermissions(role.key);
+  const total = await getCollection(ROLE_PERMISSIONS_COLLECTION).countDocuments({ role_id: role.id });
+  return { role_id: role.seq ?? null, role_slug: role.key, removed, skipped_base: skippedBase, total_permissions: total };
 }
 
 // ── Bản nhớ quyền theo vai trò ──────────────────────────────────────────
@@ -343,6 +666,9 @@ export async function getRolePermissionsCached(roleKey) {
 // xuất ra định dạng "YYYY-MM-DD HH:mm:ss" giống response HiWeb.
 
 const PERMISSIONS_COLLECTION = "permissions";
+
+/** Meta tĩnh theo slug (nhãn mô-đun, cờ quyền cơ bản) để bổ sung vào bản ghi catalog đọc từ DB. */
+const CATALOG_META_BY_SLUG = new Map(PERMISSION_CATALOG.map((p) => [p.slug, p]));
 
 function fmtDateTime(value) {
   const d = value ? new Date(value) : new Date();
@@ -431,10 +757,18 @@ export async function listPermissionsPaged(query = {}) {
     .skip((page - 1) * perPage)
     .limit(perPage)
     .toArray();
-  const data = docs.map((d) => ({
-    id: d.id, slug: d.slug, name_vi: d.name_vi, name_en: d.name_en, module: d.module,
-    created_at: fmtDateTime(d.createdAt), updated_at: fmtDateTime(d.updatedAt || d.createdAt),
-  }));
+  const data = docs.map((d) => {
+    const meta = CATALOG_META_BY_SLUG.get(d.slug) || {};
+    return {
+      id: d.id, slug: d.slug, name_vi: d.name_vi, name_en: d.name_en, module: d.module,
+      // Field phụ cho UI (nhãn mô-đun + cờ quyền cơ bản) — lấy từ khai báo
+      // catalog tĩnh, không đổi shape phẳng cốt lõi của bản ghi.
+      module_vi: meta.module_vi || d.module,
+      module_en: meta.module_en || d.module,
+      is_base: !!meta.is_base,
+      created_at: fmtDateTime(d.createdAt), updated_at: fmtDateTime(d.updatedAt || d.createdAt),
+    };
+  });
   return { data, total, page, perPage };
 }
 
@@ -444,7 +778,7 @@ const ROLE_SORT_FIELDS = {
 };
 
 export async function listRolesPaged(query = {}) {
-  await ensureSeeded();
+  await ensureRolePermissionsMigrated();
   const col = getCollection(COLLECTION);
   // id số kiểu HiWeb: gắn dần `seq` cho các vai trò chưa có (built-in + custom).
   const all = await col.find({}).toArray();
@@ -481,6 +815,7 @@ export async function listRolesPaged(query = {}) {
     return cmp * sortDir;
   });
   const total = rows.length;
+  const slugMap = await loadRolePermissionSlugs(rows);
   const data = rows.slice((page - 1) * perPage, page * perPage).map((d) => ({
     id: d.seq,
     slug: d.key,
@@ -488,7 +823,8 @@ export async function listRolesPaged(query = {}) {
     name_en: d.name_en || d.label,
     created_at: fmtDateTime(d.createdAt),
     updated_at: fmtDateTime(d.updatedAt || d.createdAt),
-    total_permissions: permissionDetailsFromPermissions(mergePermissions(matrixToPermissions(normalizeMatrix(d.matrix)), d.extraPermissions)).length,
+    // Số quyền thật = số bản ghi role_permissions của vai trò.
+    total_permissions: (slugMap.get(d.id) || []).length,
   }));
   return { data, total, page, perPage };
 }
@@ -511,4 +847,4 @@ export async function seedAllAccessPermissions() {
   };
 }
 
-export { FEATURES as PERMISSION_FEATURES, PERMISSION_CATALOG, matrixToPermissions };
+export { PERMISSION_CATALOG, matrixToPermissions };

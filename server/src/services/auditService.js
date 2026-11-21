@@ -74,6 +74,9 @@ export const AUDIT = {
   ROLE_UPDATE: "role.update",
   ROLE_DELETE: "role.delete",
   PERMISSION_ALL: "role.all_permissions",
+  ROLE_PERMISSIONS_GRANT: "role.permissions.grant",
+  ROLE_PERMISSIONS_SYNC: "role.permissions.sync",
+  ROLE_PERMISSIONS_REVOKE: "role.permissions.revoke",
   CONFIG_UPDATE: "config.update",
   // Tra cứu dữ liệu quản trị qua chat AI (update_features.md §4): chỉ ghi
   // LOẠI truy vấn + số kết quả vào meta — không ghi nội dung câu hỏi đầy

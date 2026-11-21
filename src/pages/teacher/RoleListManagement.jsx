@@ -63,9 +63,12 @@ export default function RoleListManagement({ user, showToast }) {
   const [detail, setDetail] = useState(null);
 
   // ── Ma trận quyền (?m=rolePerms&role=…) — gộp từ trang /dashboard/roles-matrix
+  // Từ đợt refactor Role & Permission: danh mục lấy từ Permission Catalog
+  // (GET /api/permissions/catalog), quyền đã gán lấy từ
+  // GET /api/rolePermissions?role_id=…, lưu = PUT đồng bộ toàn bộ.
   const [roleMap, setRoleMap] = useState(null); // key → vai trò (GET /permissions/roles)
-  const [features, setFeatures] = useState(null);
   const [catalog, setCatalog] = useState(null);
+  const [permRoleRef, setPermRoleRef] = useState(null); // id số (seq) hoặc slug của vai trò đang sửa quyền
   const [permOpen, setPermOpen] = useState(false);
   const [permRole, setPermRole] = useState(null);
   const [permLoading, setPermLoading] = useState(false);
@@ -95,20 +98,17 @@ export default function RoleListManagement({ user, showToast }) {
     const t = setTimeout(() => {
       Promise.all([
         permissionService.listRoles(rangeAll()),
-        permissionService.features(),
-        permissionService.catalog(),
+        permissionService.catalogAll(),
       ])
-        .then(([rs, fs, cat]) => {
+        .then(([rs, cat]) => {
           const list = rs || [];
           setRoleMap(Object.fromEntries(list.map((r) => [r.key, r])));
           setBuiltinMap(Object.fromEntries(list.map((r) => [r.key, !!r.isBuiltIn])));
-          setFeatures(fs || []);
           setCatalog(cat || []);
         })
         .catch(() => {
           setRoleMap({});
           setBuiltinMap({});
-          setFeatures([]);
           setCatalog([]);
         });
     }, 0);
@@ -202,6 +202,9 @@ export default function RoleListManagement({ user, showToast }) {
     permRestoredRef.current = true; // mở bằng nút → không mở lại từ URL nữa
     setPermOpen(true);
     setPermRole({ key, name_vi: row.name_vi, name_en: row.name_en, label: row.label || row.name_vi });
+    // role_id cho API rolePermissions: ưu tiên id số của dòng (GET /api/roles),
+    // thiếu thì dùng slug (server resolve cả hai).
+    setPermRoleRef(row.id ?? key);
     setPermLoading(true);
     setPermError("");
     setPermSearch("");
@@ -211,19 +214,17 @@ export default function RoleListManagement({ user, showToast }) {
     modalParam.open("rolePerms", { role: key });
     try {
       // Vào thẳng link khi effect chính chưa tải xong danh mục → tải bù ngay.
-      let nextFeatures = features;
       let nextCatalog = catalog;
-      if (!nextFeatures || !nextCatalog) {
-        [nextFeatures, nextCatalog] = await Promise.all([
-          permissionService.features(),
-          permissionService.catalog(),
-        ]);
-        setFeatures(nextFeatures || []);
+      if (!nextCatalog) {
+        nextCatalog = await permissionService.catalogAll();
         setCatalog(nextCatalog || []);
       }
-      const detailRole = await permissionService.getRole(key);
+      const [detailRole, assigned] = await Promise.all([
+        permissionService.getRole(key),
+        permissionService.listRolePermissions(row.id ?? key),
+      ]);
       setPermRole(detailRole);
-      setGranted(new Set((detailRole.permission_details || []).map((p) => p.slug)));
+      setGranted(new Set((assigned || []).map((p) => p.permission_id)));
     } catch (e) {
       setPermError(e.message || "Không tải được quyền của vai trò");
     } finally {
@@ -240,8 +241,8 @@ export default function RoleListManagement({ user, showToast }) {
     if (!canEditPermissions || permission.is_base) return;
     setGranted((prev) => {
       const next = new Set(prev);
-      if (next.has(permission.slug)) next.delete(permission.slug);
-      else next.add(permission.slug);
+      if (next.has(permission.id)) next.delete(permission.id);
+      else next.add(permission.id);
       return next;
     });
   };
@@ -262,7 +263,7 @@ export default function RoleListManagement({ user, showToast }) {
   const filteredPermissions = useMemo(() => {
     const q = permSearch.trim().toLowerCase();
     return (catalog || []).filter((permission) => {
-      const isGranted = granted.has(permission.slug);
+      const isGranted = granted.has(permission.id);
       if (permStatus === "granted" && !isGranted) return false;
       if (permStatus === "not_granted" && isGranted) return false;
       if (permModule !== "all" && permission.module !== permModule) return false;
@@ -273,39 +274,25 @@ export default function RoleListManagement({ user, showToast }) {
   }, [catalog, granted, permModule, permSearch, permStatus]);
 
   const grantedCount = useMemo(
-    () => (catalog || []).filter((permission) => granted.has(permission.slug)).length,
+    () => (catalog || []).filter((permission) => granted.has(permission.id)).length,
     [catalog, granted]
   );
 
   const savePermissions = async () => {
-    // Chưa tải được danh mục quyền (API lỗi) mà bấm Lưu sẽ gửi ma trận rỗng →
+    // Chưa tải được danh mục quyền (API lỗi) mà bấm Lưu sẽ đồng bộ về rỗng →
     // xoá sạch quyền của vai trò, nên chặn ngay từ đầu.
-    if (!permRole || !features || !features.length || !catalog?.length) {
+    if (!permRole || !catalog?.length) {
       showToast?.("Chưa tải được danh mục quyền — không lưu được, thử lại sau", "error");
       return;
     }
-    const nextMatrix = {};
-    for (const feature of features) {
-      nextMatrix[feature.key] = { view: false, edit: false, delete: false };
-    }
-    for (const permission of catalog || []) {
-      if (permission.is_base) continue;
-      if (!granted.has(permission.slug) || !permission.feature_key || !permission.action) continue;
-      if (!nextMatrix[permission.feature_key]) {
-        nextMatrix[permission.feature_key] = { view: false, edit: false, delete: false };
-      }
-      nextMatrix[permission.feature_key][permission.action] = true;
-    }
-
-    // Quyền `_all` (toàn quyền) không có ô ma trận → gửi riêng ở extraPermissions,
-    // server chỉ nhận các slug `_all` hợp lệ (admin tổng mới được seed sẵn).
-    const extraPermissions = (catalog || [])
-      .filter((permission) => permission.slug.endsWith("_all") && granted.has(permission.slug))
-      .map((permission) => permission.slug);
-
+    // Đồng bộ toàn bộ qua API Role Permissions: gửi đúng tập id đang tick
+    // (quyền cơ bản luôn nằm trong tập — server cũng giữ chúng bắt buộc).
+    const permissionIds = (catalog || [])
+      .filter((permission) => granted.has(permission.id))
+      .map((permission) => permission.id);
     setPermSaving(true);
     try {
-      await permissionService.updateRole(permRole.key, { matrix: nextMatrix, extraPermissions });
+      await permissionService.syncRolePermissions(permRoleRef ?? permRole.key, permissionIds);
       closePermissions();
       showToast?.("Đã cập nhật quyền", "success");
       load(); // cột "Số quyền" trên bảng / thẻ tải lại theo
@@ -791,7 +778,7 @@ export default function RoleListManagement({ user, showToast }) {
                       </tr>
                     ) : (
                       filteredPermissions.map((permission, index) => {
-                        const checked = granted.has(permission.slug);
+                        const checked = granted.has(permission.id);
                         return (
                           <tr
                             key={permission.slug}

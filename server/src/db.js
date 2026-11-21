@@ -410,6 +410,63 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // Phân quyền (refactor Role & Permission): 3 thành phần tách riêng —
+    // `roles` (vai trò), `permissions` (catalog phẳng, id số), và
+    // `role_permissions` (bản ghi gán quyền cho từng vai trò; cặp
+    // (role_id, permission_id) unique ở indexDefs). role_id ở đây là `id`
+    // (chuỗi) của document vai trò; permission_id là id số của catalog.
+    roles: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "key"],
+        properties: {
+          id: { bsonType: "string" },
+          key: { bsonType: "string" },
+          label: { bsonType: "string" },
+          name_en: { bsonType: "string" },
+          description: { bsonType: "string" },
+          isBuiltIn: { bsonType: "bool" },
+          dashboardAccess: { bsonType: "bool" },
+          matrix: { bsonType: "object" },
+          extraPermissions: { bsonType: "array" },
+          seq: { bsonType: ["int", "double", "long"] },
+          rpMigrated: { bsonType: "bool" },
+          rpSeedVersion: { bsonType: ["int", "double", "long"] },
+          seedVersion: { bsonType: ["int", "double", "long"] },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
+    permissions: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "slug"],
+        properties: {
+          id: { bsonType: ["int", "double", "long"] },
+          slug: { bsonType: "string" },
+          name_vi: { bsonType: "string" },
+          name_en: { bsonType: "string" },
+          module: { bsonType: "string" },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
+    role_permissions: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "role_id", "permission_id"],
+        properties: {
+          id: { bsonType: "string" },
+          role_id: { bsonType: "string" },
+          permission_id: { bsonType: ["int", "double", "long"] },
+          role_key: { bsonType: "string" },
+          permission_slug: { bsonType: "string" },
+          createdAt: { bsonType: "string" },
+        },
+      }
+    },
     submissions: {
       $jsonSchema: {
         bsonType: "object",
@@ -997,6 +1054,16 @@ async function _runHeavyInit(database) {
     ["events", { id: 1 }, { unique: true }],
     ["events", { createdAt: -1 }],
     ["events", { enabled: 1, endsAt: 1 }],
+
+    // Phân quyền — catalog tra theo slug/id số; role_permissions unique
+    // theo cặp (role_id, permission_id) để gán trùng không nhân đôi.
+    ["roles", { key: 1 }, { unique: true }],
+    ["roles", { id: 1 }, { unique: true }],
+    ["permissions", { slug: 1 }, { unique: true }],
+    ["permissions", { id: 1 }, { unique: true }],
+    ["role_permissions", { role_id: 1, permission_id: 1 }, { unique: true }],
+    ["role_permissions", { role_id: 1 }],
+    ["role_permissions", { permission_id: 1 }],
 
     // event_rewards — unique (eventId, questId, userId) là chốt chống trao
     // trùng; tra theo học sinh để dựng trạng thái "đã mở khoá".
