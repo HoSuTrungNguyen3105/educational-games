@@ -3,17 +3,17 @@
 // bao giờ xuất hiện cùng lúc).
 //
 // Cấu trúc: thẻ danh tính bé (avatar + tên + lớp + số dư 🪙 ⭐) → nhóm
-// panel (Hôm nay + các mục lấy từ trang Hồ sơ) → nhóm lối tắt ra trang
-// riêng → Đăng xuất. Toàn bộ danh sách lấy từ kidNav.js để sidebar và
-// hàng chip mobile không lệch nhau.
+// panel (Hôm nay + các mục lấy từ trang Hồ sơ) → nhóm Khám phá nhanh
+// (mở trang đích ngay trong khung, sidebar không biến mất) → Đăng xuất.
+// Toàn bộ danh sách lấy từ kidNav.js để sidebar và hàng chip mobile
+// không lệch nhau.
 import { IconLogout } from "../../../components/ui/index.js";
-import { navigate } from "../../../lib/router.js";
-import { PANELS, SHORTCUTS, SHORTCUT_ICONS } from "../kid/kidNav.js";
+import { PANELS, SHORTCUTS, SHORTCUT_ICONS, exploreId } from "../kid/kidNav.js";
 import { AvatarWithBadge } from "./ProfileSections.jsx";
 
 const GROUP_LABEL = "text-[11px] font-extrabold uppercase tracking-wide text-ink/35 px-2.5 mb-1";
 
-export default function KidSidebar({ vm, kid, activeId, onSelect, onLogout }) {
+export default function KidSidebar({ vm, kid, activeId, onSelect, onExplore, onLogout }) {
   const { user, lv, coins, stars } = vm;
   const className = vm.className || (kid?.grade ? `Lớp ${kid.grade}` : "");
 
@@ -69,18 +69,24 @@ export default function KidSidebar({ vm, kid, activeId, onSelect, onLogout }) {
         })}
       </nav>
 
-      {/* ── Lối tắt một chạm ra trang riêng ── */}
+      {/* ── Khám phá nhanh: mở trang đích NGAY trong khung trang Bé
+          (sidebar trái vẫn hiện) thay vì điều hướng ra route riêng. ── */}
       <nav className="flex flex-col gap-0.5" aria-label="Lối tắt">
         <p className={GROUP_LABEL}>Khám phá nhanh</p>
-        {SHORTCUTS.map(({ key, label, path }) => {
+        {SHORTCUTS.map(({ key, label }) => {
           const Icon = SHORTCUT_ICONS[key];
+          const active = activeId === exploreId(key);
           return (
             <button
               key={key}
-              onClick={() => navigate(path)}
-              className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm font-semibold text-ink/70 transition hover:bg-ink/5 hover:text-ink"
+              onClick={() => onExplore?.(key)}
+              aria-current={active ? "page" : undefined}
+              className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm font-semibold transition hover:bg-ink/5"
+              style={active
+                ? { background: "var(--accent-bg)", color: "var(--accent)" }
+                : { color: "var(--ink, #1d2b52)", opacity: 0.85 }}
             >
-              <Icon className="w-5 h-5 shrink-0 text-ink/45" />
+              <Icon className="w-5 h-5 shrink-0" style={{ color: active ? "var(--accent)" : "var(--ink, #1d2b52)", opacity: active ? 1 : 0.45 }} />
               <span className="truncate">{label}</span>
             </button>
           );

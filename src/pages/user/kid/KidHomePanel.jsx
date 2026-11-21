@@ -17,7 +17,13 @@ import { SHORTCUTS } from "./kidNav.js";
 
 const MAX_TASKS = 4; // Bé không đọc nổi danh sách dài — 4 thẻ là vừa đủ.
 
-export default function KidHomePanel({ vm, kid, onClaimed }) {
+export default function KidHomePanel({ vm, kid, onClaimed, onExplore }) {
+  /* Lối tắt: ưu tiên mở nhúng trong khung trang Bé (giữ sidebar) khi
+   * trang cha truyền onExplore; thiếu handler thì về hành vi cũ. */
+  const goShortcut = (key, path) => {
+    if (onExplore) onExplore(key);
+    else navigate(path);
+  };
   const { user, coins, stars, lv } = vm;
   const className = vm.className || (kid?.grade ? `Lớp ${kid.grade}` : "");
 
@@ -162,7 +168,7 @@ export default function KidHomePanel({ vm, kid, onClaimed }) {
 
         {(tasks?.length || 0) > MAX_TASKS && (
           <button
-            onClick={() => navigate("/daily-tasks")}
+            onClick={() => goShortcut("tasks", "/daily-tasks")}
             className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl py-2 text-sm font-bold text-sky-600 hover:bg-sky-50 transition"
           >
             Xem tất cả nhiệm vụ <ChevronRight className="w-4 h-4" />
@@ -177,7 +183,7 @@ export default function KidHomePanel({ vm, kid, onClaimed }) {
           {SHORTCUTS.map(({ key, icon, label, path, tint }) => (
             <button
               key={key}
-              onClick={() => navigate(path)}
+              onClick={() => goShortcut(key, path)}
               className="group flex flex-col items-center gap-1.5 rounded-2xl bg-white p-3 shadow active:scale-95 transition"
               style={{ border: "1px solid var(--line)" }}
             >

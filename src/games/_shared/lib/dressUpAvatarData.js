@@ -3345,7 +3345,22 @@
       + (shoes ? shoes.r : '')
       + '</g>';
 
-    /* Chi tiết bộ đồ đè lên áo quần (mũ, thắt lưng, phù hiệu, bốt) */
+    /* Tóc trước của thân CÓ BỘ ĐỒ VẼ SẴN phải vẽ TRƯỚC suit.top(): mũ /
+     * headgear có sẵn (mũ giáp hiệp sĩ, mũ phù thủy, mũ đầu bếp, mũ cảnh
+     * sát, kính phi hành…) nằm trong suit.top() — tóc vẽ sau là tóc phủ
+     * mất mũ. Thứ tự này khớp file mẫu body/*.html (tóc → mũ) và ghi chú
+     * trong BODIES ("Mũ vẽ sau tóc nên tóc không xuyên mũ"). Tóc nằm ở
+     * segment riêng cùng class khớp đầu (.av-head) như segment kính/mũ,
+     * để chuyển động đầu vẫn đồng bộ. Mặt vẫn vẽ SAU suit.top() như cũ —
+     * có chi tiết cố ý nằm dưới mặt (râu ông già Noel: "miệng cười vẽ đè
+     * lên râu") nên không đảo cả khối top() xuống sau mặt. */
+    var hairFront = slots.indexOf('hair') >= 0
+      ? '<g fill="url(#kidHair)">' + hair.front + '</g>' : '';
+    if (suit && hairFront) {
+      o += '<g class="av-joint av-head av-hair-front">' + hairFront + '</g>';
+    }
+
+    /* Chi tiết bộ đồ đè lên áo quần (mũ có sẵn, thắt lưng, phù hiệu, bốt) */
     if (suit) {
       o += suit.top();
       if (acc && acc.f) o += acc.f;
@@ -3358,7 +3373,7 @@
       if (girl) o += lashes();
     }
     if (slots.indexOf('face') >= 0) o += FACES[s.face] ? FACES[s.face].svg : FACES.face_01.svg;
-    if (slots.indexOf('hair') >= 0) o += '<g fill="url(#kidHair)">' + hair.front + '</g>';
+    if (!suit) o += hairFront;
     o += '</g>';
     /* Kính + mũ: segment phụ của cùng khớp đầu (origin theo khung riêng) */
     var topBits = (GLASSES[s.glasses] ? GLASSES[s.glasses].svg : '')

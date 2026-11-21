@@ -256,6 +256,7 @@ function App() {
           onLogout={handleLogout}
           onUserLogin={() => setShowUserLogin(true)}
           showToast={showToast}
+          onSelectGame={selectGame}
         />
       </RouteShell>
     ),
@@ -266,6 +267,7 @@ function App() {
           onLogout={handleLogout}
           onUserLogin={() => setShowUserLogin(true)}
           showToast={showToast}
+          onSelectGame={selectGame}
         />
       </RouteShell>
     ),
