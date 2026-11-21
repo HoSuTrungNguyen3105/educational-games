@@ -27,6 +27,7 @@
  * không bao giờ thấy khung trống; dò xong có .riv mới chuyển đường.
  */
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import "../../styles/svgAvatarMotion.css";
 import {
   getCharacterBody,
   characterPublicUrl,

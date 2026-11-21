@@ -1,0 +1,154 @@
+/* =====================================================================
+ * Chuyển động cho avatar SVG ghép lớp (EG_DRESSUP) — đặc tả
+ * "Làm chuyển động + nâng cấp kho avatar SVG 2D".
+ *
+ * Nguyên tắc: transform CHỈ áp lên nhóm khớp (.av-joint) mà renderKid
+ * sinh ra — #avatar-head-group / #avatar-upper-body / #avatar-arm-left /
+ * #avatar-arm-right / #avatar-leg-left / #avatar-leg-right. Mọi lớp đồ
+ * (tóc, áo, quần, giày, kính, mũ, phụ kiện) nằm trọn trong một nhóm khớp
+ * nên khi nhóm xoay/co giãn, đồ đi theo đúng phần thân đó — không lệch.
+ *
+ * Trạng thái gắn trên container bao avatar:
+ *   .av-state-idle  — đứng yên: thân trên nhún thở, đầu lắc rất nhẹ
+ *   .av-state-walk  — đi: thân nhún nhịp bước, tay đánh ngược pha,
+ *                     chân bước luân phiên (thân liền khối chỉ nhún/lướt)
+ *   .av-state-jump  — nhảy một lần 620ms rồi JS tự trả về idle/walk
+ * CharacterStage (#160) không gắn av-state-* mà dùng class mood riêng
+ * (cs--mood-idle/wave/celebrate/encourage) — các rule :where() ở cuối
+ * file ánh xạ cùng keyframes sang mood đó với specificity thấp, để khi
+ * hai hệ lồng nhau (sân khấu trong MovableSvgAvatar) av-state thắng.
+ * ===================================================================== */
+
+.av-joint {
+  transform-box: fill-box;
+}
+
+/* Điểm neo khớp: cổ ở cuối khung đầu, vai ở đỉnh tay, hông ở đỉnh chân,
+ * thân trên neo ở hông để nhún thở không trượt chân. */
+.av-head { transform-origin: 50% 90%; }
+.av-upper { transform-origin: 50% 100%; }
+.av-arm { transform-origin: 50% 10%; }
+.av-leg { transform-origin: 50% 5%; }
+
+/* ── IDLE ─────────────────────────────────────────────────────────── */
+@keyframes av-breathe {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(1.6px) scaleY(1.006); }
+}
+@keyframes av-head-sway {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50% { transform: rotate(1.6deg); }
+}
+@keyframes av-arm-sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+.av-state-idle .av-upper { animation: av-breathe 2.8s ease-in-out infinite; }
+.av-state-idle .av-head { animation: av-head-sway 3.6s ease-in-out infinite; }
+.av-state-idle .av-arm-l { animation: av-arm-sway 2.8s ease-in-out infinite; }
+.av-state-idle .av-arm-r { animation: av-arm-sway 2.8s ease-in-out infinite reverse; }
+
+/* ── WALK ─────────────────────────────────────────────────────────── */
+@keyframes av-walk-bob {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-4px); }
+  50% { transform: translateY(0); }
+  75% { transform: translateY(-4px); }
+}
+@keyframes av-walk-arm-l {
+  0%, 100% { transform: rotate(9deg); }
+  50% { transform: rotate(-9deg); }
+}
+@keyframes av-walk-arm-r {
+  0%, 100% { transform: rotate(-9deg); }
+  50% { transform: rotate(9deg); }
+}
+@keyframes av-walk-leg-l {
+  0%, 100% { transform: rotate(6deg); }
+  50% { transform: rotate(-6deg); }
+}
+@keyframes av-walk-leg-r {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+@keyframes av-walk-head {
+  0%, 100% { transform: rotate(-1.2deg); }
+  50% { transform: rotate(1.2deg); }
+}
+
+.av-state-walk .av-upper { animation: av-walk-bob 0.56s ease-in-out infinite; }
+.av-state-walk .av-head { animation: av-walk-head 0.56s ease-in-out infinite; }
+.av-state-walk .av-arm-l { animation: av-walk-arm-l 0.56s ease-in-out infinite; }
+.av-state-walk .av-arm-r { animation: av-walk-arm-r 0.56s ease-in-out infinite; }
+.av-state-walk .av-leg-l { animation: av-walk-leg-l 0.56s ease-in-out infinite; }
+.av-state-walk .av-leg-r { animation: av-walk-leg-r 0.56s ease-in-out infinite; }
+
+/* ── JUMP (một lần, JS gỡ class sau ~650ms) ───────────────────────── */
+@keyframes av-jump-upper {
+  0% { transform: translateY(0) scaleY(1); }
+  30% { transform: translateY(3px) scaleY(0.97); }
+  55% { transform: translateY(-14px) scaleY(1.02); }
+  78% { transform: translateY(-4px) scaleY(1); }
+  100% { transform: translateY(0) scaleY(1); }
+}
+@keyframes av-jump-arm-l {
+  0%, 100% { transform: rotate(0deg); }
+  55% { transform: rotate(-22deg); }
+}
+@keyframes av-jump-arm-r {
+  0%, 100% { transform: rotate(0deg); }
+  55% { transform: rotate(22deg); }
+}
+@keyframes av-jump-head {
+  0%, 100% { transform: rotate(0deg); }
+  55% { transform: rotate(-2.4deg); }
+}
+
+.av-state-jump .av-upper { animation: av-jump-upper 0.62s ease-in-out 1; }
+.av-state-jump .av-head { animation: av-jump-head 0.62s ease-in-out 1; }
+.av-state-jump .av-arm-l { animation: av-jump-arm-l 0.62s ease-in-out 1; }
+.av-state-jump .av-arm-r { animation: av-jump-arm-r 0.62s ease-in-out 1; }
+
+/* ── Ánh xạ mood của CharacterStage (#160) sang cùng keyframes ──────
+ * CharacterStage bọc SVG trong .character-stage.cs--mood-*; khi không
+ * có av-state-* (trang chủ), nhân vật vẫn thở/vẫy theo mood sẵn có.
+ * :where() giữ specificity 0 cho phần mood để av-state-* thắng khi
+ * MovableSvgAvatar lồng ngoài CharacterStage. */
+:where(.character-stage.cs--mood-idle) .av-upper { animation: av-breathe 2.8s ease-in-out infinite; }
+:where(.character-stage.cs--mood-idle) .av-head { animation: av-head-sway 3.6s ease-in-out infinite; }
+:where(.character-stage.cs--mood-wave) .av-arm-r { animation: av-arm-sway 0.7s ease-in-out infinite; }
+:where(.character-stage.cs--mood-wave) .av-upper { animation: av-breathe 2.8s ease-in-out infinite; }
+:where(.character-stage.cs--mood-celebrate) .av-upper { animation: av-jump-upper 0.62s ease-in-out 2; }
+:where(.character-stage.cs--mood-celebrate) .av-arm-l { animation: av-jump-arm-l 0.62s ease-in-out 2; }
+:where(.character-stage.cs--mood-celebrate) .av-arm-r { animation: av-jump-arm-r 0.62s ease-in-out 2; }
+:where(.character-stage.cs--mood-encourage) .av-head { animation: av-head-sway 1.8s ease-in-out infinite; }
+
+/* ── Giảm chuyển động theo hệ điều hành ───────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .av-state-idle .av-upper,
+  .av-state-idle .av-head,
+  .av-state-idle .av-arm-l,
+  .av-state-idle .av-arm-r,
+  .av-state-walk .av-upper,
+  .av-state-walk .av-head,
+  .av-state-walk .av-arm-l,
+  .av-state-walk .av-arm-r,
+  .av-state-walk .av-leg-l,
+  .av-state-walk .av-leg-r,
+  .av-state-jump .av-upper,
+  .av-state-jump .av-head,
+  .av-state-jump .av-arm-l,
+  .av-state-jump .av-arm-r,
+  :where(.character-stage) .av-upper,
+  :where(.character-stage) .av-head,
+  :where(.character-stage) .av-arm-l,
+  :where(.character-stage) .av-arm-r {
+    animation: none !important;
+  }
+}
+
+/* Khi MovableSvgAvatar bọc CharacterStage (modal tuỳ chỉnh), bóng đổ do
+ * wrapper quản (dịch theo posX, thu nhỏ khi nhảy) — ẩn bóng riêng của
+ * sân khấu để không có hai bóng chồng nhau. */
+.du-stage-movable .cs__shadow { display: none; }
