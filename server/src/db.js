@@ -366,6 +366,50 @@ async function _runHeavyInit(database) {
         },
       }
     },
+    // Sự kiện & thử thách theo mùa (Đợt 3 capnhattinhnang.md) — admin tạo
+    // chiến dịch giới hạn thời gian KHÔNG cần sửa code. `quests` là mảng cột
+    // mốc tự chứa (loại nhiệm vụ đo được từ results thật + phần thưởng);
+    // `finalLeaderboard` là snapshot bảng xếp hạng lúc tổng kết (rỗng/chưa
+    // có cho tới khi finalizedAt được đặt).
+    events: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "name", "startsAt", "endsAt", "scope", "quests", "enabled", "createdBy", "createdAt", "updatedAt"],
+        properties: {
+          id: { bsonType: "string" },
+          name: { bsonType: "string" },
+          description: { bsonType: "string" },
+          startsAt: { bsonType: "string" },
+          endsAt: { bsonType: "string" },
+          scope: { bsonType: "object" },
+          quests: { bsonType: "array" },
+          enabled: { bsonType: "bool" },
+          finalizedAt: { bsonType: ["string", "null"] },
+          finalLeaderboard: { bsonType: "array" },
+          createdBy: { bsonType: "string" },
+          createdAt: { bsonType: "string" },
+          updatedAt: { bsonType: "string" },
+        },
+      }
+    },
+    // Sổ đã trao thưởng sự kiện — một bản ghi cho mỗi (sự kiện, cột mốc,
+    // học sinh); unique index ở indexDefs chống trao trùng kể cả khi hai
+    // đường trao (đọc tiến độ / tổng kết) chạy gần như đồng thời.
+    event_rewards: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["id", "eventId", "questId", "userId", "kind", "grantedAt"],
+        properties: {
+          id: { bsonType: "string" },
+          eventId: { bsonType: "string" },
+          questId: { bsonType: "string" },
+          userId: { bsonType: "string" },
+          kind: { enum: ["badge", "seed"] },
+          refId: { bsonType: "string" },
+          grantedAt: { bsonType: "string" },
+        },
+      }
+    },
     submissions: {
       $jsonSchema: {
         bsonType: "object",
@@ -395,6 +439,11 @@ async function _runHeavyInit(database) {
           userId: { bsonType: "string" },
           slots: { bsonType: "array" },
           inventory: { bsonType: "object" },
+          // Kho hạt giống được TẶNG (thưởng sự kiện theo mùa, Đợt 3):
+          // map plantTypeId -> số hạt. Trồng cây tiêu hạt ở đây trước khi
+          // trừ xu (xem plantTree trong gardenService). Doc cũ không có
+          // field này vẫn hợp lệ.
+          seeds: { bsonType: "object" },
           createdAt: { bsonType: "string" },
         },
       }
@@ -942,6 +991,18 @@ async function _runHeavyInit(database) {
     // danh sách ảnh lọc hàng loạt theo publicId và theo chủ.
     ["imageOwners", { publicId: 1 }, { unique: true }],
     ["imageOwners", { ownerId: 1 }],
+
+    // events (Đợt 3) — danh sách admin đọc mới nhất trước; processor tổng
+    // kết quét theo (enabled, endsAt).
+    ["events", { id: 1 }, { unique: true }],
+    ["events", { createdAt: -1 }],
+    ["events", { enabled: 1, endsAt: 1 }],
+
+    // event_rewards — unique (eventId, questId, userId) là chốt chống trao
+    // trùng; tra theo học sinh để dựng trạng thái "đã mở khoá".
+    ["event_rewards", { eventId: 1, questId: 1, userId: 1 }, { unique: true }],
+    ["event_rewards", { eventId: 1, userId: 1 }],
+    ["event_rewards", { userId: 1 }],
   ];
 
   const createdIndexes = [];

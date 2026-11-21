@@ -96,7 +96,7 @@ export async function getGarden(userId) {
     { $set: { waterDrops: garden.waterDrops, lastWaterRegenAt: garden.lastWaterRegenAt } }
   );
 
-  return { slots, inventory: garden.inventory || {}, waterDrops: garden.waterDrops, lastWaterRegenAt: garden.lastWaterRegenAt };
+  return { slots, inventory: garden.inventory || {}, seeds: garden.seeds || {}, waterDrops: garden.waterDrops, lastWaterRegenAt: garden.lastWaterRegenAt };
 }
 
 export async function plantTree(userId, slotIndex, plantType) {
@@ -108,7 +108,6 @@ export async function plantTree(userId, slotIndex, plantType) {
   const userCol = getCollection("users");
   const user = await userCol.findOne({ id: userId });
   if (!user) throw new Error("Không tìm thấy người dùng");
-  if ((user.coins || 0) < type.seedPrice) throw new Error("Không đủ xu để mua hạt giống");
 
   const col = getCollection("gardens");
   let garden = await col.findOne({ userId });
@@ -124,7 +123,20 @@ export async function plantTree(userId, slotIndex, plantType) {
   if (!slot) throw new Error("Vị trí không tồn tại");
   if (slot.plant) throw new Error("Vị trí này đã có cây");
 
-  await addCoins(userId, -type.seedPrice);
+  // Hạt ĐƯỢC TẶNG (thưởng sự kiện theo mùa — map `seeds` trên doc vườn)
+  // được tiêu TRƯỚC: có hạt của đúng loại này thì trồng bằng hạt, không
+  // trừ xu. Không có hạt → giữ nguyên hành vi cũ (trừ xu theo seedPrice).
+  const giftedSeeds = Number(garden.seeds?.[plantType]) || 0;
+  const useGiftedSeed = giftedSeeds > 0;
+  if (!useGiftedSeed && (user.coins || 0) < type.seedPrice) {
+    throw new Error("Không đủ xu để mua hạt giống");
+  }
+
+  if (useGiftedSeed) {
+    garden.seeds[plantType] = giftedSeeds - 1;
+  } else {
+    await addCoins(userId, -type.seedPrice);
+  }
 
   const plantId = `plant_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const plant = {
@@ -135,10 +147,13 @@ export async function plantTree(userId, slotIndex, plantType) {
   };
 
   garden.slots[slotIndex].plant = plant;
-  await col.updateOne({ userId }, { $set: { slots: garden.slots } });
+  const setDoc = { slots: garden.slots };
+  if (useGiftedSeed) setDoc.seeds = garden.seeds;
+  await col.updateOne({ userId }, { $set: setDoc });
 
   return {
     success: true,
+    usedGiftedSeed: useGiftedSeed,
     plant: { ...plant, progress: 0, isReady: false },
   };
 }

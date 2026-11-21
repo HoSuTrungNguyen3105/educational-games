@@ -1055,6 +1055,26 @@ export const remediationService = {
   },
 };
 
+// Sự kiện & thử thách theo mùa (Đợt 3): admin CRUD qua /events/admin
+// (chỉ admin — server đòi quyền events.manage); phía học sinh qua
+// /events/active + /events/:id (tiến độ do server tính từ results thật,
+// đạt mốc thì server trao thưởng ngay khi đọc).
+export const eventService = {
+  async listAdmin(range) {
+    if (hasRange(range)) return fetchRangedList("/events/admin", range);
+    return apiFetch("/events/admin") || [];
+  },
+  async topics() { return apiFetch("/events/admin/topics") || []; },
+  async create(data) { return apiFetch("/events/admin", { method: "POST", body: data }); },
+  async update(id, data) { return apiFetch(`/events/admin/${id}`, { method: "PUT", body: data }); },
+  async setEnabled(id, enabled) { return apiFetch(`/events/admin/${id}/enabled`, { method: "PATCH", body: { enabled } }); },
+  async remove(id) { return apiFetch(`/events/admin/${id}`, { method: "DELETE" }); },
+  async leaderboard(id) { return apiFetch(`/events/admin/${id}/leaderboard`); },
+  async finalize(id) { return apiFetch(`/events/admin/${id}/finalize`, { method: "POST", body: {} }); },
+  async active() { return apiFetch("/events/active") || []; },
+  async detail(id) { return apiFetch(`/events/${id}`); },
+};
+
 export const assignmentService = {
   async list(classId, range) {
     const path = classId ? `/assignments?classId=${classId}` : "/assignments";

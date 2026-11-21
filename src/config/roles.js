@@ -20,6 +20,7 @@ export const FEATURES = [
   { key: "reports", label: "Báo cáo & thống kê", name_en: "Reports & statistics", permissions: { view: "reports.view", edit: "reports.edit", delete: "reports.delete" } },
   { key: "coins", label: "Coin & Progress", name_en: "Coins & progress", permissions: { view: "coins.view", edit: "coins.edit", delete: "coins.delete" } },
   { key: "daily_tasks", label: "Nhiệm vụ ngày", name_en: "Daily tasks", permissions: { view: "daily_tasks.view", edit: "daily_tasks.edit", delete: "daily_tasks.delete" } },
+  { key: "events", label: "Sự kiện theo mùa", name_en: "Seasonal events", permissions: { view: "events.view", edit: "events.edit", delete: "events.delete" } },
   { key: "reminders", label: "Nhắc nhở", name_en: "Reminders", permissions: { view: "reminders.view", edit: "reminders.edit", delete: "reminders.delete" } },
   { key: "chat", label: "Tin nhắn", name_en: "Messages", permissions: { view: "chat.view", edit: "chat.edit", delete: "chat.delete" } },
   { key: "attendance", label: "Chấm công", name_en: "Attendance", permissions: { view: "attendance.view", edit: "attendance.edit", delete: "attendance.delete" } },
@@ -58,6 +59,7 @@ const LEGACY_CELLS = {
   "reports.manage": ["reports", "edit"],
   "coins.manage": ["coins", "edit"],
   "daily-tasks.manage": ["daily_tasks", "edit"],
+  "events.manage": ["events", "edit"],
   "daily-tasks": ["daily_tasks", "view"],
   "reminders.manage": ["reminders", "edit"],
   "chat": ["chat", "view"],
@@ -166,7 +168,9 @@ export const ALL_PERMISSIONS = [...new Set([...Object.keys(CELL_BY_PERMISSION), 
 
 // Đổi khi muốn API seed lại built-in roles (xem ensureSeeded trong permissionService)
 // v4: thêm vai trò `parent` (phụ huynh) cho đợt 3.
-export const ROLES_SEED_VERSION = 4;
+// v5: thêm feature `events` (Sự kiện theo mùa) — admin (toàn quyền) có
+// sẵn events.*, giáo viên/học sinh mặc định không có ô nào của feature này.
+export const ROLES_SEED_VERSION = 5;
 
 export const ROLES = {
   admin: {
@@ -316,6 +320,7 @@ export function matrixToPermissions(matrix = {}) {
   if (matrix?.reports?.edit) perms.push("reports.manage");
   if (matrix?.coins?.edit) perms.push("coins.manage");
   if (matrix?.daily_tasks?.edit) perms.push("daily-tasks.manage");
+  if (matrix?.events?.edit) perms.push("events.manage");
   if (matrix?.daily_tasks?.view) perms.push("daily-tasks");
   if (matrix?.reminders?.edit) perms.push("reminders.manage");
   if (matrix?.attendance?.edit) perms.push("attendance.checkin");

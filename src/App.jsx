@@ -101,6 +101,7 @@ const CategoryPage = lazy(() => import("./pages/CategoryPage.jsx"));
 const LessonListPage = lazy(() => import("./pages/user/LessonListPage.jsx"));
 const LessonPlayPage = lazy(() => import("./pages/user/LessonPlayPage.jsx"));
 const QuestionSetListPage = lazy(() => import("./pages/user/QuestionSetListPage.jsx"));
+const StudentEventsPage = lazy(() => import("./pages/user/StudentEventsPage.jsx"));
 const QuestionSetPracticePage = lazy(() => import("./pages/user/QuestionSetPracticePage.jsx"));
 // English B1 (src/englishB1) — phân hệ tự chứa, tiến độ lưu local
 const EnglishB1Dashboard = lazy(() => import("./englishB1/pages/EnglishB1Dashboard.jsx"));
@@ -371,6 +372,18 @@ function App() {
     ),
     "question-set-practice": () => (
       <QuestionSetPracticePage setId={route.params?.setId} userAuth={userAuth} />
+    ),
+    // Sự kiện theo mùa phía học sinh (Đợt 3): danh sách sự kiện đang chạy
+    // thuộc phạm vi của bé + chi tiết một sự kiện (tiến độ + xếp hạng).
+    events: () => (
+      <RouteShell toast={toast} showBack={false}>
+        <StudentEventsPage userAuth={userAuth} onUserLogin={() => setShowUserLogin(true)} />
+      </RouteShell>
+    ),
+    "event-detail": () => (
+      <RouteShell toast={toast}>
+        <StudentEventsPage userAuth={userAuth} eventId={route.params?.eventId} onUserLogin={() => setShowUserLogin(true)} />
+      </RouteShell>
     ),
     // English B1: mọi trang tự render EnglishB1Shell (có header + tab riêng)
     // nên bọc RouteShell showBack={false} như Bài học/Danh mục; làm bài thi

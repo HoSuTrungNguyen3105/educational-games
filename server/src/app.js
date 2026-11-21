@@ -36,6 +36,7 @@ import classesRouter from "./routes/classes.js";
 import assignmentsRouter from "./routes/assignments.js";
 import heatmapRouter from "./routes/heatmap.js";
 import remediationRouter from "./routes/remediation.js";
+import eventsRouter from "./routes/events.js";
 import avatarRouter from "./routes/avatar.js";
 import gardenRouter from "./routes/garden.js";
 import plantTypesRouter from "./routes/plantTypes.js";
@@ -54,6 +55,7 @@ import lessonsRouter from "./routes/lessons.js";
 import documentsRouter from "./routes/documents.js";
 import systemRouter, { publicRouter as publicConfigRouter } from "./routes/system.js";
 import * as reminderService from "./services/reminderService.js";
+import * as eventService from "./services/eventService.js";
 import * as petService from "./services/petService.js";
 import { verifyToken } from "./services/authService.js";
 import { getRoleIdentity } from "./services/permissionService.js";
@@ -168,6 +170,7 @@ app.use("/api/classes", classesRouter);
 app.use("/api/assignments", assignmentsRouter);
 app.use("/api/heatmap", heatmapRouter);
 app.use("/api/remediation", remediationRouter);
+app.use("/api/events", eventsRouter);
 app.use("/api/avatar", avatarRouter);
 app.use("/api/garden", gardenRouter);
 app.use("/api/plant-types", plantTypesRouter);
@@ -226,3 +229,14 @@ setInterval(() => {
   });
 }, 10000);
 console.log("[ReminderScheduler] Started — checking every 10s");
+
+// ── Background scheduler: tổng kết sự kiện theo mùa vừa kết thúc ──
+// Cùng pattern với scheduler nhắc nhở ở trên: quét mỗi 60s, sự kiện
+// enabled đã qua endsAt mà chưa có finalizedAt → trao thưởng phần chưa
+// nhận + snapshot bảng xếp hạng (eventService.processEndedEvents).
+setInterval(() => {
+  eventService.processEndedEvents().catch((e) => {
+    console.error("[EventScheduler] Error:", e.message);
+  });
+}, 60000);
+console.log("[EventScheduler] Started — checking every 60s");
