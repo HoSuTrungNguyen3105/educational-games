@@ -758,6 +758,7 @@
 }
 @media (max-width: 820px) {
   .gq-checkin--desktop { display: none; }
+  .gq-event--desktop { display: none; }
   .gq-checkin--mobile { margin: 14px 0 4px; padding: 12px 14px; gap: 10px; }
   .gq-checkin--mobile .gq-checkin__flame { width: 44px; height: 44px; }
   .gq-checkin--mobile .gq-checkin__btn { padding: 11px 14px; font-size: 14px; }

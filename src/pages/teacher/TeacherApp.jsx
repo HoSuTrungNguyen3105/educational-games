@@ -34,6 +34,7 @@ const TeacherProfile = lazy(() => import('./TeacherProfile.jsx'));
 const ClassManagement = lazy(() => import('./ClassManagement.jsx'));
 const ClassToolsPage = lazy(() => import('./class-tools/ClassToolsPage.jsx'));
 const KnowledgeHeatmapPage = lazy(() => import('./KnowledgeHeatmapPage.jsx'));
+const EventManagement = lazy(() => import('./EventManagement.jsx'));
 const ClassStudents = lazy(() => import('./ClassStudents.jsx'));
 const AssignmentCreate = lazy(() => import('./AssignmentCreate.jsx'));
 const AssignmentEdit = lazy(() => import('./AssignmentEdit.jsx'));
@@ -140,6 +141,7 @@ export default function TeacherApp({ user, route, onLogout, showToast, toast }) 
         {page === "admin-classes" && <ClassManagement showToast={showToast} />}
         {page === "admin-class-tools" && <ClassToolsPage showToast={showToast} />}
         {page === "admin-heatmap" && <KnowledgeHeatmapPage showToast={showToast} />}
+        {page === "admin-events" && <EventManagement showToast={showToast} />}
         {page === "admin-class-students" && <ClassStudents classId={route.params?.classId} />}
         {page === "admin-assignments" && <AssignmentList showToast={showToast} />}
         {page === "admin-assignment-new" && <AssignmentCreate />}

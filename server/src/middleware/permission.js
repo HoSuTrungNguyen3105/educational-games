@@ -35,6 +35,7 @@ const LABELS = (() => {
   for (const f of FEATURES) m[`${f.key}_all`] = `${f.label} · toàn quyền`;
   // Quyền kiểu cũ không có trong ma trận ⇒ tự đặt nhãn cho câu 403 dễ hiểu.
   m["attendance.checkin"] = "Chấm công · điểm danh";
+  m["events.manage"] = "Sự kiện theo mùa · quản lý";
   return m;
 })();
 const label = (perm) => LABELS[perm] || perm;
@@ -118,6 +119,12 @@ const RULES = [
   { re: /^\/heatmap\//, perms: ["reports.view"] },                       // bản đồ nhiệt điểm mù — giáo viên/admin (route còn chặn requireRoles + phạm vi lớp)
   { m: "GET", re: /^\/remediation\//, perms: ["reports.view"] },         // gói can thiệp 1 chạm: xem trước câu cơ bản cùng chủ đề
   { m: "POST", re: /^\/remediation\//, perms: ["assignments.edit"] },    // gói can thiệp 1 chạm: tạo gói (route còn chặn requireRoles + phạm vi lớp)
+  // Sự kiện theo mùa (Đợt 3): CRUD admin đòi quyền events.manage (chỉ
+  // admin có — feature "events" trong src/config/roles.js); đường học
+  // sinh đọc sự kiện chỉ cần quyền hồ sơ như các trang cá nhân khác.
+  // Rule /events/admin PHẢI đứng trước rule /events chung.
+  { re: /^\/events\/admin(\/|$)/, perms: ["events.manage"] },
+  { re: /^\/events(\/|$)/, m: "GET", perms: [PROFILE] },
 
   // ── Nhiệm vụ ngày / nhắc nhở / thông báo / chat ──────────────────────
   { re: /^\/daily-tasks\/admin\//, feature: "daily_tasks" },

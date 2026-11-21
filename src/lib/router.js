@@ -63,6 +63,8 @@ const ROUTES = [
   // localStorage máy giáo viên, không qua API.
   { name: "admin-class-tools", pattern: "/dashboard/class-tools" },
   { name: "admin-heatmap", pattern: "/dashboard/heatmap" },
+  // Sự kiện & thử thách theo mùa (Đợt 3): quản trị chiến dịch cho admin
+  { name: "admin-events", pattern: "/dashboard/events" },
   { name: "admin-class-students", pattern: "/dashboard/classes/:classId/students" },
   { name: "admin-assignments", pattern: "/dashboard/assignments" },
   { name: "admin-assignment-new", pattern: "/dashboard/assignments/new" },
@@ -118,6 +120,10 @@ const ROUTES = [
   // Bộ đề luyện tập: combo câu hỏi đóng gói từ ngân hàng câu hỏi — danh sách
   // thẻ combo + trang tự luyện cả bộ (API /question-banks/sets).
   { name: "question-sets", pattern: "/question-sets" },
+  // Sự kiện theo mùa phía học sinh: danh sách sự kiện đang chạy thuộc
+  // phạm vi của mình + chi tiết một sự kiện (tiến độ + bảng xếp hạng).
+  { name: "events",       pattern: "/events" },
+  { name: "event-detail", pattern: "/events/:eventId" },
   { name: "question-set-practice", pattern: "/question-sets/:setId" },
   // English B1 (src/englishB1) — phân hệ học tiếng Anh tự chứa, tiến độ lưu
   // local. Route tĩnh PHẢI đứng trước :examId (router khớp theo thứ tự).

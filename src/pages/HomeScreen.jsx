@@ -20,6 +20,7 @@ import { PetAvatar } from '../components/PetAvatar.jsx'
 import { usePet, moodLabel } from '../pet/petApi.js'
 import DailyGiftModal from '../components/home/DailyGiftModal.jsx'
 import CheckinCard from '../components/home/CheckinCard.jsx'
+import SeasonalEventBlock from '../components/home/SeasonalEventBlock.jsx'
 import { useCheckin } from '../hooks/useCheckin.js'
 import { useKidSettings, ageBandLabel } from '../lib/kidSettings.js'
 import { useScrollLock } from '../hooks/useScrollLock.js'
@@ -1128,6 +1129,10 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             <CheckinCard state={checkinState} onCheckedIn={handleCheckedIn} className="gq-checkin--mobile" />
           )}
 
+          {/* Sự kiện theo mùa (Đợt 3) — bản mobile, nằm trong .gq-mhome
+              như CheckinCard mobile. Tự ẩn khi không có sự kiện đang chạy. */}
+          <SeasonalEventBlock userAuth={userAuth} />
+
         </div>
 
         {/* ─────────── KHUNG CẢNH: HEADER + HERO trên nền tranh ───────────
@@ -1396,6 +1401,12 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         {userAuth?.user?.role === "student" && (
           <CheckinCard state={checkinState} onCheckedIn={handleCheckedIn} className="gq-checkin--desktop" />
         )}
+
+        {/* ─────────── SỰ KIỆN THEO MÙA ───────────
+            Ngay dưới khối điểm danh, chỉ hiện khi có sự kiện đang chạy
+            thuộc phạm vi của bé (component tự ẩn khi không có). Bản
+            mobile nằm trong .gq-mhome; bản này ẩn ở ≤820px (CSS). */}
+        <SeasonalEventBlock userAuth={userAuth} className="gq-event--desktop" />
 
         {/* ─────────── HÔM NAY CỦA BÉ ─────────── */}
         <section className="gq-sect">
