@@ -10,31 +10,44 @@
 //     ProfileSections nhận `vm` như cũ → không nhân bản logic.
 //   • KidSidebar / hàng chip — điều hướng, danh sách từ kid/kidNav.js.
 //   • Panel nội dung: KidHomePanel (Hôm nay) + các section của trang Hồ sơ.
+//   • Mục đang mở đồng bộ lên URL qua ?panel=<id> (hooks/useHashParam) —
+//     F5/dán link quay lại đúng mục. Khám phá nhanh (id "x-<key>") mở
+//     trang đích NHÚNG trong cột nội dung, sidebar trái không biến mất.
 //
 // Breakpoint: ≥1024px (lg) hiện sidebar, ẩn BottomNav — khớp nhau tuyệt đối
 // nên không bao giờ có hai thanh điều hướng cùng lúc.
-import { useEffect, useState } from "react";
-import { Apple, CircleX, Share2, Wallet } from "lucide-react";
+import { useEffect } from "react";
+import { Apple, ArrowLeft, CircleX, Share2, Wallet } from "lucide-react";
 import { navigate } from "../../lib/router.js";
 import { useKidSettings } from "../../lib/kidSettings.js";
 import BottomNav from "../../components/BottomNav.jsx";
 import useChatUnread from "../../hooks/useChatUnread.js";
+import useHashParam from "../../hooks/useHashParam.js";
 import DressUpCustomizer from "../../components/avatar/DressUpCustomizer.jsx";
 import { IconNotification } from "../../components/ui/index.js";
 import { speak } from "../../lib/speech.js";
 import useProfileVm from "./profile/useProfileVm.jsx";
 import KidSidebar from "./profile/KidSidebar.jsx";
 import KidHomePanel from "./kid/KidHomePanel.jsx";
-import { PANELS } from "./kid/kidNav.js";
+import {
+  PANELS, PANEL_IDS, SHORTCUT_ICONS,
+  exploreId, exploreKeyOf, shortcutByKey,
+} from "./kid/kidNav.js";
 import {
   PersonalInfoCard, WalletRows,
   OutfitSection, ClassSection, GamesSection, KidSettingsSection, AppSection,
 } from "./profile/ProfileSections.jsx";
+import CategoryPage from "../CategoryPage.jsx";
+import DailyTasksPage from "./DailyTasksPage.jsx";
+import GardenPage from "./GardenPage.jsx";
+import AchievementsPage from "./AchievementsPage.jsx";
+import LeaderboardPage from "./LeaderboardPage.jsx";
+import StorePage from "./StorePage.jsx";
 
 const CARD_STYLE = { background: "var(--card)", border: "1px solid var(--line)" };
 const panelCls = (activeId, id) => (activeId === id ? undefined : "hidden");
 
-export default function KidDashboard({ userAuth, onLogout, onUserLogin, showToast }) {
+export default function KidDashboard({ userAuth, onLogout, onUserLogin, showToast, onSelectGame }) {
   const kid = useKidSettings();
   const { chatUnread } = useChatUnread(userAuth);
 
@@ -45,9 +58,20 @@ export default function KidDashboard({ userAuth, onLogout, onUserLogin, showToas
     customizer, setCustomizer, outfit, handleSaveOutfit,
   } = useProfileVm({ userAuth, showToast, onLogout, onBack: () => navigate("/") });
 
-  // Panel đang chọn — mặc định "Hôm nay". Đổi panel chỉ ẩn/hiện (giữ trạng
-  // thái trong section: danh sách game đang mở, tab cài đặt push…).
-  const [activeId, setActiveId] = useState("home");
+  // Panel đang chọn — mặc định "Hôm nay", ĐỒNG BỘ với ?panel= trên URL
+  // (theo mẫu ?tab= của AvatarManagement): bấm mục ở sidebar/chip thì
+  // URL mang theo ?panel=<id> bằng replaceState, tải lại trang (F5) hay
+  // dán link là quay lại đúng mục đang mở; ?panel= lạ → về "home".
+  // Đổi panel chỉ ẩn/hiện (giữ trạng thái trong section: danh sách game
+  // đang mở, tab cài đặt push…).
+  const [activeId, setActiveId] = useHashParam("panel", PANEL_IDS, "home");
+
+  // Khám phá nhanh: id dạng "x-<key>" = trang đích mở NHÚNG trong cột
+  // nội dung này (xem EXPLORE_VIEWS bên dưới) — sidebar trái không mất.
+  const exploreKey = exploreKeyOf(activeId);
+  const exploreMeta = exploreKey ? shortcutByKey(exploreKey) : null;
+  const openExplore = (key) => setActiveId(exploreId(key));
+  const backFromExplore = () => setActiveId("home");
 
   // Đọc lời chào một lần khi vào trang (chỉ khi bé đã đăng nhập).
   const userName = vm.user.name;
@@ -57,6 +81,8 @@ export default function KidDashboard({ userAuth, onLogout, onUserLogin, showToas
   }, [userName, showLoading]);
 
   const activeItem = PANELS.find((p) => p.id === activeId) || PANELS[0];
+  const HeaderIcon = exploreMeta ? SHORTCUT_ICONS[exploreMeta.key] : activeItem.Icon;
+  const headerLabel = exploreMeta ? exploreMeta.label : activeItem.label;
 
   // ── Chưa đăng nhập ──
   if (!userAuth?.user) {
@@ -142,6 +168,7 @@ export default function KidDashboard({ userAuth, onLogout, onUserLogin, showToas
             kid={kid}
             activeId={activeId}
             onSelect={setActiveId}
+            onExplore={openExplore}
             onLogout={onLogout}
           />
 
@@ -150,8 +177,8 @@ export default function KidDashboard({ userAuth, onLogout, onUserLogin, showToas
             {/* Tiêu đề panel — ẩn trên mobile vì chip đã ghi nhãn; desktop hiện
               tiêu đề lớn để bé biết mình đang ở mục nào. */}
             <div className="mb-3 hidden items-center gap-2 lg:flex">
-              <activeItem.Icon className="w-6 h-6" style={{ color: "var(--accent)" }} />
-              <h1 className="font-display text-xl text-ink">{activeItem.label}</h1>
+              <HeaderIcon className="w-6 h-6" style={{ color: "var(--accent)" }} />
+              <h1 className="font-display text-xl text-ink">{headerLabel}</h1>
             </div>
 
             {/* ── Hàng chip chọn mục (mobile, thay cho sidebar) ── */}
@@ -183,8 +210,55 @@ export default function KidDashboard({ userAuth, onLogout, onUserLogin, showToas
                 vm={vm}
                 kid={kid}
                 onClaimed={() => vm.refreshProfile?.()}
+                onExplore={openExplore}
               />
             </div>
+
+            {/* ── KHÁM PHÁ NHANH (nhúng): trang đích render ngay tại đây
+                nên sidebar trái + BottomNav của trang Bé vẫn còn nguyên.
+                Chỉ mount trang đang mở (các trang tự nạp dữ liệu riêng);
+                nút Quay lại của từng trang đích trỏ về panel Hôm nay.
+                CategoryPage tắt BottomNav riêng (hideBottomNav) vì trang
+                Bé đã có một thanh. ── */}
+            {exploreKey === "categories" && (
+              <div data-explore="categories">
+                <CategoryPage onSelectGame={onSelectGame} userAuth={userAuth} hideBottomNav />
+              </div>
+            )}
+            {exploreKey === "tasks" && (
+              <div data-explore="tasks">
+                <DailyTasksPage userAuth={userAuth} onBack={backFromExplore} />
+              </div>
+            )}
+            {exploreKey === "garden" && (
+              <div data-explore="garden">
+                <GardenPage userAuth={userAuth} onBack={backFromExplore} showToast={showToast} />
+              </div>
+            )}
+            {exploreKey === "achievements" && (
+              <div data-explore="achievements">
+                <AchievementsPage userAuth={userAuth} onBack={backFromExplore} />
+              </div>
+            )}
+            {exploreKey === "leaderboard" && (
+              <div data-explore="leaderboard">
+                <LeaderboardPage userAuth={userAuth} onBack={backFromExplore} />
+              </div>
+            )}
+            {exploreKey === "store" && (
+              <div data-explore="store">
+                <StorePage userAuth={userAuth} onBack={backFromExplore} showToast={showToast} />
+              </div>
+            )}
+            {exploreMeta && (
+              <button
+                onClick={backFromExplore}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold text-ink/70 shadow-sm transition hover:text-ink active:scale-95"
+                style={CARD_STYLE}
+              >
+                <ArrowLeft className="w-4 h-4" /> Về trang của bé
+              </button>
+            )}
 
             {/* ── PANEL: Tổng quan (Thông tin cá nhân + Ví của bé) ── */}
             <div id="sec-overview" className={panelCls(activeId, "sec-overview")}>

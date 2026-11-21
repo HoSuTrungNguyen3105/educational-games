@@ -137,7 +137,7 @@ function buildCatalog(games, apiSubjects) {
   return { bySubject, subjects: ordered, sortTopics };
 }
 
-export default function CategoryPage({ onSelectGame, userAuth }) {
+export default function CategoryPage({ onSelectGame, userAuth, hideBottomNav = false }) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [games, setGames] = useState(null);
   const [apiSubjects, setApiSubjects] = useState([]);
@@ -383,7 +383,11 @@ export default function CategoryPage({ onSelectGame, userAuth }) {
               mục "Danh mục" active, các mục path đi thẳng, mục "Game" ghi
               ý định cuộn rồi về trang chủ (xem BottomNav.jsx). Hiện ở cả
               màn con liệt kê game theo chủ đề vì cùng một cây render này. */}
-          <BottomNav userAuth={userAuth} activeKey="categories" chatUnread={chatUnread} />
+          {/* Khi nhúng trong trang Bé (Khám phá nhanh), trang cha đã có
+              BottomNav riêng — ẩn bản này để không có hai thanh chồng nhau. */}
+          {!hideBottomNav && (
+            <BottomNav userAuth={userAuth} activeKey="categories" chatUnread={chatUnread} />
+          )}
         </>
       )}
     </div>

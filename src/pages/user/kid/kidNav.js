@@ -48,3 +48,27 @@ export const SHORTCUT_ICONS = {
   leaderboard: Medal,
   store: ShoppingBag,
 };
+
+/* ── Khám phá nhanh NHÚNG trong trang Bé ────────────────────────────────
+ * Bấm lối tắt KHÔNG điều hướng ra route riêng nữa (mất sidebar trái) mà
+ * mở trang đích ngay trong cột nội dung của trang Bé — sidebar + khung
+ * trang giữ nguyên. Mỗi lối tắt thành một "panel mở rộng" có id dạng
+ * `x-<key>` để dùng chung cơ chế chọn panel + đồng bộ ?panel= lên URL
+ * với các panel thường (xem KidDashboard + hooks/useHashParam). */
+export const EXPLORE_PREFIX = "x-";
+export const exploreId = (key) => `${EXPLORE_PREFIX}${key}`;
+export const shortcutByKey = (key) => SHORTCUTS.find((s) => s.key === key) || null;
+export const exploreKeyOf = (panelId) =>
+  typeof panelId === "string" && panelId.startsWith(EXPLORE_PREFIX)
+    ? panelId.slice(EXPLORE_PREFIX.length)
+    : null;
+export const isExploreId = (panelId) => {
+  const key = exploreKeyOf(panelId);
+  return !!key && !!shortcutByKey(key);
+};
+
+/** Mọi giá trị ?panel= hợp lệ: panel thường + panel khám phá. */
+export const PANEL_IDS = [
+  ...PANELS.map((p) => p.id),
+  ...SHORTCUTS.map((s) => exploreId(s.key)),
+];

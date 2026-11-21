@@ -217,7 +217,16 @@ export default function MovableSvgAvatar({
           transition: transform 240ms ease, opacity 200ms ease;
           z-index: 0;
         }
-        .mav__figure { position: relative; z-index: 1; }
+        /* Chuỗi chiều cao PHẢI liền mạch từ .mav xuống nhân vật:
+         * CharacterStage (.character-stage) dùng height:100% và mọi con
+         * của nó đều position:absolute — thiếu height ở .mav__figure /
+         * lớp .av-state-* là sân khấu sập về 0px, nhân vật biến mất dù
+         * nút điều khiển (absolute) vẫn hiện. Trang chủ không dính vì
+         * .gq-hero__char có height cố định và CharacterStage là con trực
+         * tiếp, không qua hai lớp bọc này. */
+        .mav { height: 100%; }
+        .mav__figure { position: relative; z-index: 1; height: 100%; }
+        .mav__figure > div { height: 100%; }
         .mav__controls {
           position: absolute;
           right: 6px;
