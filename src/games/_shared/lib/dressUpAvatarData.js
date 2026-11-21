@@ -578,9 +578,15 @@
     hair_14: {
       n: 'Undercut học đường',
       back: '<path d="M176 206 C152 178 156 130 186 104 C206 86 230 80 256 80 C290 80 318 94 336 118 C358 148 354 190 336 212 L312 228 L200 228 Z"/>',
-      front: '<path d="M172 164 C168 122 194 90 232 80 C260 74 294 82 316 100 L296 110 L262 96 L236 128 L206 110 L188 140 Z"/>'
-        + '<path d="M175 168 L197 175 L193 212 L173 205 Z" opacity="0.5"/>'
-        + '<path d="M337 168 L315 175 L319 212 L339 205 Z" opacity="0.5"/>'
+      /* Mái trước phải là một KHỐI đội kín đỉnh đầu (như mọi tóc khác):
+       * bản cũ chỉ là một vệt cong mỏng + hai mảng mờ hai bên nên đầu
+       * trông như hói/trọc từng mảng. Nay: mái ngắn rẽ ngôi phủ kín tới
+       * ~y150 + hai dải tóc ngắn ÔM SÁT hai bên đầu (đặc trưng undercut:
+       * trên dài, hai bên cạo ngắn) vẽ đặc, không mờ. */
+      front: '<path d="M170 162 C164 110 194 78 236 72 C268 67 304 79 326 105 C340 122 345 140 342 160 L310 126 L286 146 L256 118 L228 148 L202 122 L184 148 Z"/>'
+        + '<path d="M171 156 L197 148 L193 210 C182 212 174 205 172 192 Z"/>'
+        + '<path d="M341 156 L315 148 L319 210 C330 212 338 205 340 192 Z"/>'
+        + '<path d="M206 96 C222 84 242 79 260 80" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity="0.2"/>'
     }
   };
 
@@ -1084,10 +1090,12 @@
     },
     hat_08: {
       n: 'Tai thỏ',
-      svg: '<ellipse cx="202" cy="42" rx="17" ry="50" transform="rotate(-13 202 42)" fill="#FDFDFD" stroke="#E8B7D4" stroke-width="5"/>'
-        + '<ellipse cx="310" cy="42" rx="17" ry="50" transform="rotate(13 310 42)" fill="#FDFDFD" stroke="#E8B7D4" stroke-width="5"/>'
-        + '<ellipse cx="202" cy="48" rx="8" ry="32" transform="rotate(-13 202 48)" fill="#FFC7DD"/>'
-        + '<ellipse cx="310" cy="48" rx="8" ry="32" transform="rotate(13 310 48)" fill="#FFC7DD"/>'
+      /* Tai hạ xuống 10px: bản cũ đỉnh tai tới y≈−7, NGOÀI viewBox nên
+       * bị cắt mất chóp tai khi hiện trên nhân vật. */
+      svg: '<ellipse cx="202" cy="52" rx="17" ry="50" transform="rotate(-13 202 52)" fill="#FDFDFD" stroke="#E8B7D4" stroke-width="5"/>'
+        + '<ellipse cx="310" cy="52" rx="17" ry="50" transform="rotate(13 310 52)" fill="#FDFDFD" stroke="#E8B7D4" stroke-width="5"/>'
+        + '<ellipse cx="202" cy="58" rx="8" ry="32" transform="rotate(-13 202 58)" fill="#FFC7DD"/>'
+        + '<ellipse cx="310" cy="58" rx="8" ry="32" transform="rotate(13 310 58)" fill="#FFC7DD"/>'
         + '<path d="M174 170 C178 106 214 74 256 74 C298 74 334 106 338 170" stroke="#F4A9C7" stroke-width="11" fill="none" stroke-linecap="round"/>'
     },
     hat_09: {
@@ -1118,7 +1126,10 @@
       svg: '<path d="M168 192 C158 92 200 42 256 42 C312 42 354 92 344 192 C312 172 200 172 168 192 Z" fill="#BFE8FF" fill-opacity=".38" stroke="#D8E2EE" stroke-width="7"/>'
         + '<path d="M196 92 C206 68 226 54 246 50" stroke="#FFFFFF" stroke-width="9" fill="none" stroke-linecap="round" opacity=".8"/>'
         + '<circle cx="168" cy="168" r="9" fill="#E8453C"/><circle cx="344" cy="168" r="9" fill="#3D7BD1"/>'
-        + '<rect x="162" y="184" width="188" height="20" rx="10" fill="#E8EDF6" stroke="#B9C4D6" stroke-width="4"/>'
+        /* Vành mũ ở y158–178, NGAY TRÊN lông mày (177+): bản cũ đặt
+         * vành ở y184–204 nên vành cắt ngang qua mắt, che mất nửa trên
+         * của cả hai mắt. */
+        + '<rect x="162" y="158" width="188" height="20" rx="10" fill="#E8EDF6" stroke="#B9C4D6" stroke-width="4"/>'
     }
   };
 
@@ -1193,8 +1204,11 @@
     },
     glasses_07: {
       n: 'Râm ngôi sao',
-      svg: '<path d="M0 -37 L9 -15 L33 -11 L15 6 L21 30 L0 16 L-21 30 L-15 6 L-33 -11 L-9 -15 Z" transform="translate(224 210)" fill="#26262E" stroke="#F5C63C" stroke-width="4" stroke-linejoin="round"/>'
-        + '<path d="M0 -37 L9 -15 L33 -11 L15 6 L21 30 L0 16 L-21 30 L-15 6 L-33 -11 L-9 -15 Z" transform="translate(288 210)" fill="#26262E" stroke="#F5C63C" stroke-width="4" stroke-linejoin="round"/>'
+      /* Thu ngôi sao còn 84%: bản gốc hai sao (bán kính 37, tâm cách
+       * nhau 64) chồng lên nhau ~10px ở giữa sống mũi thành một vệt
+       * đen liền khối; thu nhỏ là hai sao tách rõ, vẫn che kín mắt. */
+      svg: '<path d="M0 -37 L9 -15 L33 -11 L15 6 L21 30 L0 16 L-21 30 L-15 6 L-33 -11 L-9 -15 Z" transform="translate(224 210) scale(0.84)" fill="#26262E" stroke="#F5C63C" stroke-width="4" stroke-linejoin="round"/>'
+        + '<path d="M0 -37 L9 -15 L33 -11 L15 6 L21 30 L0 16 L-21 30 L-15 6 L-33 -11 L-9 -15 Z" transform="translate(288 210) scale(0.84)" fill="#26262E" stroke="#F5C63C" stroke-width="4" stroke-linejoin="round"/>'
         + '<path d="M253 204 L259 204" stroke="#F5C63C" stroke-width="6" stroke-linecap="round"/>'
         + '<path d="M193 198 L181 192 M319 198 L331 192" stroke="#26262E" stroke-width="7" stroke-linecap="round"/>'
     },
@@ -1271,14 +1285,20 @@
     },
     acc_07: {
       n: 'Cánh thiên thần',
-      b: '<path d="M170 336 C112 312 82 254 92 196 C124 214 144 232 156 258 C138 250 120 252 104 264 C138 268 158 284 168 306 Z" fill="#FFFFFF" stroke="#D8E2EE" stroke-width="5"/>'
-        + '<path d="M342 336 C400 312 430 254 420 196 C388 214 368 232 356 258 C374 250 392 252 408 264 C374 268 354 284 344 306 Z" fill="#FFFFFF" stroke="#D8E2EE" stroke-width="5"/>'
-        + '<path d="M120 240 C136 246 148 256 156 270 M392 240 C376 246 364 256 356 270" stroke="#D8E2EE" stroke-width="5" fill="none"/>'
+      /* Cánh phóng to + hạ thấp: bản cũ chỉ cao tới vai và hẹp nên thân
+       * che gần hết, nhìn như hai chiếc lá ở cổ. Nay cánh xoè rõ sau
+       * lưng từ trên vai (y≈224) xuống quá eo (y≈388), đầu cánh nhô hẳn
+       * ra ngoài sườn (x58) nên đứng正面 cũng thấy trọn đôi cánh. */
+      b: '<path d="M180 350 C116 344 66 296 58 224 C84 240 100 260 110 282 C96 277 82 279 68 287 C98 295 116 311 126 333 C112 331 98 336 86 349 C120 352 154 365 178 388 Z" fill="#FFFFFF" stroke="#D8E2EE" stroke-width="5" stroke-linejoin="round"/>'
+        + '<path d="M332 350 C396 344 446 296 454 224 C428 240 412 260 402 282 C416 277 430 279 444 287 C414 295 396 311 386 333 C400 331 414 336 426 349 C392 352 358 365 334 388 Z" fill="#FFFFFF" stroke="#D8E2EE" stroke-width="5" stroke-linejoin="round"/>'
+        + '<path d="M96 252 C116 262 130 278 140 300 M416 252 C396 262 382 278 372 300" stroke="#D8E2EE" stroke-width="5" fill="none"/>'
     },
     acc_08: {
       n: 'Cánh rồng nhỏ',
-      b: '<path d="M172 340 C118 328 84 288 82 236 L120 256 L114 216 L150 244 L154 206 C172 248 180 296 182 334 Z" fill="#4CAF50" stroke="#2E7D5B" stroke-width="5" stroke-linejoin="round"/>'
-        + '<path d="M340 340 C394 328 428 288 430 236 L392 256 L398 216 L362 244 L358 206 C340 248 332 296 330 334 Z" fill="#4CAF50" stroke="#2E7D5B" stroke-width="5" stroke-linejoin="round"/>'
+      /* Phóng to cùng lý do như cánh thiên thần: bản cũ bị thân che
+       * gần hết, chỉ ló đầu cánh trên vai. */
+      b: '<path d="M180 352 C124 344 76 306 60 240 L102 262 L94 214 L138 248 L146 202 C168 252 178 302 180 352 Z" fill="#4CAF50" stroke="#2E7D5B" stroke-width="5" stroke-linejoin="round"/>'
+        + '<path d="M332 352 C388 344 436 306 452 240 L410 262 L418 214 L374 248 L366 202 C344 252 334 302 332 352 Z" fill="#4CAF50" stroke="#2E7D5B" stroke-width="5" stroke-linejoin="round"/>'
     },
     acc_09: {
       n: 'Ba lô tên lửa',
@@ -3567,6 +3587,77 @@
     return res;
   }
 
+  /* Đáy vùng đầu trên viewBox: đầu chuẩn kết thúc ở y≈301 (cằm), cổ tới
+   * ~345. Phần tử của suit.top() nằm trọn trên y=315 (mũ bảo hiểm, mũ đầu
+   * bếp, mũ cảnh sát...) thuộc vùng đầu. */
+  var TOP_HEAD_ZONE_BOTTOM = 315;
+
+  /** Tách fragment suit.top() thành { main, head }: phần tử nằm trọn trong
+   *  vùng đầu sang head để bọc nhóm khớp ĐẦU — trước đây top() phát thẳng
+   *  không nhóm nên khi nhảy, mặt bay theo nhóm đầu còn mũ bảo hiểm đứng
+   *  yên tại chỗ. Phần tử cắt ngang biên 315 (râu, cổ áo) ở lại main cho
+   *  an toàn. Nhóm đã mang class av-joint (đoạn bốt tách theo chân) giữ
+   *  nguyên ở main, không tách lại. Hai vùng không chồng lấn nhau nên thứ
+   *  tự vẽ tương đối giữa các phần tử không đổi hình đứng yên. */
+  function splitTopFragment(frag) {
+    var res = { main: '', head: '', segs: '', firstZone: '' };
+    function mark(zone) { if (!res.firstZone) res.firstZone = zone; }
+    var els = svgTopElements(frag);
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      var elAttrs = svgElAttrs(el);
+      if (elAttrs['class'] && elAttrs['class'].indexOf('av-joint') >= 0) { res.segs += el.raw; continue; }
+      if (el.tag === 'g' && !el.selfClose && !elAttrs.transform && !elAttrs.filter) {
+        var inner = splitTopFragment(svgElInner(el));
+        if (inner.head || inner.segs) {
+          var open = el.openTag, close = '</' + el.tag + '>';
+          if (inner.main) res.main += open + inner.main + close;
+          if (inner.head) res.head += open + inner.head + close;
+          res.segs += inner.segs;
+          if (!res.firstZone && inner.firstZone) res.firstZone = inner.firstZone;
+          continue;
+        }
+        res.main += el.raw;
+        mark('main');
+        continue;
+      }
+      if (el.tag === 'path') {
+        var dAttr = elAttrs.d || '';
+        var subs = svgSplitSubpaths(dAttr);
+        var allAbs = subs.length > 1;
+        for (var q = 0; q < subs.length; q++) if (subs[q].charAt(0) !== 'M') allAbs = false;
+        if (allAbs) {
+          var buckets = { main: [], head: [] };
+          var movedH = false;
+          for (var s2 = 0; s2 < subs.length; s2++) {
+            var bb2 = svgPathBBox(subs[s2]);
+            var toHead = !!(bb2 && bb2.y1 <= TOP_HEAD_ZONE_BOTTOM);
+            if (toHead) movedH = true;
+            buckets[toHead ? 'head' : 'main'].push(subs[s2]);
+          }
+          if (movedH) {
+            if (buckets.main.length) res.main += svgPathWithD(el.raw, buckets.main.join(' '));
+            if (buckets.head.length) res.head += svgPathWithD(el.raw, buckets.head.join(' '));
+            /* Vùng của subpath ĐẦU TIÊN quyết định khối nào phát trước. */
+            var fb = svgPathBBox(subs[0]);
+            mark(fb && fb.y1 <= TOP_HEAD_ZONE_BOTTOM ? 'head' : 'main');
+            continue;
+          }
+        }
+        var pbb = svgElBBox(el);
+        if (pbb && pbb.y1 <= TOP_HEAD_ZONE_BOTTOM) { res.head += el.raw; mark('head'); continue; }
+        res.main += el.raw;
+        mark('main');
+        continue;
+      }
+      var bb = svgElBBox(el);
+      if (bb && bb.y1 <= TOP_HEAD_ZONE_BOTTOM) { res.head += el.raw; mark('head'); continue; }
+      res.main += el.raw;
+      mark('main');
+    }
+    return res;
+  }
+
   /** Tâm xoay khớp hông của một nhóm chân, theo đúng công thức CSS hiện tại
    *  (.av-leg: transform-box fill-box, transform-origin 50% 5%). */
   function legPivotOf(frag) {
@@ -3714,8 +3805,12 @@
        * chân chuẩn phía sau (vẽ đè lên váy như thân bé gái) — nhóm đó
        * được cộng transform-origin quy về khớp hông này ở dưới. */
       if (suitLegs && suitLegs.under) {
-        o += '<g id="avatar-leg-left" class="av-joint av-leg av-leg-l">' + suitLegs.l + '</g>';
-        o += '<g id="avatar-leg-right" class="av-joint av-leg av-leg-r">' + suitLegs.r + '</g>';
+        /* .av-leg-under: nhóm chân này nằm TRONG nhóm thân trên nên khi
+         * nhảy chỉ xoay (keyframes *-ride), không cộng translateY nữa —
+         * xem svgAvatarMotion.css. Đi bộ không đổi (keyframes walk vốn
+         * chỉ xoay). */
+        o += '<g id="avatar-leg-left" class="av-joint av-leg av-leg-l av-leg-under">' + suitLegs.l + '</g>';
+        o += '<g id="avatar-leg-right" class="av-joint av-leg av-leg-r av-leg-under">' + suitLegs.r + '</g>';
       }
       o += bodyMain;
     }
@@ -3786,7 +3881,19 @@
           topRaw = topOut;
         }
       }
-      o += topRaw;
+      /* Headgear trong top() (mũ bảo hiểm, mũ đầu bếp...) phải bay CÙNG
+       * nhóm đầu, chi tiết ngang thân (thắt lưng, phù hiệu) CÙNG thân
+       * trên: tách top() theo vùng rồi bọc nhóm khớp tương ứng. Trước
+       * đây top() phát thẳng không nhóm — nhảy lên là mặt đi một nơi,
+       * mũ bảo hiểm ở lại một nẻo. Đoạn bốt đã tách theo chân giữ
+       * nguyên vị trí phát như cũ. */
+      var topZone = splitTopFragment(topRaw);
+      var topHeadG = topZone.head ? '<g class="av-joint av-head av-suit-top">' + topZone.head + '</g>' : '';
+      var topMainG = topZone.main ? '<g class="av-joint av-upper av-suit-top">' + topZone.main + '</g>' : '';
+      /* Phát khối chứa phần tử ĐẦU TIÊN của top() trước, để thứ tự vẽ ở
+       * vùng chồng lấn biên (râu/choàng cổ chạm mũ) khớp hệt bản gốc. */
+      o += topZone.firstZone === 'main' ? topMainG + topHeadG : topHeadG + topMainG;
+      o += topZone.segs;
       if (acc && acc.f) o += acc.f;
     }
 
@@ -3969,13 +4076,13 @@
       case 'skin': return { kind: 'dot', ids: idsOf('skin'), dot: function (id) { return SKIN_TONES[id]; }, label: function (id) { return SKIN_NAMES_VI[id] || id; } };
       case 'hairColor': return { kind: 'dot', ids: idsOf('hairColor'), dot: function (id) { return HAIR_COLORS[id]; }, label: function (id) { return HAIRCOLOR_NAMES_VI[id] || id; } };
       case 'face': return { kind: 'svg', vb: '166 150 180 150', ids: idsOf('face'), nullable: false, pv: function (id) { return FACES[id] ? FACES[id].svg : ''; } };
-      case 'hair': return { kind: 'svg', vb: '110 34 292 460', ids: idsOf('hair'), nullable: false, pv: function (id) { return hairPreview(id, s); } };
-      case 'shirt': return { kind: 'svg', vb: '150 292 212 224', ids: idsOf('shirt'), nullable: true, pv: function (id) { return stripKidFilter(shirtPaintById(id, s.body)); }, label: function (id) { return SHIRT_STYLES[id] ? SHIRT_STYLES[id].n : 'Áo ' + (COLOR_NAMES_VI[id] || id); } };
+      case 'hair': return { kind: 'svg', vb: '110 34 292 460', vbFor: function (id) { return HAIR_VB[id] || '110 34 292 460'; }, ids: idsOf('hair'), nullable: false, pv: function (id) { return hairPreview(id, s); } };
+      case 'shirt': return { kind: 'svg', vb: '150 292 212 224', vbFor: function (id) { return id === 'hoodie' ? '150 270 212 246' : '150 292 212 224'; }, ids: idsOf('shirt'), nullable: true, pv: function (id) { return stripKidFilter(shirtPaintById(id, s.body)); }, label: function (id) { return SHIRT_STYLES[id] ? SHIRT_STYLES[id].n : 'Áo ' + (COLOR_NAMES_VI[id] || id); } };
       case 'dress': return { kind: 'svg', vb: '132 292 248 345', ids: idsOf('dress'), nullable: true, pv: function (id) { return stripKidFilter(dressPaintById(id, s.body)); }, label: function (id) { return DRESS_STYLES[id] ? DRESS_STYLES[id].n : 'Váy ' + (COLOR_NAMES_VI[id] || id); } };
-      case 'pants': return { kind: 'svg', vb: '150 480 212 150', ids: idsOf('pants'), nullable: true, pv: function (id) { return pantsSvg(id, s.body); }, label: function (id) { return PANT_OPTIONS[id] ? PANT_OPTIONS[id].n : id; } };
-      case 'shoes': return { kind: 'svg', vb: '168 622 176 62', ids: idsOf('shoes'), nullable: true, vbFor: function (id) { return id === 'hero_boots' ? '160 540 192 145' : '168 622 176 62'; }, pv: function (id) { return stripKidFilter(shoesPaintById(id, s.body)); }, label: function (id) { return SHOE_STYLES[id] ? SHOE_STYLES[id].n : 'Giày ' + (COLOR_NAMES_VI[id] || id); } };
-      case 'glasses': return { kind: 'svg', vb: '150 170 212 90', ids: idsOf('glasses'), nullable: true, pv: function (id) { return GLASSES[id] ? GLASSES[id].svg : ''; } };
-      case 'hat': return { kind: 'svg', vb: '100 30 312 210', ids: idsOf('hat'), nullable: true, pv: function (id) { return HATS[id] ? HATS[id].svg : ''; } };
+      case 'pants': return { kind: 'svg', vb: '150 480 212 150', vbFor: function (id) { return id === 'overalls' ? '150 348 212 322' : (id === 'jeans' || id === 'black' || id === 'gi_pants' || id === 'jeans_cuff') ? '150 480 212 182' : '150 480 212 150'; }, ids: idsOf('pants'), nullable: true, pv: function (id) { return pantsSvg(id, s.body); }, label: function (id) { return PANT_OPTIONS[id] ? PANT_OPTIONS[id].n : id; } };
+      case 'shoes': return { kind: 'svg', vb: '168 622 176 62', ids: idsOf('shoes'), nullable: true, vbFor: function (id) { return id === 'hero_boots' ? '160 540 192 145' : id === 'doll' ? '168 604 176 80' : '168 622 176 62'; }, pv: function (id) { return stripKidFilter(shoesPaintById(id, s.body)); }, label: function (id) { return SHOE_STYLES[id] ? SHOE_STYLES[id].n : 'Giày ' + (COLOR_NAMES_VI[id] || id); } };
+      case 'glasses': return { kind: 'svg', vb: '150 170 212 90', vbFor: function (id) { return id === 'glasses_05' ? '150 96 212 164' : '150 170 212 90'; }, ids: idsOf('glasses'), nullable: true, pv: function (id) { return GLASSES[id] ? GLASSES[id].svg : ''; } };
+      case 'hat': return { kind: 'svg', vb: '100 30 312 210', vbFor: function (id) { return HAT_VB[id] || '100 30 312 210'; }, ids: idsOf('hat'), nullable: true, pv: function (id) { return HATS[id] ? HATS[id].svg : ''; } };
       case 'acc': return { kind: 'svg', vb: '100 300 312 340', vbFor: accVb, ids: idsOf('acc'), nullable: true, pv: function (id) { return accPreview(id); } };
       default: return { kind: 'list', ids: [], nullable: false };
     }
@@ -4007,8 +4114,8 @@
     acc_04: '144 48 224 224',
     acc_05: '202 320 196 272',
     acc_06: '108 312 296 340',
-    acc_07: '70 180 372 180',
-    acc_08: '60 190 392 170',
+    acc_07: '50 195 412 205',
+    acc_08: '52 195 408 168',
     acc_09: '100 320 312 210',
     acc_10: '330 300 140 200',
     acc_11: '330 545 150 135',
@@ -4019,6 +4126,24 @@
   function accVb(id) {
     return ACC_VB[id] || '100 300 312 340';
   }
+
+  /* Khung nhìn riêng cho tóc/mũ có chi tiết vượt lên trên khung mặc
+   * định của tab (búi tóc, chỏm nhọn, tai thỏ, sừng tuần lộc…): dùng
+   * khung chung là phần đỉnh bị CẮT trong ô preview thẻ đồ. */
+  var HAIR_VB = {
+    hair_03: '110 34 330 460',
+    hair_04: '110 0 292 494',
+    hair_07: '110 12 292 482',
+    hair_08: '110 4 292 490',
+    hair_11: '110 12 292 482',
+    hair_13: '110 34 292 480'
+  };
+  var HAT_VB = {
+    hat_08: '100 -6 312 246',
+    hat_09: '100 10 312 230',
+    hat_10: '80 30 332 210',
+    hat_11: '100 8 312 232'
+  };
 
   var KID_TABS = [
     { k: 'body', l: '🧍 Thân' },

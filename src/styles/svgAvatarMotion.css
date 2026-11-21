@@ -12,7 +12,7 @@
  *   .av-state-idle  — đứng yên: thân trên nhún thở, đầu lắc rất nhẹ
  *   .av-state-walk  — đi: thân nhún nhịp bước, tay đánh ngược pha,
  *                     chân bước luân phiên (thân liền khối chỉ nhún/lướt)
- *   .av-state-jump  — nhảy một lần 620ms rồi JS tự trả về idle/walk
+ *   .av-state-jump  — nhảy một lần 680ms rồi JS tự trả về idle/walk
  * CharacterStage (#160) không gắn av-state-* mà dùng class mood riêng
  * (cs--mood-idle/wave/celebrate/encourage) — các rule :where() ở cuối
  * file ánh xạ cùng keyframes sang mood đó với specificity thấp, để khi
@@ -84,31 +84,144 @@
 .av-state-walk .av-leg-l { animation: av-walk-leg-l 0.56s ease-in-out infinite; }
 .av-state-walk .av-leg-r { animation: av-walk-leg-r 0.56s ease-in-out infinite; }
 
-/* ── JUMP (một lần, JS gỡ class sau ~650ms) ───────────────────────── */
+/* ── JUMP (một lần 0.68s, JS gỡ class sau ~700ms) ───────────────────
+ * Nhảy tự nhiên như người thật: lấy đà nén (squash) → bật CAO → tay
+ * vung lên trời, chân duỗi → rơi xuống → tiếp đất nén nhẹ → hồi phục.
+ * MỌI nhóm khớp dùng CHUNG một đường cong translateY (cùng giá trị ở
+ * cùng % thời gian): av-jump-rise. Trước đây chỉ .av-upper có
+ * translateY (đỉnh −14px) còn .av-head chỉ rotate −2.4° và chân không
+ * có animation nào — thân bay lên mà mặt đứng yên, chân đứng yên.
+ * Nay đầu/tay/chân đều mang cùng đường cong nên toàn thân + mọi lớp
+ * đồ đi liền một khối; mỗi nhóm chỉ cộng thêm chuyển động riêng:
+ * thân trên squash/stretch, đầu ngả nhẹ, tay xoay quanh vai lên cao
+ * (±138° ở đỉnh), chân duỗi tách nhẹ khi bay. */
+@keyframes av-jump-rise {
+  0% { transform: translateY(0); }
+  16% { transform: translateY(12px); }
+  32% { transform: translateY(2px); }
+  52% { transform: translateY(-80px); }
+  68% { transform: translateY(-46px); }
+  84% { transform: translateY(9px); }
+  92% { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
 @keyframes av-jump-upper {
   0% { transform: translateY(0) scaleY(1); }
-  30% { transform: translateY(3px) scaleY(0.97); }
-  55% { transform: translateY(-14px) scaleY(1.02); }
-  78% { transform: translateY(-4px) scaleY(1); }
+  16% { transform: translateY(12px) scaleY(0.93); }
+  32% { transform: translateY(2px) scaleY(1.02); }
+  52% { transform: translateY(-80px) scaleY(1.03); }
+  68% { transform: translateY(-46px) scaleY(1); }
+  84% { transform: translateY(9px) scaleY(0.95); }
+  92% { transform: translateY(-3px) scaleY(1.01); }
   100% { transform: translateY(0) scaleY(1); }
 }
+@keyframes av-jump-head {
+  0% { transform: translateY(0) rotate(0deg); }
+  16% { transform: translateY(12px) rotate(2deg); }
+  32% { transform: translateY(2px) rotate(0deg); }
+  52% { transform: translateY(-80px) rotate(-3.5deg); }
+  68% { transform: translateY(-46px) rotate(-1.5deg); }
+  84% { transform: translateY(9px) rotate(1.5deg); }
+  92% { transform: translateY(-3px) rotate(0deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+/* Tay: nhóm tay nằm TRONG nhóm thân trên nên đã thừa hưởng đường cong
+ * translateY của thân — keyframes tay chỉ xoay quanh vai: lấy đà vung
+ * xuống–ra sau một chút, bật nhảy thì GIƠ THẲNG LÊN (tay trái +138°,
+ * tay phải −138° → hai bàn tay lên trời chếch ra ngoài thành chữ V),
+ * tiếp đất hạ dần về 0. */
 @keyframes av-jump-arm-l {
-  0%, 100% { transform: rotate(0deg); }
-  55% { transform: rotate(-22deg); }
+  0% { transform: rotate(0deg); }
+  16% { transform: rotate(-12deg); }
+  32% { transform: rotate(34deg); }
+  52% { transform: rotate(138deg); }
+  68% { transform: rotate(118deg); }
+  84% { transform: rotate(22deg); }
+  92% { transform: rotate(5deg); }
+  100% { transform: rotate(0deg); }
 }
 @keyframes av-jump-arm-r {
-  0%, 100% { transform: rotate(0deg); }
-  55% { transform: rotate(22deg); }
+  0% { transform: rotate(0deg); }
+  16% { transform: rotate(12deg); }
+  32% { transform: rotate(-34deg); }
+  52% { transform: rotate(-138deg); }
+  68% { transform: rotate(-118deg); }
+  84% { transform: rotate(-22deg); }
+  92% { transform: rotate(-5deg); }
+  100% { transform: rotate(0deg); }
 }
-@keyframes av-jump-head {
-  0%, 100% { transform: rotate(0deg); }
-  55% { transform: rotate(-2.4deg); }
+/* Chân: lấy đà hơi chụm, khi bay duỗi thẳng tách nhẹ ra hai bên (bàn
+ * chân rời đất CÙNG thân nhờ chung đường cong), tiếp đất về 0. */
+@keyframes av-jump-leg-l {
+  0% { transform: translateY(0) rotate(0deg); }
+  16% { transform: translateY(12px) rotate(-4deg); }
+  32% { transform: translateY(2px) rotate(1deg); }
+  52% { transform: translateY(-80px) rotate(7deg); }
+  68% { transform: translateY(-46px) rotate(5deg); }
+  84% { transform: translateY(9px) rotate(2deg); }
+  92% { transform: translateY(-3px) rotate(0deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+@keyframes av-jump-leg-r {
+  0% { transform: translateY(0) rotate(0deg); }
+  16% { transform: translateY(12px) rotate(4deg); }
+  32% { transform: translateY(2px) rotate(-1deg); }
+  52% { transform: translateY(-80px) rotate(-7deg); }
+  68% { transform: translateY(-46px) rotate(-5deg); }
+  84% { transform: translateY(9px) rotate(-2deg); }
+  92% { transform: translateY(-3px) rotate(0deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+/* Bóng đổ trong SVG: phình ra khi lấy đà, thu nhỏ + nhạt tương xứng
+ * khi nhân vật ở đỉnh nhảy, về cũ khi tiếp đất. */
+.av-ground-shadow {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+@keyframes av-jump-shadow {
+  0% { transform: scale(1); opacity: 1; }
+  16% { transform: scale(1.07); opacity: 1; }
+  32% { transform: scale(0.94); opacity: 0.9; }
+  52% { transform: scale(0.58); opacity: 0.5; }
+  68% { transform: scale(0.72); opacity: 0.65; }
+  84% { transform: scale(1.05); opacity: 1; }
+  92% { transform: scale(0.98); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-.av-state-jump .av-upper { animation: av-jump-upper 0.62s ease-in-out 1; }
-.av-state-jump .av-head { animation: av-jump-head 0.62s ease-in-out 1; }
-.av-state-jump .av-arm-l { animation: av-jump-arm-l 0.62s ease-in-out 1; }
-.av-state-jump .av-arm-r { animation: av-jump-arm-r 0.62s ease-in-out 1; }
+/* Chân của thân váy liền (.av-leg-under) nằm TRONG nhóm thân trên —
+ * giống tay, đã thừa hưởng translateY của thân nên chỉ xoay, nếu cộng
+ * thêm đường cong nữa là chân bay gấp đôi thân và lệch khỏi giày. */
+@keyframes av-jump-leg-l-ride {
+  0% { transform: rotate(0deg); }
+  16% { transform: rotate(-4deg); }
+  32% { transform: rotate(1deg); }
+  52% { transform: rotate(7deg); }
+  68% { transform: rotate(5deg); }
+  84% { transform: rotate(2deg); }
+  92% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes av-jump-leg-r-ride {
+  0% { transform: rotate(0deg); }
+  16% { transform: rotate(4deg); }
+  32% { transform: rotate(-1deg); }
+  52% { transform: rotate(-7deg); }
+  68% { transform: rotate(-5deg); }
+  84% { transform: rotate(-2deg); }
+  92% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.av-state-jump .av-upper { animation: av-jump-upper 0.68s ease-in-out 1; }
+.av-state-jump .av-head { animation: av-jump-head 0.68s ease-in-out 1; }
+.av-state-jump .av-arm-l { animation: av-jump-arm-l 0.68s ease-in-out 1; }
+.av-state-jump .av-arm-r { animation: av-jump-arm-r 0.68s ease-in-out 1; }
+.av-state-jump .av-leg-l { animation: av-jump-leg-l 0.68s ease-in-out 1; }
+.av-state-jump .av-leg-r { animation: av-jump-leg-r 0.68s ease-in-out 1; }
+.av-state-jump .av-leg-l.av-leg-under { animation-name: av-jump-leg-l-ride; }
+.av-state-jump .av-leg-r.av-leg-under { animation-name: av-jump-leg-r-ride; }
+.av-state-jump .av-ground-shadow { animation: av-jump-shadow 0.68s ease-in-out 1; }
 
 /* ── Ánh xạ mood của CharacterStage (#160) sang cùng keyframes ──────
  * CharacterStage bọc SVG trong .character-stage.cs--mood-*; khi không
@@ -119,9 +232,15 @@
 :where(.character-stage.cs--mood-idle) .av-head { animation: av-head-sway 3.6s ease-in-out infinite; }
 :where(.character-stage.cs--mood-wave) .av-arm-r { animation: av-arm-sway 0.7s ease-in-out infinite; }
 :where(.character-stage.cs--mood-wave) .av-upper { animation: av-breathe 2.8s ease-in-out infinite; }
-:where(.character-stage.cs--mood-celebrate) .av-upper { animation: av-jump-upper 0.62s ease-in-out 2; }
-:where(.character-stage.cs--mood-celebrate) .av-arm-l { animation: av-jump-arm-l 0.62s ease-in-out 2; }
-:where(.character-stage.cs--mood-celebrate) .av-arm-r { animation: av-jump-arm-r 0.62s ease-in-out 2; }
+:where(.character-stage.cs--mood-celebrate) .av-upper { animation: av-jump-upper 0.68s ease-in-out 2; }
+:where(.character-stage.cs--mood-celebrate) .av-head { animation: av-jump-head 0.68s ease-in-out 2; }
+:where(.character-stage.cs--mood-celebrate) .av-arm-l { animation: av-jump-arm-l 0.68s ease-in-out 2; }
+:where(.character-stage.cs--mood-celebrate) .av-arm-r { animation: av-jump-arm-r 0.68s ease-in-out 2; }
+:where(.character-stage.cs--mood-celebrate) .av-leg-l { animation: av-jump-leg-l 0.68s ease-in-out 2; }
+:where(.character-stage.cs--mood-celebrate) .av-leg-r { animation: av-jump-leg-r 0.68s ease-in-out 2; }
+:where(.character-stage.cs--mood-celebrate) .av-leg-l.av-leg-under { animation-name: av-jump-leg-l-ride; }
+:where(.character-stage.cs--mood-celebrate) .av-leg-r.av-leg-under { animation-name: av-jump-leg-r-ride; }
+:where(.character-stage.cs--mood-celebrate) .av-ground-shadow { animation: av-jump-shadow 0.68s ease-in-out 2; }
 :where(.character-stage.cs--mood-encourage) .av-head { animation: av-head-sway 1.8s ease-in-out infinite; }
 
 /* ── Giảm chuyển động theo hệ điều hành ───────────────────────────── */
@@ -140,10 +259,16 @@
   .av-state-jump .av-head,
   .av-state-jump .av-arm-l,
   .av-state-jump .av-arm-r,
+  .av-state-jump .av-leg-l,
+  .av-state-jump .av-leg-r,
+  .av-state-jump .av-ground-shadow,
   :where(.character-stage) .av-upper,
   :where(.character-stage) .av-head,
   :where(.character-stage) .av-arm-l,
-  :where(.character-stage) .av-arm-r {
+  :where(.character-stage) .av-arm-r,
+  :where(.character-stage) .av-leg-l,
+  :where(.character-stage) .av-leg-r,
+  :where(.character-stage) .av-ground-shadow {
     animation: none !important;
   }
 }
