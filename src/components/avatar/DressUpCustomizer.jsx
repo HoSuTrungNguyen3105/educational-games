@@ -15,8 +15,9 @@ import {
   itemLabel, outfitKey, ensureDressUpCss, kidDefaultOutfit,
 } from "../../lib/dressUpAvatar.js";
 import { PrimaryButton, GhostButton } from "../ui";
-import { Ban, Dices, Rotate3d, RotateCcw, Save, X } from "lucide-react";
+import { Ban, Check, Dices, Rotate3d, RotateCcw, Save, X } from "lucide-react";
 import CharacterStage from "../character/CharacterStage.jsx";
+import MovableSvgAvatar from "./MovableSvgAvatar.jsx";
 
 const SCOPES = {
   avatar: {
@@ -83,6 +84,9 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
   const [stageMood, setStageMood] = useState("wave");
   const [turnX, setTurnX] = useState(0);
   const [celebrateKey, setCelebrateKey] = useState(0);
+  /* Nhảy nhẹ mỗi lần chọn đồ / tung ngẫu nhiên / lưu xong — MovableSvgAvatar
+   * nhận tín hiệu này (chỉ nhánh avatar). */
+  const [jumpKey, setJumpKey] = useState(0);
   const dragRef = useRef(null);
   useEffect(() => {
     if (kind !== "avatar") return undefined;
@@ -129,6 +133,7 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
       return;
     }
     setDraft(cfg.sanitize({ ...draft, [field]: id || null }));
+    if (kind === "avatar") setJumpKey((k) => k + 1);
   }
 
   function randomize() {
@@ -140,6 +145,7 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
       next[t.k] = pickOne(c.nullable ? [null, ...c.ids] : c.ids);
     }
     setDraft(cfg.sanitize(next));
+    if (kind === "avatar") setJumpKey((k) => k + 1);
   }
 
   function reset() {
@@ -160,6 +166,7 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
       // 2) đẩy lên hồ sơ
       await onSave(kind, draft);
       setSaving(false);
+      if (kind === "avatar") setJumpKey((k) => k + 1);
       setMessage({ ok: true, text: "Đã lưu vào hồ sơ" });
       setTimeout(onClose, 650);
     } catch {
@@ -199,14 +206,20 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
               onPointerUp={stagePointerUp}
               onPointerCancel={stagePointerUp}
             >
-              <CharacterStage
-                bodyId={draft.body}
-                accessories={draft}
-                mood={stageMood}
-                turnX={turnX}
-                celebrateKey={celebrateKey}
-                label={cfg.title}
-              />
+              {/* MovableSvgAvatar (#SVG-2D): nhân vật đi lại/nhảy ngay
+                  trên sân khấu này; CharacterStage vẫn giữ nguyên wave
+                  khi mở, celebrate khi đổi Thân và xoay kéo/nút. Cụm nút
+                  di chuyển nằm góc phải dưới, nút xoay #160 ở góc trái. */}
+              <MovableSvgAvatar className="du-stage-movable h-full w-full" jumpSignal={jumpKey}>
+                <CharacterStage
+                  bodyId={draft.body}
+                  accessories={draft}
+                  mood={stageMood}
+                  turnX={turnX}
+                  celebrateKey={celebrateKey}
+                  label={cfg.title}
+                />
+              </MovableSvgAvatar>
               <button
                 type="button"
                 onClick={() => setTurnX((t) => (t === 0 ? 0.85 : 0))}
@@ -252,52 +265,61 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
 
             {/* lựa chọn */}
             <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3" style={{ background: "var(--card)" }}>
-              <div className="grid grid-cols-4 min-[420px]:grid-cols-5 lg:grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 min-[420px]:grid-cols-4 lg:grid-cols-5 gap-2">
                 {activeCfg?.nullable && (
                   <button
                     onClick={() => pick(null)}
                     aria-pressed={!draft[field]}
-                    className="aspect-square rounded-xl border-2 flex items-center justify-center text-xl transition"
+                    className="du-card"
                     style={{
                       background: "var(--stage)",
                       borderColor: !draft[field] ? "var(--accent)" : "var(--line)",
+                      boxShadow: !draft[field] ? "0 0 0 2px var(--accent)" : "0 1px 2px rgba(30,20,10,.08)",
                     }}
                     title="Không dùng"
                   >
-                    <Ban className="w-5 h-5 text-ink/35" />
+                    <span className="du-card__pv">
+                      <Ban className="w-6 h-6 text-ink/35" />
+                    </span>
+                    <span className="du-card__name">Không dùng</span>
+                    {!draft[field] && (
+                      <span className="du-card__badge"><Check className="w-3 h-3" /></span>
+                    )}
                   </button>
                 )}
                 {ids.map((id) => {
                   const selected = draft[field] === id;
+                  const name = activeCfg.label ? activeCfg.label(id) : itemLabel(kind, field, id);
                   return (
                     <button
                       key={String(id)}
                       onClick={() => pick(id)}
                       aria-pressed={selected}
-                      title={itemLabel(kind, field, id)}
-                      className="aspect-square rounded-xl border-2 flex items-center justify-center overflow-hidden transition"
+                      title={name}
+                      className="du-card"
                       style={{
                         background: "var(--stage)",
                         borderColor: selected ? "var(--accent)" : "var(--line)",
-                        boxShadow: selected ? "0 0 0 2px var(--accent)" : "none",
+                        boxShadow: selected ? "0 0 0 2px var(--accent)" : "0 1px 2px rgba(30,20,10,.08)",
                       }}
                     >
-                      {activeCfg.kind === "dot" ? (
-                        <span className="w-[58%] aspect-square rounded-full border border-black/10" style={{ background: activeCfg.dot(id) }} />
-                      ) : (
-                        <svg viewBox={activeCfg.vbFor ? activeCfg.vbFor(id) : activeCfg.vb} width="100%" height="100%">
-                          <g dangerouslySetInnerHTML={{ __html: activeCfg.pv(id) }} />
-                        </svg>
+                      <span className="du-card__pv">
+                        {activeCfg.kind === "dot" ? (
+                          <span className="w-[52%] aspect-square rounded-full border border-black/10" style={{ background: activeCfg.dot(id) }} />
+                        ) : (
+                          <svg viewBox={activeCfg.vbFor ? activeCfg.vbFor(id) : activeCfg.vb} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+                            <g dangerouslySetInnerHTML={{ __html: activeCfg.pv(id) }} />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="du-card__name">{name}</span>
+                      {selected && (
+                        <span className="du-card__badge"><Check className="w-3 h-3" /></span>
                       )}
                     </button>
                   );
                 })}
               </div>
-              {activeCfg?.kind !== "dot" && (
-                <p className="mt-3 text-center text-xs text-ink/50">
-                  {field ? itemLabel(kind, field, draft[field]) : ""}
-                </p>
-              )}
             </div>
 
             {/* chân */}
@@ -312,6 +334,57 @@ export default function DressUpCustomizer({ kind = "avatar", initial, onClose, o
               <PrimaryButton onClick={save} disabled={saving} className="w-full justify-center inline-flex items-center gap-1.5">
                 {saving ? "Đang lưu..." : <><Save className="w-4 h-4" /> Lưu vào hồ sơ</>}
               </PrimaryButton>
+              <style>{`
+                .du-card {
+                  position: relative;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 2px;
+                  padding: 6px 4px 5px;
+                  border: 2px solid var(--line);
+                  border-radius: 16px;
+                  cursor: pointer;
+                  transition: transform 130ms ease, box-shadow 130ms ease, border-color 130ms ease;
+                }
+                .du-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(30,20,10,.14) !important; }
+                .du-card__pv {
+                  width: 100%;
+                  aspect-ratio: 1 / 1;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  overflow: hidden;
+                  border-radius: 10px;
+                  pointer-events: none;
+                }
+                .du-card__name {
+                  font-size: 11px;
+                  font-weight: 600;
+                  line-height: 1.15;
+                  text-align: center;
+                  color: var(--ink, #333);
+                  display: -webkit-box;
+                  -webkit-line-clamp: 2;
+                  -webkit-box-orient: vertical;
+                  overflow: hidden;
+                  pointer-events: none;
+                }
+                .du-card__badge {
+                  position: absolute;
+                  top: -7px;
+                  right: -7px;
+                  width: 20px;
+                  height: 20px;
+                  border-radius: 999px;
+                  display: grid;
+                  place-items: center;
+                  background: var(--accent);
+                  color: #fff;
+                  box-shadow: 0 2px 6px rgba(30,20,10,.25);
+                  pointer-events: none;
+                }
+              `}</style>
             </div>
           </div>
         </div>

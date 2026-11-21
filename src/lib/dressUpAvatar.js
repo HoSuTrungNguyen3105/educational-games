@@ -179,7 +179,11 @@ export function itemLabel(kind, field, id) {
     return id.charAt(0).toUpperCase() + id.slice(1);
   }
   const map = api.kid[KID_LABELS[field]];
-  const item = map?.[id];
+  let item = map?.[id];
+  /* Kiểu vẽ riêng (áo võ phục, giày sneaker…) nằm ở map style riêng. */
+  if (!item && field === "shirt") item = api.kid.shirtStyles?.[id];
+  if (!item && field === "dress") item = api.kid.dressStyles?.[id];
+  if (!item && field === "shoes") item = api.kid.shoeStyles?.[id];
   if (!item) return id;
   if (typeof item === "string") return item.charAt(0).toUpperCase() + item.slice(1);
   return item.n || id;

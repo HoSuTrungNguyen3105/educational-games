@@ -45,15 +45,15 @@ export const AVATAR_FIELDS = {
     "body_cowboy_01", "body_artist_01", "body_scientist_01", "body_ballerina_01"],
   skin: ["s1", "s2", "s3", "s4"],
   face: ["face_01", "face_02", "face_03", "face_04", "face_05"],
-  hair: ["hair_01", "hair_02", "hair_03", "hair_04", "hair_05", "hair_06"],
+  hair: ["hair_01", "hair_02", "hair_03", "hair_04", "hair_05", "hair_06", "hair_07", "hair_08", "hair_09", "hair_10", "hair_11", "hair_12", "hair_13", "hair_14"],
   hairColor: ["nâu", "đen", "vàng", "nâuSáng", "đỏ", "xanh", "tím", "bạc"],
-  shirt: ["white", "red", "blue", "yellow", "green", "pink", "purple", "orange", null],
-  dress: ["pink", "red", "yellow", "blue", "purple", "mint", null],
-  pants: ["jeans", "black", "khaki", "redshort", "skirt_pink", "skirt_mint", null],
-  shoes: ["white", "red", "blue", "black", "pink", null],
-  glasses: ["glasses_01", "glasses_02", "glasses_03", "glasses_04", null],
-  hat: ["hat_01", "hat_02", "hat_03", "hat_04", "hat_05", "hat_06", null],
-  acc: ["acc_01", "acc_02", "acc_03", "acc_04", "acc_05", "acc_06", null],
+  shirt: ["white", "red", "blue", "yellow", "green", "pink", "purple", "orange", "gi_orange", "uniform", "hoodie", "astro", "tee_star", "tee_dino", null],
+  dress: ["pink", "red", "yellow", "blue", "purple", "mint", "princess", "sailor", "jean_dress", null],
+  pants: ["jeans", "black", "khaki", "redshort", "skirt_pink", "skirt_mint", "gi_pants", "jeans_cuff", "sport_shorts", "overalls", null],
+  shoes: ["white", "red", "blue", "black", "pink", "martial", "glow", "hero_boots", "doll", "sandals", null],
+  glasses: ["glasses_01", "glasses_02", "glasses_03", "glasses_04", "glasses_05", "glasses_06", "glasses_07", "glasses_08", null],
+  hat: ["hat_01", "hat_02", "hat_03", "hat_04", "hat_05", "hat_06", "hat_07", "hat_08", "hat_09", "hat_10", "hat_11", "hat_12", null],
+  acc: ["acc_01", "acc_02", "acc_03", "acc_04", "acc_05", "acc_06", "acc_07", "acc_08", "acc_09", "acc_10", "acc_11", "acc_12", "acc_13", null],
 };
 
 /** Bộ đồ mặc định khi hồ sơ chưa có gì (khớp với EG_DRESSUP.kid.defaults). */
