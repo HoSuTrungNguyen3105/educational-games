@@ -39,6 +39,7 @@ import {
 } from "../../lib/documents/tableOps.js";
 import { TableTemplateList, TableTools, TableToolsDisabled } from "./documents/TableTools.jsx";
 import PageSettings from "./documents/PageSettings.jsx";
+import ImagePickerModal from "./studio/ImagePicker.jsx";
 import FindReplaceDialog from "./documents/FindReplaceDialog.jsx";
 import { jsonItemIndexAt, htmlAnchorAt } from "../../lib/documents/sourceMap.js";
 import { templatesFor } from "../../lib/documents/templates.js";
@@ -80,7 +81,8 @@ import "./documents/docstudio.css";
 //   • Xuất .docx / .pptx thật, thao tác slide bằng nút ở chế độ JSON.
 //   • Đợt nâng cấp: tự động lưu bản nháp (debounce 2,5s, tắt được trong
 //     Cài đặt) + cảnh báo khi rời trang lúc chưa lưu; nhân bản ngay
-//     trong editor; tìm & thay thế (Ctrl+F / Ctrl+H); tải ảnh từ máy;
+//     trong editor; tìm & thay thế (Ctrl+F / Ctrl+H); chèn ảnh từ
+//     thư viện ảnh dùng chung / dán link / tải lên thư viện;
 //     thống kê số từ/khối/slide ở chân khung soạn; kéo thả thumbnail
 //     để sắp xếp slide; nút In / lưu PDF cho bản xem trước dạng iframe.
 //   • Đợt định dạng chữ + mobile (kiểu Word mobile): thanh định dạng
@@ -145,6 +147,15 @@ const escAttr = (value) => String(value ?? "")
 const escHtml = (value) => String(value ?? "")
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+/** Alt gợi ý từ URL ảnh: tên file (bỏ đuôi + thư mục), "-" / "_" → khoảng
+ * trắng. Dùng khi giáo viên chọn ảnh từ thư viện mà chưa nhập mô tả. */
+const fileNameToAlt = (url) => {
+  try {
+    const base = String(url || "").split(/[?#]/)[0].split("/").pop() || "";
+    return decodeURIComponent(base).replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+  } catch { return ""; }
+};
+
 function buildApplied(mode, docType, res) {
   if (mode === "html") {
     return { mode, docType, model: res.model, warnings: res.warnings || [], bodyHtml: res.bodyHtml, cssText: res.cssText, source: "" };
@@ -180,10 +191,11 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     try { return localStorage.getItem("docstudio.autosave") !== "off"; } catch { return true; }
   });
   const [duplicating, setDuplicating] = useState(false);
-  const [imageError, setImageError] = useState("");
+  const [imagePickerOpen, setImagePickerOpen] = useState(false);
+  // Xem trước của ô "Đường dẫn ảnh": idle (chưa kiểm tra) | ok | error.
+  const [srcPreviewState, setSrcPreviewState] = useState("idle");
   const saveInFlight = useRef(false);
   const autoAttemptRef = useRef(""); // snapshot đã thử autosave — tránh lặp vô hạn khi mất mạng
-  const imageFileRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [exportReport, setExportReport] = useState(null);
   const [split, setSplit] = useState(50);
@@ -1239,29 +1251,22 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     .split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
     .map((line) => line.split("|").map((cell) => cell.trim()));
 
-  // Tải ảnh từ máy: đọc thành data URI rồi đi đúng đường chèn hiện có
-  // (ô "Đường dẫn ảnh" nhận data URI như một URL). Trần 600 KB vì ảnh
-  // nhúng làm phình mã nguồn ~1,37 lần mà máy chủ chỉ lưu tối đa 1 MB.
-  const MAX_LOCAL_IMAGE_BYTES = 600 * 1024;
-  const handleImageFile = (file) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { setImageError("File đã chọn không phải là file ảnh."); return; }
-    if (file.size > MAX_LOCAL_IMAGE_BYTES) {
-      setImageError(`Ảnh nặng ${(file.size / 1024).toFixed(0)} KB — tối đa 600 KB vì mã nguồn tài liệu (kèm ảnh nhúng) giới hạn lưu 1 MB. Hãy nén ảnh rồi thử lại.`);
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImageError("");
-      setToolForm((f) => ({
-        ...f,
-        src: String(reader.result || ""),
-        alt: f.alt || file.name.replace(/\.[^.]+$/, ""),
-      }));
-      showToast?.("Đã nạp ảnh từ máy — bấm Chèn hình ảnh để đưa vào tài liệu.", "success");
-    };
-    reader.onerror = () => setImageError("Không đọc được file ảnh đã chọn.");
-    reader.readAsDataURL(file);
+  // Chọn ảnh từ hộp thoại dùng chung ImagePickerModal (thư viện ảnh qua
+  // API /images, dán link có kiểm tra, tải lên Cloudinary qua đúng
+  // POST /images/upload): chỉ ĐẶT đường dẫn vào ô "Đường dẫn ảnh" — đường
+  // chèn vào tài liệu vẫn là handleInsertImage như cũ (thẻ <img> ở chế độ
+  // HTML, khối image ở Word, slide image ở PowerPoint). Tài liệu chỉ lưu
+  // URL nên không còn trần 600 KB của cách nhúng data URI cũ, và ảnh tải
+  // lên nằm trong thư viện dùng chung cho lần sau.
+  const handlePickDocumentImage = (url) => {
+    if (!url) return;
+    setSrcPreviewState("idle");
+    setToolForm((f) => ({
+      ...f,
+      src: url,
+      alt: f.alt || fileNameToAlt(url),
+    }));
+    showToast?.("Đã chọn ảnh — bấm Chèn hình ảnh để đưa vào tài liệu.", "success");
   };
 
   const handleInsertImage = () => {
@@ -1573,25 +1578,35 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
     }
 
     if (tool === "image") {
+      const srcValue = toolForm.src.trim();
       return (
         <aside className="docstudio-flyout">
           <h3>Chèn hình ảnh</h3>
           <p className="docstudio-flyout-hint">
             {mode === "html" ? "Chèn thẻ <img> tại vị trí con trỏ." : docType === "word" ? "Thêm một khối hình ảnh vào cuối tài liệu." : "Thêm một slide hình ảnh vào cuối bài."}
           </p>
-          <label className="docstudio-label" htmlFor="docstudio-img-src">Đường dẫn ảnh</label>
-          <input id="docstudio-img-src" className="docstudio-input" value={toolForm.src}
-            onChange={(e) => setToolForm((f) => ({ ...f, src: e.target.value }))}
-            placeholder="https://… hoặc /images/…" />
-          <input ref={imageFileRef} type="file" accept="image/*" className="hidden"
-            onChange={(e) => { handleImageFile(e.target.files?.[0]); e.target.value = ""; }} />
-          <button type="button" className="docstudio-btn-ghost" onClick={() => imageFileRef.current?.click()}>
-            <Upload className="w-4 h-4" /> Tải ảnh từ máy…
+          <button type="button" className="docstudio-btn-ghost" onClick={() => setImagePickerOpen(true)}>
+            <ImageIcon className="w-4 h-4" /> Thư viện ảnh / tải lên / dán link…
           </button>
           <p className="docstudio-flyout-hint">
-            Ảnh tải từ máy được nhúng thẳng vào tài liệu (tối đa 600 KB — mã nguồn tài liệu giới hạn lưu 1 MB).
+            Chọn ảnh có sẵn trong thư viện ảnh dùng chung, tải ảnh mới lên thư viện, hoặc dán link ảnh — tài liệu chỉ lưu đường dẫn nên không bị nặng file.
           </p>
-          {imageError && <p className="docstudio-img-error" role="alert">{imageError}</p>}
+          <label className="docstudio-label" htmlFor="docstudio-img-src">Đường dẫn ảnh</label>
+          <input id="docstudio-img-src" className="docstudio-input" value={toolForm.src}
+            onChange={(e) => { setSrcPreviewState("idle"); setToolForm((f) => ({ ...f, src: e.target.value })); }}
+            placeholder="https://… hoặc /images/…" />
+          {srcValue && (
+            <div className="docstudio-img-preview">
+              <img key={srcValue} src={srcValue} alt=""
+                onLoad={() => setSrcPreviewState("ok")}
+                onError={() => setSrcPreviewState("error")} />
+              {srcPreviewState === "error" && (
+                <p className="docstudio-img-error" role="alert">
+                  Chưa tải được ảnh từ đường dẫn này — kiểm tra lại link; ảnh hỏng sẽ không hiện trong bản xem trước và khi xuất file.
+                </p>
+              )}
+            </div>
+          )}
           {docType === "powerpoint" && mode === "json" && (
             <>
               <label className="docstudio-label" htmlFor="docstudio-img-title">Tiêu đề slide</label>
@@ -2153,6 +2168,12 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
         onImported={importUploaded}
         initialMode={mode}
         initialDocType={docType}
+      />
+
+      <ImagePickerModal
+        open={imagePickerOpen}
+        onClose={() => setImagePickerOpen(false)}
+        onPick={handlePickDocumentImage}
       />
 
       <ConfirmModal {...confirmProps} />
