@@ -351,10 +351,13 @@ function App() {
     // header + nút Đóng) nên không bọc RouteShell để tránh hai thanh đầu.
     // Trang Danh mục: duyệt môn → chủ đề → game, chơi qua selectGame
     // dùng chung với trang chủ. showBack={false} theo yêu cầu của Nguyên
-    // (2026-11-09): bỏ nút "← Về trang chủ" ở đầu trang Danh mục.
+    // (2026-11-09): bỏ nút "← Về trang chủ" của RouteShell ở đầu trang.
+    // Route độc lập truyền showHomeLink để CategoryPage tự hiện nút về
+    // trang chủ RIÊNG trên desktop (BottomNav ẩn từ breakpoint lg nên
+    // desktop không còn đường về nào khác); mobile giữ nguyên không nút.
     categories: () => (
       <RouteShell toast={toast} showBack={false}>
-        <CategoryPage onSelectGame={selectGame} userAuth={userAuth} />
+        <CategoryPage onSelectGame={selectGame} userAuth={userAuth} showHomeLink />
       </RouteShell>
     ),
     lessons: () => (
