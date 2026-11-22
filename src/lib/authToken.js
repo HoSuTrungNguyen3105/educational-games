@@ -29,13 +29,28 @@
  * Đồng bộ LIÊN TAB (vá lỗi "refresh token không còn hiệu lực" khi mở nhiều
  * tab/PWA): localStorage là nguồn sự thật về THẾ HỆ token mới nhất — tab nào
  * refresh xong cũng ghi bản mới xuống đó, còn `memory` là bản riêng từng tab
- * nên tab chậm sẽ lệch thế hệ. Ba cơ chế giữ mọi tab cùng một thế hệ:
+ * nên tab chậm sẽ lệch thế hệ. Bốn cơ chế giữ mọi tab cùng một thế hệ:
  *   (1) sự kiện `storage`: tab khác ghi/xoá phiên → memory nhận theo ngay;
  *   (2) đường refresh luôn đọc lại localStorage trước khi trình token;
- *   (3) Web Locks API: chỉ MỘT tab được refresh tại một thời điểm.
+ *   (3) Web Locks API: chỉ MỘT tab được refresh tại một thời điểm;
+ *   (4) CHẶN THẾ HỆ LÙI theo `iat` của access token (xem isOlderAuth): bản
+ *       ghi trong storage CŨ hơn bản tab đang giữ thì KHÔNG nhận, và tab
+ *       chậm cũng không được ghi bản cũ của mình đè lên storage.
  * Thiếu các cơ chế này, tab chậm trình refresh token đã xoay quá cửa sổ
  * grace → server coi là reuse → thu hồi CẢ family → mọi tab bị đá về đăng
  * nhập dù token mới nhất vẫn hợp lệ.
+ *
+ * Vì sao cần (4) dù đã có (1)–(3) — lỗi mất phiên khi mở tab thứ hai trên
+ * production 2026-11-22, tái hiện xác định bằng harness 2 tab + độ trễ:
+ * storage bị GHI LÙI về một thế hệ cũ (tab bị đóng băng/bfcache khôi phục
+ * rồi ghi lại snapshot phiên cũ của nó — vd đường ghi phụ patchUser →
+ * setAuth lấy refresh token từ memory cũ của chính tab đó; hoặc bản ghi cũ
+ * được khôi phục đè lên). Các tab khác nhận bừa bản lùi qua (1)/(2), trình
+ * refresh token đã xoay từ lâu → ngoài grace → server thu hồi cả family →
+ * tab trình token lỗi dọn luôn storage dùng chung → MỌI tab mất phiên.
+ * `iat` do server cấp trong access token, tăng đơn điệu theo mỗi vòng xoay
+ * nên là mốc so thế hệ tin cậy được; hai thế hệ cấp cùng một giây có `iat`
+ * bằng nhau → vẫn nhận như cũ, cửa sổ grace của server đủ che trường hợp đó.
  */
 const AUTH_KEY = "edu_games_auth";
 
@@ -68,14 +83,34 @@ function writeStorage(auth) {
 }
 
 /**
+ * Bản ghi `candidate` có thuộc THẾ HỆ CŨ HƠN bản ghi `baseline` không — so
+ * bằng `iat` (giây) trong access token, mốc do server cấp và tăng đơn điệu
+ * theo mỗi vòng xoay token. Chỉ kết luận khi CẢ HAI token đều đọc được
+ * `iat`; thiếu mốc (token opaque/không phải JWT) thì coi như không cũ hơn
+ * và giữ hành vi cũ — thà nhận nhầm còn hơn chặn nhầm phiên hợp lệ.
+ */
+function isOlderAuth(candidate, baseline) {
+  if (!candidate?.token || !baseline?.token) return false;
+  const a = tokenPayload(candidate.token)?.iat;
+  const b = tokenPayload(baseline.token)?.iat;
+  return typeof a === "number" && typeof b === "number" && a < b;
+}
+
+/**
  * Nhận bản ghi trong localStorage làm bản ghi của tab này — KHÔNG ghi lại
  * (nó đã nằm trong storage rồi). Trả true nếu memory thật sự thay đổi.
  * Cơ sở của đồng bộ liên tab: localStorage luôn giữ thế hệ token MỚI NHẤT
  * vì mọi lần xoay token, ở bất kỳ tab nào, đều ghi xuống đó ngay; `memory`
  * của một tab chậm/ít mở có thể còn giữ thế hệ cũ.
+ *
+ * NGOẠI LỆ (cơ chế (4) ở đầu file): bản ghi trong storage CŨ hơn bản tab
+ * đang giữ = storage vừa bị ghi lùi bởi một tab chậm — KHÔNG nhận. Nhận
+ * vào là tab này sẽ trình refresh token đã xoay quá grace ở lần refresh
+ * tới và tự tay kích reuse-detection giết cả family.
  */
 function adoptStored(stored) {
   if (!stored?.token) return false;
+  if (memory && isOlderAuth(stored, memory)) return false;
   const next = {
     token: stored.token ?? null,
     user: stored.user ?? null,
@@ -189,14 +224,32 @@ function emit() {
 export function setAuth(auth, { persist = true } = {}) {
   if (!auth || !(auth.token || auth.user)) {
     memory = null;
-  } else {
-    const prev = memory ?? readStorage();
-    memory = {
-      token: auth.token ?? null,
-      user: auth.user ?? null,
-      refreshToken: auth.refreshToken !== undefined ? auth.refreshToken : (prev?.refreshToken ?? null),
-    };
+    if (persist) writeStorage(null);
+    emit();
+    return memory;
   }
+  const prev = memory ?? readStorage();
+  const next = {
+    token: auth.token ?? null,
+    user: auth.user ?? null,
+    refreshToken: auth.refreshToken !== undefined ? auth.refreshToken : (prev?.refreshToken ?? null),
+  };
+  if (persist) {
+    const stored = readStorage();
+    if (stored?.token && isOlderAuth(next, stored)) {
+      /* Storage đang giữ thế hệ MỚI hơn bản caller muốn ghi — tab này chậm
+       * thế hệ (vd patchUser lấy token từ memory cũ của một tab bị đóng
+       * băng lâu). Ghi đè là kéo mọi tab lùi về refresh token đã xoay, và
+       * lần refresh kế tiếp của bất kỳ tab nào cũng có thể giết cả family
+       * (xem cơ chế (4) ở đầu file). KHÔNG ghi; nhận bản trong storage
+       * làm bản của tab này để tab tự lành theo thế hệ mới nhất. */
+      memory = next;
+      adoptStored(stored);
+      emit();
+      return memory;
+    }
+  }
+  memory = next;
   if (persist) writeStorage(memory);
   emit();
   return memory;
