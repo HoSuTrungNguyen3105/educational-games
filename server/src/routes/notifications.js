@@ -118,23 +118,4 @@ router.post("/test-push", authenticate, async (req, res, next) => {
   }
 });
 
-// GET /api/notifications/push-status — check FCM config + device count
-router.get("/push-status", authenticate, async (req, res, next) => {
-  try {
-    const { getActiveTokensByUser } = await import("../services/userDeviceService.js");
-    const fs = await import("fs");
-    const tokens = await getActiveTokensByUser(req.user.sub);
-    const hasFirebase = !!(process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
-    const hasLocalFile = fs.existsSync("./firebase-service-account.json");
-    sendSuccess(res, {
-      userId: req.user.sub,
-      deviceCount: tokens.length,
-      devices: tokens.map(t => t.slice(0, 20) + "..."),
-      firebaseConfigured: hasFirebase,
-      localServiceAccount: hasLocalFile,
-      nodeEnv: process.env.NODE_ENV,
-    });
-  } catch (e) { next(e); }
-});
-
 export default router;

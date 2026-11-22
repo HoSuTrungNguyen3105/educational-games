@@ -190,15 +190,6 @@ router.delete("/categories", authenticate, requireRoles("teacher", "admin"), asy
   }
 });
 
-router.get("/players", async (_req, res, next) => {
-  try {
-    const data = await setupService.listPlayers();
-    sendSuccess(res, data);
-  } catch (e) {
-    next(e);
-  }
-});
-
 router.get("/games/:gameId/players", async (req, res, next) => {
   try {
     const { gameId } = req.params;

@@ -378,11 +378,6 @@ export async function removeAllCategories() {
   return { deleted: count };
 }
 
-export async function listPlayers() {
-  const docs = await getCollection("players").find({}).toArray();
-  return docs.map(({ _id, ...rest }) => rest);
-}
-
 export async function listSubjects() {
   const docs = await getCollection("subjects").find({}).sort({ name: 1 }).toArray();
   return docs.map(d => ({ _id: d._id.toString(), name: d.name }));

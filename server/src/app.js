@@ -26,7 +26,7 @@ import conversationsRouter from "./routes/conversations.js";
 import friendsRouter from "./routes/friends.js";
 import seedRouter from "./routes/seed.js";
 import gameProgressRouter, { adminRouter } from "./routes/gameProgress.js";
-import examResultsRouter, { adminRouter as examResultsAdminRouter } from "./routes/examResults.js";
+import examResultsRouter from "./routes/examResults.js";
 import gamePlaysRouter from "./routes/gamePlays.js";
 import dailyTasksRouter from "./routes/dailyTasks.js";
 import tasksRouter from "./routes/tasks.js";
@@ -124,7 +124,6 @@ app.use("/api/users", examResultsRouter);
 // path khác của /api/users.
 app.use("/api/users", usersDirectoryRouter);
 app.use("/api/users", adminRouter);
-app.use("/api/users", examResultsAdminRouter);
 // GET /api/users/me — current user profile. Phải đặt TRƯỚC usersSearchRouter
 // vì router đó có GET "/:id" và sẽ nuốt "/me" thành userId → 404.
 app.get("/api/users/me", async (req, res) => {

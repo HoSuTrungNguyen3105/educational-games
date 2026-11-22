@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, changePassword, getCoins, getWallet, adjustWallet, exchangeWallet, redeemAchievement, getXp, claimDailyStarGift } from "../services/authService.js";
+import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, changePassword, getCoins, getWallet, adjustWallet, exchangeWallet, redeemAchievement, getXp, claimDailyStarGift, getTickets, addTickets, useTicket } from "../services/authService.js";
 import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 import { getByUser, XP_LEDGER_GAME_ID } from "../services/gameProgressService.js";
@@ -402,6 +402,40 @@ router.post("/me/wallet/redeem", authenticate, async (req, res, next) => {
     sendSuccess(res, await redeemAchievement(req.user.sub, achievementId));
   } catch (e) {
     sendError(res, e.message, 400);
+  }
+});
+
+// ── Vé (tickets) ─────────────────────────────────────────────────────────
+// Client (ticketService) đã gọi 3 endpoint này từ lâu nhưng server chưa
+// từng có → cộng vé ở DailyGift/thắng game đều 404. Rule permission
+// /^\/auth\/me/ (quyền `profile`) đã bao phủ cả cụm này như /me/wallet.
+
+// GET /api/auth/me/tickets — vé chưa dùng + số lượng
+router.get("/me/tickets", authenticate, async (req, res, next) => {
+  try {
+    sendSuccess(res, await getTickets(req.user.sub));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/auth/me/tickets — cộng vé: { amount }
+router.post("/me/tickets", authenticate, async (req, res) => {
+  try {
+    const { amount } = req.body || {};
+    if (amount === undefined) return sendError(res, "Cần truyền amount (kiểu số)", 400);
+    sendSuccess(res, await addTickets(req.user.sub, amount));
+  } catch (e) {
+    sendError(res, e.message, 400);
+  }
+});
+
+// POST /api/auth/me/tickets/:ticketId/use — dùng 1 vé
+router.post("/me/tickets/:ticketId/use", authenticate, async (req, res) => {
+  try {
+    sendSuccess(res, await useTicket(req.user.sub, req.params.ticketId));
+  } catch (e) {
+    sendError(res, e.message, e.status || 400);
   }
 });
 

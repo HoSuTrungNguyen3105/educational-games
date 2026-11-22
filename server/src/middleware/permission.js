@@ -145,6 +145,7 @@ const RULES = [
   { re: /^\/garden/, perms: [PLAY] },
   { re: /^\/plant-types/, m: "GET", perms: [PLAY, "plant_types.view"] },
   { re: /^\/plant-types/, feature: "plant_types" },
+  { re: /^\/avatar\/upload$/, feature: "avatar_items" },
   { re: /^\/avatar\/admin\//, feature: "avatar_items" },
   { m: "PUT", re: /^\/avatar\/template$/, feature: "avatar_templates" },
   { re: /^\/avatar\/(inventory|buy|save)$/, perms: [PROFILE] },
@@ -169,7 +170,6 @@ const RULES = [
   { re: /^\/permissions\/roles/, feature: "roles" },
   { re: /^\/permissions/, perms: ["roles.view"] },
   { re: /^\/stats/, feature: "reports" },
-  { re: /^\/players/, perms: ["reports.view", "games.view"] },
   { re: /^\/chat/, perms: ["chat", "chat.view"] },                  // quyền cơ bản `chat`
   { re: /^\/conversations/, perms: ["chat", "chat.view"] },
   { re: /^\/friends/, perms: [PROFILE, "friends"] },               // kết bạn: quyền cơ bản `friends`

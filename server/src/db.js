@@ -240,6 +240,21 @@ async function _runHeavyInit(database) {
               properties: { id: { bsonType: "string" }, at: { bsonType: "string" } },
             },
           },
+          // Vé thưởng (DailyGift + thắng game, /api/auth/me/tickets):
+          // [{ id, source, createdAt, usedAt }] — usedAt null = chưa dùng.
+          tickets: {
+            bsonType: "array",
+            items: {
+              bsonType: "object",
+              required: ["id"],
+              properties: {
+                id: { bsonType: "string" },
+                source: { bsonType: "string" },
+                createdAt: { bsonType: "string" },
+                usedAt: { bsonType: ["string", "null"] },
+              },
+            },
+          },
           coinsEarnedOn: { bsonType: "string" },
           coinsEarnedToday: { bsonType: ["int", "double", "long"] },
           // Ngày đã nhận quà sao hằng ngày (YYYY-MM-DD) — chặn nhận trùng.

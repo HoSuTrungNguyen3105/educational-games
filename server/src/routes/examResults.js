@@ -1,7 +1,6 @@
 import { Router } from "express";
-import { authenticate, requireRoles } from "../middleware/auth.js";
+import { authenticate } from "../middleware/auth.js";
 import { sendSuccess, sendError } from "../utils/response.js";
-import { respondWithRange } from "../utils/rangeList.js";
 import * as examResultService from "../services/examResultService.js";
 
 const router = Router();
@@ -31,21 +30,8 @@ router.get("/me/exam-results", async (req, res, next) => {
   }
 });
 
-// ── Admin routes ──
-const adminRouter = Router();
-adminRouter.use(authenticate);
-adminRouter.use(requireRoles("teacher", "admin"));
-
-// GET /api/users/exam-results — all students' exam results
-adminRouter.get("/exam-results", async (req, res, next) => {
-  try {
-    const list = await examResultService.listAll({ limit: req.query.limit });
-    if (respondWithRange(req, res, list)) return;
-    sendSuccess(res, list);
-  } catch (e) {
-    next(e);
-  }
-});
+// Bản admin GET /api/users/exam-results (liệt kê kết quả thi của mọi học
+// sinh) đã bị GỠ: 0 caller trong web — client chỉ dùng /me/exam-results
+// cho chính học sinh. adminRouter rỗng đi kèm cũng gỡ khỏi app.js.
 
 export default router;
-export { adminRouter };
