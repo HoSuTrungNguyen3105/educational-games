@@ -72,7 +72,6 @@ const RULES = [
   { re: /^\/game-configs/, feature: "game_config" },
 
   // ── Nội dung: câu hỏi / ngân hàng / môn / danh mục / template ────────
-  { m: "POST", re: /^\/questions\/explain-context$/, perms: [PLAY, PROFILE] },
   { re: /^\/questions/, m: "GET", perms: [PLAY, "questions.view"] },
   { re: /^\/questions/, feature: "questions" },
   // Học sinh tự luyện BỘ ĐỀ: server chấm 1 câu (như explain-context) — phải
@@ -125,7 +124,6 @@ const RULES = [
   { re: /^\/events(\/|$)/, m: "GET", perms: [PROFILE] },
 
   // ── Nhiệm vụ ngày / nhắc nhở / thông báo / chat ──────────────────────
-  { re: /^\/daily-tasks\/admin\//, feature: "daily_tasks" },
   { re: /^\/daily-tasks/, perms: ["daily-tasks", "daily_tasks.view"] },
   { re: /^\/tasks\/admin\//, feature: "daily_tasks" },
   { re: /^\/tasks/, perms: ["daily-tasks", "daily_tasks.view"] },
@@ -177,7 +175,7 @@ const RULES = [
   // setupRouter mount ở "/api" (không có prefix /setup) nên các đường dẫn của nó
   // (/templates, /categories, /subjects, /players, /games/:id/players) đã được
   // các rule tương ứng phía trên che phủ — không cần rule riêng.
-  { m: "POST", re: /^\/ai\/(generate-question|quizzes\/generate)$/, perms: ["questions.edit"] },
+  { m: "POST", re: /^\/ai\/quizzes\/generate$/, perms: ["questions.edit"] },
   // Lịch sử hỏi AI: CHỈ admin (route còn requireRoles("admin") chốt cuối).
   // Gắn feature reports như /stats: GET cần reports.view, DELETE cần
   // reports.delete — giáo viên có reports.view nhưng THIẾU reports.delete

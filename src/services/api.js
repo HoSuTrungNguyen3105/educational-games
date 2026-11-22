@@ -933,9 +933,6 @@ export const imageService = {
   async removeMany(publicIds) {
     return apiFetch("/images", { method: "DELETE", body: { publicIds } });
   },
-  async getInfo(publicId) {
-    return apiFetch(`/images/${encodeURIComponent(publicId)}`);
-  },
   // Đồng bộ (chỉ admin): gán toàn bộ ảnh chưa có chủ trong folder cho mình.
   async claimUnowned(folder = "edu-game") {
     return apiFetch("/images/claim-unowned", { method: "POST", body: { folder } });
@@ -951,37 +948,6 @@ export const gameEventService = {
 export const dailyTaskService = {
   async list() {
     return apiFetch("/daily-tasks") || [];
-  },
-  async getMyStatus() {
-    return apiFetch("/daily-tasks/me");
-  },
-  async track(type, amount) {
-    return apiFetch("/daily-tasks/track", { method: "POST", body: { type, amount } });
-  },
-  async claim(taskId) {
-    return apiFetch(`/daily-tasks/claim/${encodeURIComponent(taskId)}`, { method: "POST" });
-  },
-  async adminStats() {
-    return apiFetch("/daily-tasks/admin/stats");
-  },
-  async adminProgress() {
-    return apiFetch("/daily-tasks/admin/progress");
-  },
-  async adminReset(userId) {
-    return apiFetch("/daily-tasks/admin/reset", { method: "POST", body: { userId } });
-  },
-  async adminCreateTask(data) {
-    return apiFetch("/daily-tasks/admin/tasks", { method: "POST", body: data });
-  },
-  async adminUpdateTask(taskId, data) {
-    return apiFetch(`/daily-tasks/admin/tasks/${encodeURIComponent(taskId)}`, { method: "PUT", body: data });
-  },
-  async adminDeleteTask(taskId) {
-    return apiFetch(`/daily-tasks/admin/tasks/${encodeURIComponent(taskId)}`, { method: "DELETE" });
-  },
-  // Xóa hàng loạt nhiệm vụ (admin, tối đa 200/lần) → { deleted, failed, counts }
-  async bulkRemoveAdmin(ids) {
-    return apiFetch("/daily-tasks/admin/tasks/bulk", { method: "DELETE", body: { ids } });
   },
 };
 
