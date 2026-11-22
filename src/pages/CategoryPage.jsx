@@ -9,7 +9,7 @@ import {
 import { gameService } from "../services/api.js";
 import { setupService } from "../services/setupService.js";
 import { lessonService } from "../services/lessonService.js";
-import { useMediaQuery, useTemplates } from "../lib/hooks.js";
+import { useTemplates } from "../lib/hooks.js";
 import { navigate } from "../lib/router.js";
 import { gameThumbnail } from "../lib/gameThumbnail.js";
 import { hashString, metaForSubject, subjectLabel, tintFor, topicBaseName } from "../lib/subjectMeta.js";
@@ -137,8 +137,7 @@ function buildCatalog(games, apiSubjects) {
   return { bySubject, subjects: ordered, sortTopics };
 }
 
-export default function CategoryPage({ onSelectGame, userAuth, hideBottomNav = false }) {
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
+export default function CategoryPage({ onSelectGame, userAuth, hideBottomNav = false, showHomeLink = false }) {
   const [games, setGames] = useState(null);
   const [apiSubjects, setApiSubjects] = useState([]);
   const [error, setError] = useState(null);
@@ -241,154 +240,154 @@ export default function CategoryPage({ onSelectGame, userAuth, hideBottomNav = f
 
   return (
     <div className="gq-home cat-page">
-      {isDesktop ? (
-        <div className="cat-wrap">
-          <div className="cat-desktop-notice">
-            <h1 className="cat-title">Danh mục</h1>
-            <p className="cat-sub">Không phải cấu hình cần hiển thị trên thiết bị này.</p>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="cat-wrap">
-            <header className="cat-head">
-              <h1 className="cat-title">Khám phá danh mục 📚</h1>
-              <p className="cat-sub">Chọn môn học mà bé yêu thích nhé!</p>
-            </header>
+      <div className="cat-wrap">
+        {/* Đường về trang chủ cho route độc lập trên desktop: BottomNav
+            chỉ hiện dưới breakpoint lg nên ở desktop không còn đường về
+            nào khác. CSS chỉ hiện nút này từ 1024px trở lên — mobile giữ
+            nguyên hành vi cũ (về bằng BottomNav). Panel nhúng trong trang
+            Bé không truyền showHomeLink nên không hiện. */}
+        {showHomeLink && (
+          <button type="button" className="cat-home-link" onClick={() => navigate("/")}>
+            <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+            <span>Về trang chủ</span>
+          </button>
+        )}
+        <header className="cat-head">
+          <h1 className="cat-title">Khám phá danh mục 📚</h1>
+          <p className="cat-sub">Chọn môn học mà bé yêu thích nhé!</p>
+        </header>
 
-            <label className="cat-search">
-              <Search className="w-5 h-5" aria-hidden="true" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={activeTopic ? "Tìm trò chơi trong chủ đề..." : "Tìm môn học, chủ đề..."}
-                aria-label="Tìm kiếm trong danh mục"
+        <label className="cat-search">
+          <Search className="w-5 h-5" aria-hidden="true" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={activeTopic ? "Tìm trò chơi trong chủ đề..." : "Tìm môn học, chủ đề..."}
+            aria-label="Tìm kiếm trong danh mục"
+          />
+          {query && (
+            <button type="button" className="cat-search__x" onClick={() => setQuery("")} aria-label="Xoá tìm kiếm">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </label>
+
+        {error ? (
+          <ErrorState title="Không tải được danh mục" subtitle={error} onRetry={() => setReloadKey((k) => k + 1)} />
+        ) : games === null ? (
+          <Loader label="Đang tải danh mục..." />
+        ) : activeTopic ? (
+          /* ─────────── MÀN CON: TRÒ CHƠI CỦA MỘT CHỦ ĐỀ ─────────── */
+          <section aria-label={`Trò chơi chủ đề ${activeTopic.name}`}>
+            <button type="button" className="cat-back" onClick={() => setActiveTopic(null)}>
+              <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+              <span>Chủ đề</span>
+            </button>
+            <h2 className="cat-topic-title">{activeTopic.name}</h2>
+            <p className="cat-topic-sub">
+              {activeTopic.subject} · {activeTopic.games.length} trò chơi
+            </p>
+            {gamesForTopic.length === 0 ? (
+              <EmptyState
+                icon={<Search className="w-10 h-10 text-gray-400" />}
+                title="Không tìm thấy trò chơi nào"
+                subtitle="Thử từ khoá khác nhé!"
               />
-              {query && (
-                <button type="button" className="cat-search__x" onClick={() => setQuery("")} aria-label="Xoá tìm kiếm">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </label>
-
-            {error ? (
-              <ErrorState title="Không tải được danh mục" subtitle={error} onRetry={() => setReloadKey((k) => k + 1)} />
-            ) : games === null ? (
-              <Loader label="Đang tải danh mục..." />
-            ) : activeTopic ? (
-              /* ─────────── MÀN CON: TRÒ CHƠI CỦA MỘT CHỦ ĐỀ ─────────── */
-              <section aria-label={`Trò chơi chủ đề ${activeTopic.name}`}>
-                <button type="button" className="cat-back" onClick={() => setActiveTopic(null)}>
-                  <ChevronLeft className="w-5 h-5" aria-hidden="true" />
-                  <span>Chủ đề</span>
-                </button>
-                <h2 className="cat-topic-title">{activeTopic.name}</h2>
-                <p className="cat-topic-sub">
-                  {activeTopic.subject} · {activeTopic.games.length} trò chơi
-                </p>
-                {gamesForTopic.length === 0 ? (
-                  <EmptyState
-                    icon={<Search className="w-10 h-10 text-gray-400" />}
-                    title="Không tìm thấy trò chơi nào"
-                    subtitle="Thử từ khoá khác nhé!"
-                  />
-                ) : (
-                  <div className="gq-grid cat-games">
-                    {gamesForTopic.map((game, i) => {
-                      const t = templateOf(game);
-                      const meta = metaForSubject(subjectLabel(game.subject));
-                      return (
-                        <GqGameCard
-                          key={game._id || game.id || i}
-                          name={game.name}
-                          icon={t?.icon}
-                          thumb={t?.thumbnail || gameThumbnail(t?.slug || t?.id || t?._id, game.name)}
-                          tint={tintFor(game.name || String(i))}
-                          badge={meta.kind === "learn" ? "Học" : "Chơi"}
-                          age={meta.age}
-                          play={() => onSelectGame(game)}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
             ) : (
-              /* ─────────── MÀN CHÍNH: MÔN (trái) + CHỦ ĐỀ (phải) ─────────── */
-              <div className="cat-layout">
-                <nav className="cat-rail" aria-label="Môn học">
-                  {railSubjects.map((name) => (
-                    <button
-                      key={name}
-                      type="button"
-                      className={`cat-rail__item${subject === name ? " cat-rail__item--on" : ""}`}
-                      onClick={() => pickSubject(name)}
-                      aria-current={subject === name ? "true" : undefined}
-                    >
-                      {name}
-                    </button>
-                  ))}
-                </nav>
-
-                <section className="cat-main" aria-label="Chủ đề">
-                  <h2 className="cat-main__title">{subject}</h2>
-
-                  {lessonCount > 0 && (
-                    <button type="button" className="cat-lessons" onClick={() => navigate("/lessons")}>
-                      <span className="cat-lessons__ico" aria-hidden="true"><BookOpen className="w-5 h-5" /></span>
-                      <span className="cat-lessons__txt">
-                        Có {lessonCount} bài học {subject === ALL_SUBJECTS ? "đã xuất bản" : `môn ${subject}`}
-                      </span>
-                      <span className="cat-lessons__go">Xem bài học →</span>
-                    </button>
-                  )}
-
-                  {topicsForView.length === 0 ? (
-                    <EmptyState
-                      icon={<BookOpen className="w-10 h-10 text-gray-400" />}
-                      title={query ? "Không tìm thấy chủ đề nào" : "Chưa có trò chơi nào"}
-                      subtitle={query ? "Thử từ khoá khác hoặc chọn môn khác nhé!" : "Thầy cô thêm game vào nhé!"}
+              <div className="gq-grid cat-games">
+                {gamesForTopic.map((game, i) => {
+                  const t = templateOf(game);
+                  const meta = metaForSubject(subjectLabel(game.subject));
+                  return (
+                    <GqGameCard
+                      key={game._id || game.id || i}
+                      name={game.name}
+                      icon={t?.icon}
+                      thumb={t?.thumbnail || gameThumbnail(t?.slug || t?.id || t?._id, game.name)}
+                      tint={tintFor(game.name || String(i))}
+                      badge={meta.kind === "learn" ? "Học" : "Chơi"}
+                      age={meta.age}
+                      play={() => onSelectGame(game)}
                     />
-                  ) : (
-                    <div className="cat-grid">
-                      {topicsForView.map((t) => {
-                        const Icon = topicIcon(t.name, t.subject);
-                        return (
-                          <button
-                            key={t.key}
-                            type="button"
-                            className="cat-topic"
-                            onClick={() => setActiveTopic(t)}
-                            aria-label={`Xem trò chơi chủ đề ${t.name}`}
-                          >
-                            <span className="cat-topic__ring" style={{ backgroundColor: tintFor(`${t.subject}-${t.name}`) }} aria-hidden="true">
-                              <Icon className="w-7 h-7" />
-                            </span>
-                            <span className="cat-topic__name">{t.name}</span>
-                            <span className="cat-topic__count">
-                              {t.games.length} trò chơi{subject === ALL_SUBJECTS ? ` · ${t.subject}` : ""}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </section>
+                  );
+                })}
               </div>
             )}
-          </div>
+          </section>
+        ) : (
+          /* ─────────── MÀN CHÍNH: MÔN (trái) + CHỦ ĐỀ (phải) ─────────── */
+          <div className="cat-layout">
+            <nav className="cat-rail" aria-label="Môn học">
+              {railSubjects.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  className={`cat-rail__item${subject === name ? " cat-rail__item--on" : ""}`}
+                  onClick={() => pickSubject(name)}
+                  aria-current={subject === name ? "true" : undefined}
+                >
+                  {name}
+                </button>
+              ))}
+            </nav>
 
-          {/* Thanh điều hướng dưới cùng DÙNG CHUNG với trang chủ (component
-              BottomNav) — trước đây trang này không có nên mất đường về;
-              mục "Danh mục" active, các mục path đi thẳng, mục "Game" ghi
-              ý định cuộn rồi về trang chủ (xem BottomNav.jsx). Hiện ở cả
-              màn con liệt kê game theo chủ đề vì cùng một cây render này. */}
-          {/* Khi nhúng trong trang Bé (Khám phá nhanh), trang cha đã có
-              BottomNav riêng — ẩn bản này để không có hai thanh chồng nhau. */}
-          {!hideBottomNav && (
-            <BottomNav userAuth={userAuth} activeKey="categories" chatUnread={chatUnread} />
-          )}
-        </>
+            <section className="cat-main" aria-label="Chủ đề">
+              <h2 className="cat-main__title">{subject}</h2>
+
+              {lessonCount > 0 && (
+                <button type="button" className="cat-lessons" onClick={() => navigate("/lessons")}>
+                  <span className="cat-lessons__ico" aria-hidden="true"><BookOpen className="w-5 h-5" /></span>
+                  <span className="cat-lessons__txt">
+                    Có {lessonCount} bài học {subject === ALL_SUBJECTS ? "đã xuất bản" : `môn ${subject}`}
+                  </span>
+                  <span className="cat-lessons__go">Xem bài học →</span>
+                </button>
+              )}
+
+              {topicsForView.length === 0 ? (
+                <EmptyState
+                  icon={<BookOpen className="w-10 h-10 text-gray-400" />}
+                  title={query ? "Không tìm thấy chủ đề nào" : "Chưa có trò chơi nào"}
+                  subtitle={query ? "Thử từ khoá khác hoặc chọn môn khác nhé!" : "Thầy cô thêm game vào nhé!"}
+                />
+              ) : (
+                <div className="cat-grid">
+                  {topicsForView.map((t) => {
+                    const Icon = topicIcon(t.name, t.subject);
+                    return (
+                      <button
+                        key={t.key}
+                        type="button"
+                        className="cat-topic"
+                        onClick={() => setActiveTopic(t)}
+                        aria-label={`Xem trò chơi chủ đề ${t.name}`}
+                      >
+                        <span className="cat-topic__ring" style={{ backgroundColor: tintFor(`${t.subject}-${t.name}`) }} aria-hidden="true">
+                          <Icon className="w-7 h-7" />
+                        </span>
+                        <span className="cat-topic__name">{t.name}</span>
+                        <span className="cat-topic__count">
+                          {t.games.length} trò chơi{subject === ALL_SUBJECTS ? ` · ${t.subject}` : ""}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+      </div>
+
+      {/* Thanh điều hướng dưới cùng DÙNG CHUNG với trang chủ (component
+          BottomNav) — trước đây trang này không có nên mất đường về;
+          mục "Danh mục" active, các mục path đi thẳng, mục "Game" ghi
+          ý định cuộn rồi về trang chủ (xem BottomNav.jsx). Hiện ở cả
+          màn con liệt kê game theo chủ đề vì cùng một cây render này. */}
+      {/* Khi nhúng trong trang Bé (Khám phá nhanh), trang cha đã có
+          BottomNav riêng — ẩn bản này để không có hai thanh chồng nhau. */}
+      {!hideBottomNav && (
+        <BottomNav userAuth={userAuth} activeKey="categories" chatUnread={chatUnread} />
       )}
     </div>
   );
