@@ -7,8 +7,21 @@ import { gameSync } from './lib/gameSync.js'
 import { armCoinWallet, loadWallet } from './lib/coinWallet.js'
 import { updateSW } from './lib/pwaUpdate.js'
 import { startAppUpdateWatcher } from './lib/appUpdate.js'
+import AppErrorBoundary from './components/AppErrorBoundary.jsx'
+import { installPreloadErrorHandler } from './lib/chunkRecovery.js'
 
-createRoot(document.getElementById('root')).render(<App />)
+// Bắt sự kiện vite:preloadError (Vite phát khi preload của dynamic
+// import lỗi) — đi chung đường tự khôi phục của AppErrorBoundary:
+// còn lượt thì tự tải lại 1 lần, hết lượt thì lỗi ném vào boundary.
+installPreloadErrorHandler()
+
+// Boundary ngoài cùng: đỡ cả lỗi phát sinh ngay khi App render lần đầu,
+// để app không bao giờ trắng trang (boundary theo route nằm trong App).
+createRoot(document.getElementById('root')).render(
+  <AppErrorBoundary>
+    <App />
+  </AppErrorBoundary>
+)
 
 // Gửi tiến độ "Trường Vui Vẻ" còn kẹt từ phiên offline trước, kể cả khi người
 // chơi mở app ở trang khác (hàng đợi nằm trong localStorage).

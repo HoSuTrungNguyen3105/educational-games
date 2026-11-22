@@ -17,6 +17,8 @@ import PageLoading from "./components/PageLoading.jsx";
 import PWAInstallPrompt from "./components/PWAInstallPrompt.jsx";
 import MaintenanceBanner from "./components/MaintenanceBanner.jsx";
 import ServerWakeBanner from "./components/ServerWakeBanner.jsx";
+import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
+import { scheduleChunkReloadMarkCleanup } from "./lib/chunkRecovery.js";
 import { GameVersionProvider } from "./components/GameVersionProvider.jsx";
 import { loadSiteConfig } from "./lib/siteConfig.js";
 import LearningPlatformWithAITutor from "./components/LearningPlatformWithAITutor.jsx";
@@ -134,6 +136,10 @@ function App() {
   const kidSettings = useKidSettings();
 
   useEffect(() => { init(); }, [init]);
+
+  /* App chạy ổn định thì xoá dấu tự-tải-lại-vì-chunk-lỗi (xem
+   * lib/chunkRecovery.js) để lần khôi phục sau luôn còn nguyên 1 lượt. */
+  useEffect(() => { scheduleChunkReloadMarkCleanup(); }, []);
 
   /* Tên trang / logo / favicon / banner bảo trì admin cài ở trang Cài đặt —
    * tải một lúc ngay khi mở app (đọc /api/public-config, không cần đăng nhập). */
@@ -517,6 +523,11 @@ function App() {
 
   return (
     <GameVersionProvider>
+      {/* Lưới đỡ toàn app: chunk lazy tải lỗi → tự tải lại 1 lần hoặc
+          hiện màn hình lỗi thân thiện, không bao giờ trắng trang (xem
+          components/AppErrorBoundary.jsx + lib/chunkRecovery.js).
+          resetKey theo route để lỗi ở một trang không khoá cả phiên. */}
+      <AppErrorBoundary resetKey={route.name}>
       <MaintenanceBanner />
       {/* Thanh tiến trình ngang khi máy chủ (Render free) đang thức giấc
           lúc mở app — cố định trên đỉnh, không chặn thao tác. */}
@@ -564,6 +575,7 @@ function App() {
         </AuthOverlay>
       )}
       <PWAInstallPrompt />
+      </AppErrorBoundary>
     </GameVersionProvider>
   );
 }
