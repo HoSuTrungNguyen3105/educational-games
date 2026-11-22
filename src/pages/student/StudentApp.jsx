@@ -10,8 +10,6 @@ import { SOCKET_EVENTS } from '../../socket/socket.events.js'
 import { useSocketEvent, useSocketConnected } from '../../socket/socket.listeners.js'
 import { useGameStore } from '../../stores/game.store.js'
 import { useChatStore } from '../../stores/chat.store.js'
-import ChatPanel from '../../components/chat/ChatPanel.jsx'
-import ChatBubble from '../../components/chat/ChatBubble.jsx'
 import { Clapperboard, Gamepad2, KeyRound, PartyPopper, Rocket, Trophy, User } from 'lucide-react'
 
 const GamePlayRouter = lazy(() => import('../../games/_shared/GamePlayRouter.jsx'));
@@ -305,7 +303,6 @@ export default function StudentApp({ initialGame, coopSession, onExit, toast, us
         {screen === "play" && game && (isPlayToWin || game?.gameMode === "custom" || questions.length > 0) && (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Loader label="Đang tải trò chơi..." /></div>}>
             <GamePlayRouter game={game} questions={questions} players={players} playerName={playerName} onQuit={restart} onFinish={handleFinish} onStateUpdate={handleStateUpdate} template={template} userAuth={userAuth} coopSession={activeCoopSession} />
-            {/* <ChatBubble userAuth={userAuth} onUserLogin={onUserLogin} /> */}
           </Suspense>
         )}
         {screen === "result" && finalResult && (
@@ -495,7 +492,6 @@ function WaitingRoomScreen({ game, playerName, onStart, userAuth, onUserLogin, o
       </div>
 
       {/* Chat sidebar (desktop) / overlay (mobile) */}
-      {/* <ChatPanel userAuth={userAuth} onUserLogin={onUserLogin} onUserLogout={onUserLogout} /> */}
     </div>
   );
 }

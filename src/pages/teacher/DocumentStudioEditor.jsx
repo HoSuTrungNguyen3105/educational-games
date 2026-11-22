@@ -182,7 +182,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
   const [applied, setApplied] = useState(null);
   const [appliedSource, setAppliedSource] = useState(null); // mã nguồn đã sinh ra `applied`
   const [applyErrors, setApplyErrors] = useState([]);
-  // const [notice, setNotice] = useState(""); // Not used currently
+  // const [notice, setNotice] = useState(""); // Not used currently — LƯU Ý: setNotice vẫn còn 6 call site sống trong file này (chuyển chế độ/nạp mẫu/nhập file) mà định nghĩa bị comment → lỗi tiềm ẩn CÓ SẴN trên main, chờ quyết định riêng (khôi phục state hay xoá call site); đợt dọn này giữ nguyên dòng này.
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null); // { auto, at } — lần lưu thành công gần nhất
@@ -1905,10 +1905,7 @@ export default function DocumentStudioEditor({ documentId, showToast }) {
                     </button>
                   </div>
                 </>
-              ) : (
-                // PowerPoint: Không hiển thị thông báo chỉnh sửa, slide được chỉnh sửa trực tiếp trên Preview bên phải
-                <div className="docstudio-powerpoint-edit-notice" style={{display: 'none'}} />
-              )}
+              ) : null /* PowerPoint: không hiển thị thông báo chỉnh sửa, slide sửa trực tiếp trên Preview bên phải */}
             </section>
           )}
 

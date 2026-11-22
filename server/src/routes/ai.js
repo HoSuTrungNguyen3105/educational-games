@@ -378,24 +378,6 @@ router.post("/quizzes/generate", authenticate, requireRoles("teacher", "admin"),
   }
 });
 
-/** POST /api/ai/generate-question — endpoint cũ, giữ nguyên hợp đồng cho client cũ. */
-router.post("/generate-question", authenticate, requireRoles("teacher", "admin"), requireAiEnabled, async (req, res) => {
-  try {
-    const { subject, grade, topic, difficulty, quantity, count, content } = req.body || {};
-    const data = await callAiBackend("/api/ai/generate-question", {
-      subject: String(subject || "").slice(0, 80),
-      grade: Number(grade) || 5,
-      topic: String(topic || "").slice(0, 120),
-      difficulty: typeof difficulty === "string" ? difficulty.slice(0, 16) : undefined,
-      quantity: Math.max(1, Math.min(20, Number(quantity || count) || 5)),
-      content: typeof content === "string" ? content.slice(0, 2000) : undefined,
-    }, req);
-    sendSuccess(res, data);
-  } catch (e) {
-    forwardError(res, e, "/api/ai/generate-question");
-  }
-});
-
 // ─────────────────────── Phân tích học tập ────────────────────────
 
 /**
@@ -473,11 +455,10 @@ async function loadGamesFor(gameIds) {
 
 /**
  * POST /api/ai/learning-analysis — AI diễn giải kết quả học tập.
- * GET  /api/ai/learning-analysis — alias tiện cho kiểm tra nhanh (bộ lọc lấy ở query).
  */
 async function handleLearningAnalysis(req, res) {
   try {
-    const src = req.method === "GET" ? req.query || {} : req.body || {};
+    const src = req.body || {};
     const { studentId, from, to, gameId } = src;
 
     const targetUserId = resolveTargetUser(req, studentId);
@@ -513,7 +494,6 @@ async function handleLearningAnalysis(req, res) {
 }
 
 router.post("/learning-analysis", authenticate, requireAiEnabled, handleLearningAnalysis);
-router.get("/learning-analysis", authenticate, requireAiEnabled, handleLearningAnalysis);
 
 // ───────────────────── Tổng quan lớp (số liệu hệ thống, KHÔNG gọi AI) ─────────────────────
 //

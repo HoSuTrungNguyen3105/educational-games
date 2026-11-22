@@ -9,7 +9,6 @@
 //   /api/ai/chat               ← AiChatService
 //   /api/ai/quizzes/generate   ← AiQuizGenerationService
 //   /api/ai/generate-lesson    ← soạn bài học AI (AI_LESSON_CREATOR.md, chỉ đường trực tiếp)
-//   /api/ai/generate-question  ← AiQuestionService (bọc pipeline quiz, shape cũ)
 //   /api/ai/explain            ← AiExplainService (ngữ cảnh inline do route chấm sẵn)
 //   /api/ai/learning-analysis  ← AiLearningAnalysisService
 //
@@ -825,29 +824,6 @@ async function directGenerateQuiz(body) {
   return generateQuizPipeline(body, { validateRequest: true });
 }
 
-/** Endpoint cũ: cùng pipeline, chuyển kết quả về shape {content, options[], correctAnswer(text), points}. */
-async function directGenerateQuestionLegacy(body) {
-  const generated = await generateQuizPipeline({
-    subject: body.subject,
-    grade: body.grade,
-    topic: body.topic,
-    difficulty: body.difficulty,
-    count: body.quantity,
-    language: null,
-    sourceContent: null,
-  }, { validateRequest: false });
-
-  const questions = generated.questions.map((q) => {
-    const options = [];
-    let correctText = null;
-    for (const o of q.options) {
-      options.push(o.content);
-      if (o.id === q.correctAnswer) correctText = o.content;
-    }
-    return omitNulls({ content: q.content, options, correctAnswer: correctText, points: q.points });
-  });
-  return { questions };
-}
 
 // ─────────────────────── Giải thích câu sai ───────────────────────
 
@@ -1893,7 +1869,6 @@ const DIRECT_OPS = {
   "/api/ai/explain": { bucket: "explain", run: directExplain },
   "/api/ai/quizzes/generate": { bucket: "quiz", run: directGenerateQuiz },
   "/api/ai/generate-lesson": { bucket: "quiz", run: directGenerateLesson },
-  "/api/ai/generate-question": { bucket: "quiz", run: directGenerateQuestionLegacy },
   "/api/ai/learning-analysis": { bucket: "analysis", run: directLearningAnalysis },
 };
 
