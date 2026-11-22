@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { v2 as cloudinary } from "cloudinary";
+import multer from "multer";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import path from "path";
@@ -7,10 +9,28 @@ import { sendSuccess, sendError, sendCreated } from "../utils/response.js";
 import { respondWithRange } from "../utils/rangeList.js";
 import { getCollection } from "../db.js";
 import { renderItemParts } from "../lib/avatarRenderer.js";
+import { recordImageOwner } from "../services/imageOwnerService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "../../.env") });
+
+// Upload ảnh item avatar — cùng hạ tầng Cloudinary + cùng chuẩn validate
+// (chỉ file ảnh, tối đa 10 MB) như POST /api/images/upload.
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) return cb(null, true);
+    cb(new Error("Chỉ chấp nhận file ảnh"));
+  },
+});
 
 const router = Router();
 
@@ -294,8 +314,9 @@ async function ensureTemplate() {
 // POST /admin/reset-items, POST /admin/preview) đã bị GỠ vì không còn
 // caller nào trong client: bộ đồ avatar nằm trong hồ sơ
 // (GET/PUT /api/auth/me → `avatar`), hình vẽ nằm ở frontend, các trang
-// quản trị avatar đọc dữ liệu cứng phía client. Ba endpoint còn lại ở
-// file này là đúng những gì trang UploadItems đang gọi.
+// quản trị avatar đọc dữ liệu cứng phía client. Các endpoint còn lại ở
+// file này (GET /items, POST /upload, CRUD /admin/items) là đúng những
+// gì trang UploadItems đang gọi.
 
 router.get("/items", async (req, res, next) => {
   try {
@@ -331,6 +352,40 @@ router.get("/items", async (req, res, next) => {
 const adminOnly = [authenticate, requireRoles("teacher", "admin")];
 
 const uid = () => `av-${Math.random().toString(36).slice(2, 9)}`;
+
+// POST /api/avatar/upload — Upload 1 ảnh item (trang UploadItems cắt ảnh
+// hàng loạt rồi gọi endpoint này cho từng item). Client chỉ cần
+// `data.url` để gắn vào params của item qua /avatar/admin/items; trước
+// đây server không có endpoint này nên bước lưu item luôn hỏng ở khâu
+// upload. Quyền như các route /admin/* cùng file (teacher + admin).
+router.post("/upload", ...adminOnly, upload.single("file"), async (req, res, next) => {
+  try {
+    if (!req.file) return sendError(res, "Thiếu file", 400);
+    const folder = "edu-game/avatar-items";
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder, resource_type: "image" },
+        (err, result) => (err ? reject(err) : resolve(result))
+      );
+      stream.end(req.file.buffer);
+    });
+    // Ghi chủ như luồng /images/upload — lỗi ghi sổ không làm hỏng upload.
+    try {
+      await recordImageOwner(result.public_id, req.user);
+    } catch (e) {
+      console.error("[avatar] Không ghi được chủ sở hữu cho ảnh", result.public_id, e.message);
+    }
+    sendSuccess(res, {
+      url: result.secure_url,
+      publicId: result.public_id,
+      width: result.width,
+      height: result.height,
+      format: result.format,
+      bytes: result.bytes,
+      folder,
+    });
+  } catch (e) { next(e); }
+});
 
 router.post("/admin/items", ...adminOnly, async (req, res, next) => {
   try {

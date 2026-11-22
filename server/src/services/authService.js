@@ -668,3 +668,70 @@ export async function claimDailyStarGift(userId) {
   const after = await col.findOne({ id: userId });
   return { claimed: true, amount, stars: after?.stars || 0, date };
 }
+
+/**
+ * ── Vé (tickets) ──────────────────────────────────────────────────────────
+ * Vé là phần thưởng client ĐÃ gọi từ lâu qua `ticketService`
+ * (GET/POST /api/auth/me/tickets, POST /api/auth/me/tickets/:id/use):
+ * DailyGift quay ra vé, game thắng (accuracy ≥ 80%) tặng 1 vé. Trước đây
+ * server không có endpoint nên mọi lần cộng vé đều 404 thầm. Nay lưu thật
+ * trên doc user: `tickets: [{ id, source, createdAt, usedAt }]` — vé chưa
+ * dùng mới tính là "đang có"; dùng vé = đóng dấu `usedAt`, không xoá bản
+ * ghi để còn truy vết.
+ */
+export const MAX_TICKETS_PER_ADD = 20;
+
+function ticketState(user) {
+  const all = Array.isArray(user?.tickets) ? user.tickets : [];
+  const available = all
+    .filter((t) => t && !t.usedAt)
+    .map((t) => ({ id: t.id, source: t.source || "reward", createdAt: t.createdAt }));
+  return { tickets: available, count: available.length, usedCount: all.length - available.length };
+}
+
+/** Vé hiện có của user: danh sách vé chưa dùng + tổng số. */
+export async function getTickets(userId) {
+  const user = await getCollection(COLLECTION).findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  return ticketState(user);
+}
+
+/** Cộng `amount` vé mới (1..MAX_TICKETS_PER_ADD mỗi lần gọi). */
+export async function addTickets(userId, amount) {
+  const n = Math.floor(Number(amount) || 0);
+  if (n < 1 || n > MAX_TICKETS_PER_ADD) {
+    throw new Error(`Số vé mỗi lần cộng phải từ 1 đến ${MAX_TICKETS_PER_ADD}`);
+  }
+  const col = getCollection(COLLECTION);
+  const user = await col.findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  const now = new Date().toISOString();
+  const fresh = Array.from({ length: n }, () => ({
+    id: uid("ticket"), source: "reward", createdAt: now, usedAt: null,
+  }));
+  await col.updateOne({ id: userId }, { $push: { tickets: { $each: fresh } } });
+  const after = await col.findOne({ id: userId });
+  return ticketState(after);
+}
+
+/** Dùng 1 vé: đóng dấu usedAt. Vé không tồn tại → lỗi có `status` 404. */
+export async function useTicket(userId, ticketId) {
+  const col = getCollection(COLLECTION);
+  const user = await col.findOne({ id: userId });
+  if (!user) throw new Error("Không tìm thấy người dùng");
+  const all = Array.isArray(user.tickets) ? user.tickets : [];
+  const ticket = all.find((t) => t && t.id === ticketId);
+  if (!ticket) {
+    const err = new Error("Không tìm thấy vé");
+    err.status = 404;
+    throw err;
+  }
+  if (ticket.usedAt) throw new Error("Vé đã được sử dụng");
+  const usedAt = new Date().toISOString();
+  await col.updateOne(
+    { id: userId, "tickets.id": ticketId },
+    { $set: { "tickets.$.usedAt": usedAt } },
+  );
+  const after = await col.findOne({ id: userId });
+  return { ...ticketState(after), used: { id: ticketId, usedAt } };
+}

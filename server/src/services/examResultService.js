@@ -30,8 +30,3 @@ export async function listByUser(userId, { limit = 50 } = {}) {
   const lim = Math.min(200, Math.max(1, Number(limit) || 50));
   return getCollection(COLLECTION).find({ userId }).sort({ createdAt: -1 }).limit(lim).toArray();
 }
-
-export async function listAll({ limit = 200 } = {}) {
-  const lim = Math.min(500, Math.max(1, Number(limit) || 200));
-  return getCollection(COLLECTION).find({}).sort({ createdAt: -1 }).limit(lim).toArray();
-}
