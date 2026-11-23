@@ -33,6 +33,17 @@ export default defineConfig({
   define: {
     __BUILD_ID__: JSON.stringify(BUILD_ID),
   },
+  server: {
+    port: 5173,
+    proxy: {
+      // Proxy BFF requests to BFF server
+      '/educational-games/bff': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
+      },
+    },
+  },
   plugins: [
     react(),
     {

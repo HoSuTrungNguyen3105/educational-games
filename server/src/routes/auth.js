@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyCredentials, signToken, publicUser, registerUser, updateProfile, changePassword, getCoins, getWallet, adjustWallet, exchangeWallet, redeemAchievement, getXp, claimDailyStarGift, getTickets, addTickets, useTicket } from "../services/authService.js";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate, requireBff } from "../middleware/auth.js";
 import { sendSuccess, sendCreated, sendError } from "../utils/response.js";
 import { getByUser, XP_LEDGER_GAME_ID } from "../services/gameProgressService.js";
 import * as petService from "../services/petService.js";
@@ -22,15 +22,44 @@ const router = Router();
 const sessionMeta = (req) => ({ ua: req.headers["user-agent"] || "", ip: req.ip || "" });
 
 /**
+ * Check if request is from BFF (server-to-server)
+ */
+function isBffRequest(req) {
+  return req.isBffRequest === true;
+}
+
+/**
  * §5.1–5.2: chỉ chấp nhận refresh từ origin nằm trong REFRESH_ALLOWED_ORIGINS.
  * Chặn sớm (trước khi đụng DB/token) để token thật không bị đem ra đoán thử.
+ * Bỏ qua cho BFF requests.
  */
 function requireRefreshOrigin(req, res) {
+  // BFF requests bypass origin check
+  if (isBffRequest(req)) return true;
+  
   const check = checkRefreshOrigin(req);
   if (check.ok) return true;
   console.warn(`[refresh] Từ chối ${req.method} ${req.originalUrl} — origin=${check.origin || "(không có)"}: ${check.reason}`);
   sendError(res, check.reason || "Domain không được phép", 403);
   return false;
+}
+
+/**
+ * Set refresh cookie only for non-BFF requests
+ */
+function maybeSetRefreshCookie(res, refreshRaw, req) {
+  if (!isBffRequest(req)) {
+    setRefreshCookie(res, refreshRaw);
+  }
+}
+
+/**
+ * Clear refresh cookie only for non-BFF requests
+ */
+function maybeClearRefreshCookie(res, req) {
+  if (!isBffRequest(req)) {
+    clearRefreshCookie(res);
+  }
 }
 
 router.post("/login", async (req, res, next) => {
@@ -53,8 +82,9 @@ router.post("/login", async (req, res, next) => {
     // (client github.io ≠ API onrender.com) nên client giữ bản này trong
     // localStorage và gửi lại qua header `x-refresh-token` — xem
     // readRefreshToken trong refreshTokenService.
+    // Cho BFF: không set cookie, BFF tự quản lý session và cookie
     const refreshRaw = await issueRefreshToken(user, { meta: sessionMeta(req) });
-    setRefreshCookie(res, refreshRaw);
+    maybeSetRefreshCookie(res, refreshRaw, req);
     trackAction(user.id, "login", 1).catch(() => {});
     processTaskEvent(user.id, { type: "LOGIN" }).catch(() => {});
     audit({
@@ -99,11 +129,11 @@ export async function performRefresh(req, res) {
 
   try {
     const { token, refreshRaw } = await rotateRefreshToken(raw);
-    setRefreshCookie(res, refreshRaw); // xoay vòng: cookie mới thay cookie cũ
+    maybeSetRefreshCookie(res, refreshRaw, req); // xoay vòng: cookie mới thay cookie cũ (chỉ non-BFF)
     return { token, refreshToken: refreshRaw };
   } catch (e) {
     // Token hỏng/hết hạn/thu hồi ⇒ cookie cũng vô giá trị, xoá để client không retry lặp.
-    clearRefreshCookie(res);
+    maybeClearRefreshCookie(res, req);
     console.warn(`[refresh] Thất bại (${e.code || "unknown"}): ${e.message}`);
     sendError(res, e.message || "Refresh thất bại", 401);
     return null;
@@ -151,7 +181,7 @@ router.post("/logout", async (req, res) => {
   if (userId) {
     audit({ req, actor: { sub: userId }, action: AUDIT.LOGOUT, target: userId, message: "Đăng xuất, thu hồi mọi phiên" }).catch(() => {});
   }
-  clearRefreshCookie(res);
+  maybeClearRefreshCookie(res, req);
   sendSuccess(res, { loggedOut: true, cookie: REFRESH_COOKIE_NAME }, "logout.success");
 });
 
@@ -167,8 +197,9 @@ router.post("/register", async (req, res, next) => {
     const result = await registerUser({ username, email, password, name, generatedPassword, ageCode, gender });
     // Kèm refreshToken trong body như login — client iOS giữ bản này trong
     // localStorage vì cookie bên thứ ba bị WebKit chặn.
+    // Cho BFF: không set cookie, BFF tự quản lý session và cookie
     const refreshRaw = await issueRefreshToken(result.user, { meta: sessionMeta(req) });
-    setRefreshCookie(res, refreshRaw);
+    maybeSetRefreshCookie(res, refreshRaw, req);
     audit({
       req,
       actor: { sub: result.user?.id, username: result.user?.username, name: result.user?.name, role: result.user?.role },
@@ -281,7 +312,7 @@ router.post("/change-password", authenticate, async (req, res, next) => {
     const user = await changePassword(req.user.sub, req.body || {});
     await revokeAllForUser(user.id);
     const refreshRaw = await issueRefreshToken(user, { meta: sessionMeta(req) });
-    setRefreshCookie(res, refreshRaw);
+    maybeSetRefreshCookie(res, refreshRaw, req);
     // Chỉ ghi "đã đổi mật khẩu" — mật khẩu cũ/mới không bao giờ đi vào log.
     audit({ req, action: AUDIT.PASSWORD_CHANGE, target: req.user.username || req.user.sub, message: "Đổi mật khẩu, thu hồi mọi phiên khác" }).catch(() => {});
     // Kèm refreshToken mới trong body: phiên này vừa bị thu hồi cùng mọi

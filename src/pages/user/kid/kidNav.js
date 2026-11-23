@@ -37,6 +37,8 @@ export const SHORTCUTS = [
   { key: "achievements", icon: "🏆", label: "Kho báu", path: "/achievements", tint: "from-violet-400 to-purple-500" },
   { key: "leaderboard", icon: "🥇", label: "Bảng vàng", path: "/leaderboard", tint: "from-yellow-400 to-amber-500" },
   { key: "store", icon: "🛒", label: "Cửa hàng", path: "/store", tint: "from-pink-400 to-rose-500" },
+  { key: "home", icon: "HOME", label: "Cửa hàng", path: "/", tint: "from-pink-400 to-rose-500" },
+
 ];
 
 /** Icon lucide cho nhóm lối tắt ở sidebar (emoji chỉ dùng cho thẻ lớn). */

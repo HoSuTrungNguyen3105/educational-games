@@ -148,7 +148,7 @@ function App() {
   /* Lớp + giới tính đổi ở màn chào hay Cài đặt thì tự đẩy lên hồ sơ tài khoản. */
   useEffect(() => { startKidProfileSync(); }, []);
 
-  useSocketManager(token);
+  useSocketManager(!!user);
 
   const { playGame, loadingGame, selectGame, coopSession } = useGameLoader(route);
 
@@ -214,7 +214,7 @@ function App() {
    * gọi `/auth/me`; nếu mỗi lần App render đều tạo object mới thì các hiệu ứng
    * đó chạy lại liên tục — một lần setKidSettings là đủ tạo vòng lặp
    * render → gọi /me → setKidSettings → … */
-  const userAuth = useMemo(() => (user ? { user, token } : null), [user, token]);
+  const userAuth = useMemo(() => (user ? { user } : null), [user]);
 
   const renderStudent = () => {
     if (loadingGame) {

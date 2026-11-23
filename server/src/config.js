@@ -155,4 +155,8 @@ export const config = {
     model: process.env.GROQ_MODEL || "openai/gpt-oss-20b",
     temperature: Number(process.env.GROQ_TEMPERATURE) || 0.4,
   },
+
+  // ── BFF (Backend for Frontend) ─────────────────────────────────────────────
+  // Shared secret for BFF-to-Backend server-to-server communication
+  bffInternalToken: process.env.BFF_BACKEND_TOKEN || "bff-internal-secret-change-me",
 };

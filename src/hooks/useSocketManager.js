@@ -8,17 +8,10 @@ import { bindPresenceListeners } from "../stores/presence.store.js";
  * Quản lý socket connection lifecycle.
  * - Register global listeners một lần (+ listener hiện diện online)
  * - Warmup backend một lần
- * - Connect socket khi teacherToken hoặc userToken có giá trị
- * - Disconnect khi cả hai đều null
- *
- * Vòng đời theo phiên đăng nhập được chia nhau giữa hook này và
- * userAuth.store (store gán socket.auth + connect ngay khi init/login/
- * register — gồm cả tài khoản tự tạo ở onboarding — và disconnect khi
- * logout/hết phiên). Hook này là lớp chốt ở tầng App: mất token (đăng
- * xuất) thì NGẮT socket tại đây luôn, để không phiên nào sống sót qua
- * đăng xuất chỉ vì đường đi không qua store.
+ * - Connect socket khi user đăng nhập (auth qua HttpOnly cookie)
+ * - Disconnect khi đăng xuất
  */
-export function useSocketManager(teacherToken, userToken) {
+export function useSocketManager(isAuthenticated) {
   // Register global listeners + warmup (chỉ 1 lần)
   useEffect(() => {
     startWarmup();
@@ -27,15 +20,13 @@ export function useSocketManager(teacherToken, userToken) {
     return cleanup;
   }, []);
 
-  // Manage socket connection based on available tokens
+  // Manage socket connection based on auth state
   useEffect(() => {
-    const token = teacherToken || userToken;
-    if (token) {
-      socket.auth = { token };
+    if (isAuthenticated) {
+      // With BFF, auth is via HttpOnly cookie, no need to set socket.auth
       if (!socket.connected) socket.connect();
     } else if (socket.connected) {
-      // Cả hai token đều mất (đăng xuất) → ngắt hẳn, đúng như header hứa.
       socket.disconnect();
     }
-  }, [teacherToken, userToken]);
+  }, [isAuthenticated]);
 }

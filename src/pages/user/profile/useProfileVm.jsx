@@ -20,7 +20,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  API_BASE, authService, classService, gameProgressService,
+  API_BASE, apiFetch, authService, classService, gameProgressService,
   notificationService, userService, walletService,
 } from "../../../services/api.js";
 import { useUserAuthStore } from "../../../stores/userAuth.store.js";
@@ -385,10 +385,7 @@ export default function useProfileVm({ userAuth, showToast, onBack, onLogout }) 
     setPushLoading(true);
     setPushMessage("Đang reset thiết bị...");
     try {
-      await fetch(`${API_BASE}/notifications/devices/reset`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${userAuth.token}` },
-      });
+      await apiFetch("/notifications/devices/reset", { method: "DELETE" });
       const token = await requestNotificationPermission();
       if (token) {
         await notificationService.registerDevice(token, "WEB");

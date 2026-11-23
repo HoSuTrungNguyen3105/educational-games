@@ -100,11 +100,11 @@ export default function HtmlGameLoader({
   }, [htmlContent, gameKey, gameConfig]);
 
   useEffect(() => {
-    if (!socket.connected && userAuth?.token) {
-      socket.auth = { token: userAuth.token };
+    if (!socket.connected && userAuth?.user) {
+      // With BFF, auth is via HttpOnly cookie, no need to set socket.auth
       socket.connect();
     }
-  }, []);
+  }, [userAuth?.user]);
 
   const handleInit = useCallback(async () => {
     const iframe = iframeRef.current;
@@ -144,10 +144,12 @@ export default function HtmlGameLoader({
       }
     } catch { /* ignore */ }
 
-    if (userAuth?.token) {
+    if (userAuth?.user) {
       try {
-        authToken = userAuth.token;
-        userId = userAuth.user?.id;
+        // Get short-lived token for game iframe from BFF
+        const gameTokenRes = await authService.getGameToken();
+        authToken = gameTokenRes?.token || null;
+        userId = gameTokenRes?.userId || userAuth.user?.id;
         const wallet = await walletService.get();
         userCoins = wallet?.coins || 0;
         setHudCoins(userCoins);
@@ -282,17 +284,17 @@ export default function HtmlGameLoader({
 
   const handleJoinByCode = useCallback((data) => {
     if (!data) return;
-    if (!socket.connected && userAuth?.token) {
-      socket.auth = { token: userAuth.token };
+    if (!socket.connected && userAuth?.user) {
+      // With BFF, auth is via HttpOnly cookie
       socket.connect();
     }
     socket.emit(SOCKET_EVENTS.GAME_JOIN_BY_CODE, { code: data.code });
     setTimeout(() => {
-      if (!socket.connected && userAuth?.token) {
+      if (!socket.connected && userAuth?.user) {
         socket.emit(SOCKET_EVENTS.GAME_JOIN_BY_CODE, { code: data.code });
       }
     }, 1500);
-  }, [userAuth]);
+  }, [userAuth?.user]);
 
   const handleRequestClasses = useCallback(async (requestId) => {
     try {
