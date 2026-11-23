@@ -191,9 +191,27 @@ async function directChat(body, req) {
   // Môn của ngữ cảnh lượt này: môn client đang học (nếu có) — không có
   // thì lấy môn của bài học truy xuất đầu tiên. Dùng cho CẢ truy xuất
   // đính chính lẫn tra cấu hình Gia sư đã lưu theo (cấp × môn).
-  const chatSubject = (typeof body.subject === "string" && body.subject.trim() !== "")
+  const explicitSubject = (typeof body.subject === "string" && body.subject.trim() !== "")
     ? body.subject.trim().slice(0, 80)
-    : (context.materials[0]?.subject || null);
+    : null;
+  const explicitTopic = (typeof body.topic === "string" && body.topic.trim() !== "")
+    ? body.topic.trim().slice(0, 120)
+    : null;
+  const chatSubject = explicitSubject || (context.materials[0]?.subject || null);
+  // Ngữ cảnh bài học RÕ RÀNG của lượt này: client KHAI đang học một
+  // môn/chủ đề cụ thể (AiChatWidget được gắn trong bài học sẽ truyền
+  // subject/topic). Chat CHUNG — AiChatWidget ở trang chủ, trang phân
+  // tích… — KHÔNG gửi subject/topic nên hasLessonContext = false. Đây
+  // là ranh giới áp dụng CHỐT KHOÁ PHẠM VI của cấu hình Gia sư đã lưu:
+  // khoá phạm vi là hành vi của gia sư TRONG bài học, chỉ áp khi có ngữ
+  // cảnh rõ ràng này. Ca production 2026-11-23: cấu hình đã lưu ở khoá
+  // dự phòng (cấp | mọi môn) / (default | mọi môn) bật scopeOnly +
+  // refuseOffTopic thắng cho MỌI lượt chat theo chuỗi dự phòng của
+  // resolveEffectiveTutorConfig, và cổng từ chối phía dưới không hề
+  // phân biệt ngữ cảnh — học sinh hỏi Toán ở trang chủ, truy xuất từ
+  // khoá không khớp bài Khoa học nào, bị từ chối "ngoài phạm vi bài
+  // học" dù không hề đang ở trong bài học nào.
+  const hasLessonContext = !!(explicitSubject || explicitTopic);
   const studentLevelKey = levelKeyForGrade(context.identity?.grade ?? null);
 
   // Đính chính kiến thức (AI Studio Tab 2): truy xuất từ khoá ƯU TIÊN
@@ -272,8 +290,12 @@ async function directChat(body, req) {
   // Guardrail phạm vi của cấu hình đã lưu, chốt ở TẦNG BACKEND như
   // playground: công tắc phạm vi bật mà lượt này KHÔNG truy xuất được
   // ngữ cảnh nào (cả bài học lẫn đính chính đều rỗng) → trả thông điệp
-  // từ chối theo khuôn, KHÔNG gọi model.
-  const tutorScopeRefusal = !!tutorEntry
+  // từ chối theo khuôn, KHÔNG gọi model. CHỈ áp khi lượt chat có ngữ
+  // cảnh bài học rõ ràng (hasLessonContext): chat chung ở trang chủ
+  // không bị khoá phạm vi — học sinh được hỏi mọi nội dung học tập phù
+  // hợp lứa tuổi, phần phù hợp khối lớp do prompt học sinh xử lý.
+  const tutorScopeRefusal = hasLessonContext
+    && !!tutorEntry
     && (tutorEntry.scopeOnly || tutorEntry.refuseOffTopic)
     && context.materials.length === 0
     && corrections.length === 0;
@@ -286,9 +308,15 @@ async function directChat(body, req) {
   } else if (tutorEntry) {
     system += savedTutorConfigSection({
       systemPrompt: tutorEntry.systemPrompt || null,
-      strictScope: tutorEntry.scopeOnly === true,
+      // Hai công tắc PHẠM VI chỉ có hiệu lực khi lượt chat có ngữ cảnh
+      // bài học rõ ràng — cùng ranh giới với cổng từ chối ở tầng
+      // Backend phía trên. Chat chung mà vẫn chèn chỉ thị "chỉ trả lời
+      // trong bài / từ chối câu ngoài lề" thì model vẫn tự từ chối oan
+      // dù cổng Backend đã mở. Các phần còn lại của cấu hình đã lưu
+      // (systemPrompt, temperature, trích dẫn nguồn) áp như cũ.
+      strictScope: hasLessonContext && tutorEntry.scopeOnly === true,
       requireCitation: tutorEntry.requireCitation === true,
-      refuseOffTopic: tutorEntry.refuseOffTopic === true,
+      refuseOffTopic: hasLessonContext && tutorEntry.refuseOffTopic === true,
       level: levelLabelForKey(tutorResolved.level),
       subject: chatSubject || tutorResolved.subject || null,
     }, context.materials);

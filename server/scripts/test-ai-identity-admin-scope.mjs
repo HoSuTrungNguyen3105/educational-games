@@ -4,7 +4,10 @@
 //     theo khuôn của Backend (không gọi model), KHÔNG lộ model/provider,
 //     KHÔNG rơi vào câu từ chối phạm vi bài học của cấu hình Gia sư đã
 //     lưu (test này CỐ Ý lưu cấu hình scopeOnly+refuseOffTopic như
-//     production để tái hiện đúng ca lỗi).
+//     production để tái hiện đúng ca lỗi). LƯU Ý: từ đợt sửa 2026-11-23,
+//     khoá phạm vi của cấu hình đã lưu CHỈ còn áp cho lượt chat có ngữ
+//     cảnh bài học rõ ràng (client gửi subject/topic) — chat chung
+//     không bị từ chối phạm vi nữa (xem test-ai-home-scope-leak.mjs).
 //   · Học sinh/giáo viên hỏi về hệ thống (model, quyền của tôi, số tài
 //     khoản) → từ chối đúng ngữ cảnh "chỉ dành cho quản trị viên", không
 //     lộ dữ kiện. Câu ngoài phạm vi THƯỜNG vẫn giữ hành vi gia sư cũ.
@@ -245,8 +248,8 @@ checkTrue("HS bài học: có nguồn bài học kèm theo",
   JSON.stringify(r.body?.data));
 
 r = await chat(TOKENS.student, "Kể cho con nghe về khủng long");
-checkTrue("HS ngoài phạm vi thường: vẫn là từ chối phạm vi của cấu hình Gia sư (hành vi cũ)",
-  answerOf(r).includes("phạm vi các đoạn bài học đã xuất bản"), answerOf(r));
+check("HS chat chung hỏi ngoài bài học: KHÔNG còn bị khoá phạm vi (sửa 2026-11-23), model trả lời",
+  answerOf(r), STUB_ANSWER);
 
 // ── 3. Giáo viên: cùng ranh giới như học sinh ──
 r = await chat(TOKENS.teacher, "Bạn là ai?");
