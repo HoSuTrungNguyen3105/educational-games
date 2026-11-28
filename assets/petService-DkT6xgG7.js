@@ -1,0 +1,1 @@
+import{o as e}from"./petApi-Du4B_O82.js";async function t(t){return e(t)}export{t};
