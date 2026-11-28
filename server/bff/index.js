@@ -5,6 +5,9 @@ import { config } from "./config.js";
 import { connectSessionStore, closeSessionStore, cleanupExpiredSessions } from "./sessionStore.js";
 import authRoutes from "./routes/auth.js";
 import proxyRoutes from "./routes/proxy.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 
@@ -69,6 +72,27 @@ if (basePrefix) {
 
 // Also register at root (for direct access / dev)
 registerRoutes("");
+
+// ── Serve frontend build (dist ở gốc repo) ────────────────────────────
+// Mục đích của BFF là MỘT domain duy nhất cho cả frontend + API: cookie
+// session thành first-party nên điện thoại/Safari không chặn như cookie
+// bên thứ ba. Muốn vậy BFF phải tự phục vụ luôn bản build frontend.
+// Render build cả frontend cho service này (xem buildCommand trong
+// render.yaml) nên dist nằm ở ../../dist so với file này. Máy local
+// chưa build thì không có dist → bỏ qua, dev vẫn chạy qua Vite như cũ.
+const distDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../dist");
+if (fs.existsSync(path.join(distDir, "index.html"))) {
+  app.use(basePrefix || "/", express.static(distDir));
+  if (basePrefix) {
+    app.get("/", (req, res) => res.redirect(`${basePrefix}/`));
+    // SPA fallback: path không thuộc BFF/API thì trả index.html
+    app.get(`${basePrefix}/*`, (req, res, next) => {
+      if (req.path.startsWith(`${basePrefix}/bff`) || req.path.startsWith(`${basePrefix}/api`)) return next();
+      res.sendFile(path.join(distDir, "index.html"));
+    });
+  }
+  console.log(`[BFF] Serving frontend from ${distDir} at ${basePrefix || "/"}`);
+}
 
 // 404 handler
 app.use((req, res) => {
