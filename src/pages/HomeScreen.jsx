@@ -73,6 +73,7 @@ import {
   ShieldCheck,
   Layers,
   Languages,
+  NotebookPen,
 } from 'lucide-react'
 
 
@@ -193,6 +194,7 @@ const SCHOOL_RPG_GAME = {
 const MORE_ITEMS = (userAuth) => ([
   { key: "reminders", icon: IconNotification, label: "Nhắc nhở", type: "path", path: "/reminders", show: !!userAuth?.user },
   { key: "schedule", icon: CalendarDays, label: "Lịch học", type: "path", path: "/schedule", show: !!userAuth?.user },
+  { key: "notes", icon: NotebookPen, label: "Ghi chú", type: "path", path: "/ghi-chu", show: true },
   { key: "shop", icon: Gift, label: "Kho đồ", type: "path", path: "/inventory", show: !!userAuth?.user },
   { key: "garden", icon: Sprout, label: "Khu vườn", type: "path", path: "/garden", show: !!userAuth?.user },
   { key: "store", icon: Star, label: "Cửa hàng sao", type: "path", path: "/store", show: !!userAuth?.user },
@@ -1577,8 +1579,8 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
         )}
         {/* ─────────── CHÂN TRANG ───────────
             Chỉ link tới route CÓ THẬT trong router (đã đối chiếu
-            src/lib/router.js): /, /categories, /lessons, /leaderboard,
-            /parent, /profile. "Hỗ trợ" phía học sinh không có route
+            src/lib/router.js): /, /categories, /lessons, /ghi-chu,
+            /leaderboard, /parent, /profile. "Hỗ trợ" phía học sinh không có route
             riêng (là widget nổi trên trang) nên nhắc bằng chữ, không
             gắn link chết. Mục Hồ sơ chỉ hiện khi đã đăng nhập như
             mọi điểm đến cá nhân khác của trang. */}
@@ -1594,6 +1596,7 @@ export default function HomeScreen({ onSelectGame, userAuth, onUserLogin, onUser
             <button onClick={() => goTo("/")}>Trang chủ</button>
             <button onClick={() => goTo("/categories")}>Danh mục</button>
             <button onClick={() => goTo("/lessons")}>Bài học</button>
+            <button onClick={() => goTo("/ghi-chu")}>Ghi chú</button>
             <button onClick={() => goTo("/leaderboard")}>Bảng xếp hạng</button>
             <button onClick={() => goTo("/parent")}>Phụ huynh</button>
             {userAuth?.user && <button onClick={() => goTo("/profile")}>Hồ sơ</button>}

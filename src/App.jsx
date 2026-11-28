@@ -121,6 +121,7 @@ const MathAdventurePage = lazy(() => import("./pages/MathAdventurePage.jsx"));
 const SchoolMissionPage = lazy(() => import("./pages/SchoolMissionPage.jsx"));
 const OfflineGamePage = lazy(() => import("./pages/OfflineGamePage.jsx"));
 const BirthdayPage = lazy(() => import("./pages/BirthdayPage.jsx"));
+const NotesPage = lazy(() => import("./pages/NotesPage.jsx"));
 const PetPage = lazy(() => import("./pages/PetPage.jsx"));
 const PetWardrobePage = lazy(() => import("./pages/user/PetWardrobePage.jsx"));
 const AttendancePage = lazy(() => import("./pages/AttendancePage.jsx"));
@@ -464,6 +465,9 @@ function App() {
     // Trang sinh nhật riêng toàn màn hình (không RouteShell) — nội dung HTML
     // lấy từ API /pages, hiển thị tràn màn hình như các trang trình diễn khác.
     birthday: () => <BirthdayPage userAuth={userAuth} showToast={showToast} />,
+    // Trang Sổ ghi chú toàn màn hình (không RouteShell) — nội dung HTML
+    // tĩnh từ public/soghichu.html, render qua iframe srcDoc như BirthdayPage.
+    "ghi-chu": () => <NotesPage />,
     // Route không tồn tại (router.js trả "not-found") — trang 404 thân thiện
     "not-found": () => (
       <RouteShell toast={toast} showBack={false}>

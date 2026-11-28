@@ -145,6 +145,9 @@ const ROUTES = [
   { name: "offline-game", pattern: "/offline/:gameId" },
   // Trang sinh nhật riêng toàn màn hình — nội dung HTML lấy từ API /pages
   { name: "birthday", pattern: "/sinh-nhat" },
+  // Trang Sổ ghi chú toàn màn hình — nội dung là file HTML tĩnh
+  // public/soghichu.html (ghi chú lưu localStorage ngay trong file, không qua API)
+  { name: "ghi-chu", pattern: "/ghi-chu" },
 
   // ── Home ──
   { name: "home", pattern: "/" },
