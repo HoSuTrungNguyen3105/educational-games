@@ -46,7 +46,7 @@ services:
     runtime: node
     rootDir: server
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install && cd .. && npm install && npm run build
     startCommand: node bff/index.js
     healthCheckPath: /educational-games/bff/health
     envVars:
