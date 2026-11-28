@@ -11,7 +11,7 @@ export function startWarmup() {
 
   const ping = () => {
     try {
-      fetch(`${API_BASE}/health`, { cache: "no-store" }).catch(() => {});
+      fetch(`${API_BASE}/api/health`, { cache: "no-store" }).catch(() => {});
     } catch { /* ignore */ }
   };
 

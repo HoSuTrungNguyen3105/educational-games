@@ -107,7 +107,13 @@ function buildSignal(options) {
 // Tất cả request đi qua BFF với credentials: "include" để gửi HttpOnly cookies
 
 export async function apiFetch(path, options = {}) {
-  const url = `${BFF_BASE}${path}`;
+  // Auto-prefix with /api/ if not already prefixed
+  if (!path.startsWith("/api/") && !path.startsWith("/auth/")) {
+    path = `/api${path.startsWith("/") ? "" : "/"}${path}`;
+  }
+  // Auth calls go through BFF; API calls go through /api (no "bff" in URL)
+  const base = path.startsWith("/auth/") ? BFF_BASE : "/educational-games";
+  const url = `${base}${path}`;
   const method = (options.method || "GET").toUpperCase();
   
   const { signal, timer, detach } = buildSignal(options);
@@ -601,7 +607,7 @@ export const imageService = {
     const form = new FormData();
     form.append("file", file);
     form.append("folder", folder);
-    const res = await fetch(`${BFF_BASE}/api/images/upload`, {
+    const res = await fetch(`/educational-games/api/images/upload`, {
       method: "POST",
       credentials: "include",
       body: form,
@@ -614,7 +620,7 @@ export const imageService = {
     const form = new FormData();
     files.forEach(f => form.append("files", f));
     form.append("folder", folder);
-    const res = await fetch(`${BFF_BASE}/api/images/upload-multiple`, {
+    const res = await fetch(`/educational-games/api/images/upload-multiple`, {
       method: "POST",
       credentials: "include",
       body: form,

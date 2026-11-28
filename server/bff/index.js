@@ -55,8 +55,11 @@ function registerRoutes(prefix) {
   // Auth routes (no proxy, handled by BFF)
   app.use(`${p}/bff/auth`, authRoutes);
   
-  // Proxy all other /api/* requests to backend
+  // Proxy all other /api/* requests to backend (under /bff for backward compat)
   app.use(`${p}/bff`, proxyRoutes);
+  
+  // Also proxy /api/* directly (without bff in URL)
+  app.use(`${p}/api`, proxyRoutes);
 }
 
 // Register with base path (for reverse proxy)

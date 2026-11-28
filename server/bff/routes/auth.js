@@ -92,10 +92,6 @@ async function callBackend(path, options = {}) {
     ...options.headers,
   };
   
-  if (options.body) {
-    headers["Content-Length"] = Buffer.byteLength(JSON.stringify(options.body));
-  }
-  
   const response = await fetch(url, {
     method: options.method || "GET",
     headers,
@@ -131,15 +127,14 @@ router.post("/login", async (req, res) => {
       body: { username: id, password },
     });
     
-    if (status !== 200 || !data?.token || !data?.user) {
-      return sendError(res, data?.msg || "Sai tên đăng nhập hoặc mật khẩu", status || 401);
-    }
-    
-    // Backend returns access token + refresh token in body (for backward compat)
-    // We store both in session, only send session cookie to frontend
-    const accessToken = data.token;
-    const refreshToken = data.refreshToken; // Backend returns this in body
-    const user = data.user;
+const backendData = data?.data || data;
+if (status !== 200 || !backendData?.token || !backendData?.user) {
+  return sendError(res, data?.msg || "Sai tên đăng nhập hoặc mật khẩu", status || 401);
+}
+
+const accessToken = backendData.token;
+const refreshToken = backendData.refreshToken;
+const user = backendData.user;
     
     if (!refreshToken) {
       return sendError(res, "Không nhận được refresh token từ backend", 500);
@@ -197,13 +192,14 @@ router.post("/register", async (req, res) => {
       body: { username, email, password, name, generatedPassword, ageCode, gender },
     });
     
-    if (status !== 201 || !data?.token || !data?.user) {
-      return sendError(res, data?.msg || "Đăng ký thất bại", status || 400);
-    }
-    
-    const accessToken = data.token;
-    const refreshToken = data.refreshToken;
-    const user = data.user;
+const backendData = data?.data || data;
+if (status !== 201 || !backendData?.token || !backendData?.user) {
+  return sendError(res, data?.msg || "Đăng ký thất bại", status || 400);
+}
+
+const accessToken = backendData.token;
+const refreshToken = backendData.refreshToken;
+const user = backendData.user;
     
     if (!refreshToken) {
       return sendError(res, "Không nhận được refresh token từ backend", 500);
@@ -348,14 +344,15 @@ router.post("/refresh", async (req, res) => {
       },
     });
     
-    if (status !== 200 || !data?.token) {
-      // Refresh failed - revoke session
-      await revokeSession(sessionId);
-      clearCookies(res);
-      return sendError(res, data?.msg || "Phiên đăng nhập đã hết hạn", 401);
-    }
-    
-    const newAccessToken = data.token;
+const backendData = data?.data || data;
+if (status !== 200 || !backendData?.token) {
+  // Refresh failed - revoke session
+  await revokeSession(sessionId);
+  clearCookies(res);
+  return sendError(res, data?.msg || "Phiên đăng nhập đã hết hạn", 401);
+}
+
+const newAccessToken = backendData.token;
     const newRefreshToken = data.refreshToken || refreshToken; // Backend rotates
     
     // Encrypt new refresh token
@@ -435,11 +432,12 @@ async function refreshInBackground(sessionId) {
       },
     });
     
-    if (status === 200 && data?.token) {
-      const newRefreshToken = data.refreshToken || refreshToken;
-      const encryptedNewRefreshToken = encrypt(newRefreshToken);
-      await updateSessionTokens(sessionId, data.token, encryptedNewRefreshToken);
-    }
+const backendData = data?.data || data;
+if (status === 200 && backendData?.token) {
+  const newRefreshToken = backendData.refreshToken || refreshToken;
+  const encryptedNewRefreshToken = encrypt(newRefreshToken);
+  await updateSessionTokens(sessionId, backendData.token, encryptedNewRefreshToken);
+}
   } catch (e) {
     // Ignore background refresh errors
   }

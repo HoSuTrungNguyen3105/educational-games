@@ -1,0 +1,853 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Mê Cung Vượt Ải</title>
+<style>
+  /* Layout: full-bleed first-person canvas with a HUD overlay top bar and bottom control strip;
+     modal overlays center-stacked for puzzles and level transitions. Dark, torch-lit dungeon mood throughout (single-theme). */
+  :root{
+    --bg:#0b0e14;
+    --panel:#141922;
+    --panel-2:#1c2430;
+    --ink:#e8ecf2;
+    --ink-dim:#95a1b4;
+    --accent:#e0a94c;
+    --accent-2:#5fb3a3;
+    --danger:#d9636c;
+    --ok:#6fcf7d;
+    --line:#2a3240;
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    overflow:hidden;
+    -webkit-user-select:none;user-select:none;
+    padding-left:max(16px, env(safe-area-inset-left,0px));
+    padding-right:max(16px, env(safe-area-inset-right,0px));
+  }
+  @font-face{font-family:'Inter';src:local('Inter');}
+  h1,h2,h3,.display{font-family:'Space Grotesk',system-ui,sans-serif;}
+
+  #stage{position:relative;width:100%;height:100%;max-width:720px;margin:0 auto;}
+  canvas#view{display:block;width:100%;height:100%;background:#000;image-rendering:pixelated;}
+
+  /* HUD top bar */
+  #hud{
+    position:absolute;top:env(safe-area-inset-top,0px);left:0;right:0;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 12px;gap:8px;
+    background:linear-gradient(to bottom, rgba(8,10,16,.85), transparent);
+    pointer-events:none;
+    z-index:5;
+  }
+  #hud .chip{
+    pointer-events:auto;
+    background:rgba(20,25,34,.75);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:6px 10px;
+    font-size:12px;
+    color:var(--ink-dim);
+    letter-spacing:.02em;
+    display:flex;align-items:center;gap:6px;
+    backdrop-filter:blur(3px);
+  }
+  #hud .chip b{color:var(--accent);font-family:'Space Grotesk',sans-serif;}
+  #levelTag{font-family:'Space Grotesk',sans-serif;color:var(--ink);font-size:13px;font-weight:600;}
+
+  /* crosshair */
+  #cross{
+    position:absolute;top:50%;left:50%;width:6px;height:6px;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    background:rgba(232,236,242,.55);
+    box-shadow:0 0 0 1px rgba(0,0,0,.4);
+    pointer-events:none;z-index:4;
+  }
+
+  /* jump flash prompt */
+  #promptBar{
+    position:absolute;left:50%;bottom:120px;transform:translateX(-50%);
+    padding:8px 16px;border-radius:999px;
+    background:rgba(20,25,34,.85);border:1px solid var(--accent);
+    color:var(--accent);font-size:13px;font-weight:600;
+    opacity:0;transition:opacity .15s;pointer-events:none;z-index:6;
+    white-space:nowrap;
+  }
+  #promptBar.show{opacity:1;}
+  #promptBar.danger{border-color:var(--danger);color:var(--danger);}
+
+  /* minimap */
+  #mapWrap{
+    position:absolute;right:max(12px, env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 56px);
+    width:112px;height:112px;background:rgba(10,13,20,.8);
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    z-index:5; opacity:.9;
+  }
+  #mapWrap canvas{width:100%;height:100%;display:block;}
+
+  /* bottom touch controls */
+  #touchControls{
+    position:absolute;left:0;right:0;bottom:env(safe-area-inset-bottom,0px);
+    display:none;justify-content:space-between;align-items:flex-end;
+    padding:0 14px 18px;z-index:6;pointer-events:none;
+  }
+  #touchControls.active{display:flex;}
+  .tc-btn{
+    pointer-events:auto;
+    width:58px;height:58px;border-radius:50%;
+    background:rgba(20,25,34,.72);border:1px solid var(--line);
+    color:var(--ink);font-size:11px;font-family:'Space Grotesk',sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .tc-btn:active{background:rgba(224,169,76,.3);border-color:var(--accent);}
+  #tc-jump{width:70px;height:70px;font-size:12px;font-weight:700;color:var(--accent);}
+  #tc-stick{
+    pointer-events:auto;
+    width:120px;height:120px;border-radius:50%;
+    background:rgba(20,25,34,.55);border:1px solid var(--line);
+    position:relative;
+  }
+  #tc-stick .knob{
+    position:absolute;width:48px;height:48px;border-radius:50%;
+    background:rgba(224,169,76,.35);border:1px solid var(--accent);
+    top:50%;left:50%;transform:translate(-50%,-50%);
+  }
+  .tc-group{display:flex;gap:10px;pointer-events:auto;}
+
+  #tapHint{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(8,10,16,.55);z-index:7;flex-direction:column;gap:10px;text-align:center;padding:24px;
+  }
+  #tapHint b{font-family:'Space Grotesk',sans-serif;color:var(--accent);font-size:18px;}
+  #tapHint span{color:var(--ink-dim);font-size:13px;max-width:280px;line-height:1.5;}
+  #tapHint button{
+    margin-top:6px;padding:10px 22px;border-radius:999px;border:1px solid var(--accent);
+    background:var(--accent);color:#1a1200;font-weight:700;font-family:'Space Grotesk',sans-serif;
+    font-size:14px;cursor:pointer;
+  }
+
+  /* overlays: puzzle / level transition */
+  .overlay{
+    position:absolute;inset:0;z-index:20;
+    background:rgba(6,8,12,.72);
+    display:none;align-items:center;justify-content:center;
+    padding:20px;
+  }
+  .overlay.show{display:flex;}
+  .card{
+    width:100%;max-width:380px;background:var(--panel);
+    border:1px solid var(--line);border-radius:16px;
+    padding:22px 20px;box-shadow:0 20px 50px rgba(0,0,0,.5);
+  }
+  .card .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:8px;}
+  .card h2{margin:0 0 14px;font-size:19px;line-height:1.35;color:var(--ink);}
+  .opt{
+    display:block;width:100%;text-align:left;padding:11px 14px;margin-bottom:8px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+    color:var(--ink);font-size:14px;cursor:pointer;font-family:inherit;
+  }
+  .opt:active{background:#232c3a;}
+  .opt.correct{border-color:var(--ok);background:rgba(111,207,125,.12);color:var(--ok);}
+  .opt.wrong{border-color:var(--danger);background:rgba(217,99,108,.12);color:var(--danger);}
+  .feedback{font-size:13px;color:var(--ink-dim);margin-top:4px;min-height:18px;}
+  .cta{
+    margin-top:14px;width:100%;padding:13px;border-radius:10px;border:none;
+    background:var(--accent);color:#1a1200;font-weight:700;font-size:14px;
+    font-family:'Space Grotesk',sans-serif;cursor:pointer;
+  }
+  .cta.secondary{background:transparent;border:1px solid var(--line);color:var(--ink);}
+  .stat-row{display:flex;gap:16px;margin:14px 0 2px;}
+  .stat{flex:1;background:var(--panel-2);border-radius:10px;padding:10px 12px;border:1px solid var(--line);}
+  .stat .n{font-family:'Space Grotesk',sans-serif;font-size:20px;color:var(--accent);font-variant-numeric:tabular-nums;}
+  .stat .l{font-size:11px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.06em;}
+
+  @media (max-width:520px){
+    #touchControls.active{display:flex;}
+  }
+</style>
+
+<div id="stage">
+  <canvas id="view"></canvas>
+  <div id="cross"></div>
+  <div id="promptBar"></div>
+
+  <div id="hud">
+    <div class="chip" id="levelTag">Màn 1 · Hành Lang Đá</div>
+    <div class="chip">⏱ <b id="timerTxt">00:00</b></div>
+  </div>
+
+  <div id="mapWrap"><canvas id="mapCanvas"></canvas></div>
+
+  <div id="touchControls">
+    <div id="tc-stick"><div class="knob"></div></div>
+    <div class="tc-group">
+      <button class="tc-btn" id="tc-map">Bản<br>đồ</button>
+      <button class="tc-btn" id="tc-jump">NHẢY</button>
+    </div>
+  </div>
+
+  <div id="tapHint">
+    <b>MÊ CUNG VƯỢT ẢI</b>
+    <span>Góc nhìn thứ nhất. Giải câu đố để mở cửa, bấm NHẢY đúng lúc để vượt qua chướng ngại vật parkour. Chạm để bắt đầu, kéo để xoay hướng (trên máy tính: click để khoá chuột, WASD + chuột, Space để nhảy).</span>
+    <button id="startBtn">BẮT ĐẦU</button>
+  </div>
+
+  <div class="overlay" id="puzzleOverlay">
+    <div class="card">
+      <div class="eyebrow">Cánh cửa khoá · Câu đố</div>
+      <h2 id="puzzleQ"></h2>
+      <div id="puzzleOpts"></div>
+      <div class="feedback" id="puzzleFeedback"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="levelOverlay">
+    <div class="card">
+      <div class="eyebrow" id="loEyebrow">Hoàn thành</div>
+      <h2 id="loTitle">Màn 1 hoàn tất!</h2>
+      <div class="stat-row">
+        <div class="stat"><div class="n" id="loTime">00:00</div><div class="l">Thời gian</div></div>
+        <div class="stat"><div class="n" id="loDoors">0</div><div class="l">Cửa đã mở</div></div>
+      </div>
+      <button class="cta" id="loNext">MÀN TIẾP THEO →</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="winOverlay">
+    <div class="card" style="text-align:center">
+      <div class="eyebrow" style="color:var(--ok)">Chiến thắng</div>
+      <h2>Bạn đã thoát khỏi Mê Cung! 🏆</h2>
+      <div class="stat-row">
+        <div class="stat"><div class="n" id="finalTime">00:00</div><div class="l">Tổng thời gian</div></div>
+        <div class="stat"><div class="n" id="finalLevels">4</div><div class="l">Màn đã qua</div></div>
+      </div>
+      <button class="cta" id="restartBtn">CHƠI LẠI TỪ ĐẦU</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============== MAZE DATA (procedurally generated) ============== */
+// Tile codes:
+// '#' wall   '.' floor   'E' exit
+// 'A','B','C','D','F' locked door (letter = puzzle id for this level)
+// 'J' quick jump barrier (press Space recently to pass)
+// 'K' timed jump barrier (only passable while "open" AND recently jumped)
+// 'S' start marker (floor)
+//
+// Every level is carved as a perfect maze (DFS backtracker), so there is
+// always exactly one route from S to E. Doors and parkour gates are placed
+// directly ON that route (on the single-tile wall-openings the carver cut),
+// so dropping them in can never disconnect the maze — only gate it.
+
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function carveMaze(cw, ch, rng){
+  const W = 2*cw+1, H = 2*ch+1;
+  const grid = Array.from({length:H}, ()=>Array(W).fill('#'));
+  const visited = Array.from({length:ch}, ()=>Array(cw).fill(false));
+  const cellX = cx => 2*cx+1, cellY = cy => 2*cy+1;
+
+  visited[0][0] = true;
+  grid[cellY(0)][cellX(0)] = '.';
+  const stack = [[0,0]];
+
+  while(stack.length){
+    const [cx,cy] = stack[stack.length-1];
+    const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+    for(let i=dirs.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [dirs[i],dirs[j]]=[dirs[j],dirs[i]]; }
+    let advanced = false;
+    for(const [dx,dy] of dirs){
+      const nx=cx+dx, ny=cy+dy;
+      if(nx<0||ny<0||nx>=cw||ny>=ch||visited[ny][nx]) continue;
+      visited[ny][nx]=true;
+      grid[cellY(cy)+dy][cellX(cx)+dx] = '.';
+      grid[cellY(ny)][cellX(nx)] = '.';
+      stack.push([nx,ny]);
+      advanced = true;
+      break;
+    }
+    if(!advanced) stack.pop();
+  }
+  return {grid, W, H};
+}
+
+// BFS over the carved grid; returns {dist, parent, farthest} keyed by "x,y"
+function bfsFrom(grid, W, H, sx, sy){
+  const dist = Array.from({length:H}, ()=>Array(W).fill(-1));
+  const parent = Array.from({length:H}, ()=>Array(W).fill(null));
+  dist[sy][sx] = 0;
+  const q = [[sx,sy]];
+  let qi = 0;
+  let far = [sx,sy];
+  while(qi < q.length){
+    const [x,y] = q[qi++];
+    if(dist[y][x] > dist[far[1]][far[0]]) far = [x,y];
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=x+dx, ny=y+dy;
+      if(nx<0||ny<0||nx>=W||ny>=H) continue;
+      if(grid[ny][nx]==='#') continue;
+      if(dist[ny][nx] !== -1) continue;
+      dist[ny][nx] = dist[y][x]+1;
+      parent[ny][nx] = [x,y];
+      q.push([nx,ny]);
+    }
+  }
+  return {dist, parent, far};
+}
+
+const QUESTION_BANK = [
+  {q:"Cái gì càng lấy đi thì càng lớn thêm?", opts:["Cái hố","Nợ","Bóng tối","Trí nhớ"], correct:1},
+  {q:"Vật gì đi khắp thế gian mà vẫn ở nguyên một góc?", opts:["Con tem","Ánh sáng","Gió","Thời gian"], correct:0},
+  {q:"Càng về già càng mất đi bao nhiêu? (Đố mẹo con người)", opts:["Tóc","Trí nhớ","Tuổi thọ","Không mất gì, chỉ thêm tuổi"], correct:3},
+  {q:"Thứ gì luôn ở phía trước bạn mà không bao giờ chạm tới?", opts:["Tương lai","Cầu vồng","Đường chân trời","Giấc mơ"], correct:2},
+  {q:"Trong mê cung này, cái gì mở ra lối đi nhưng tự nó không bao giờ bước qua?", opts:["Chìa khoá","Cánh cửa","Người gác","Ánh đuốc"], correct:1},
+  {q:"Cái gì có răng mà không thể nhai?", opts:["Cái lược","Bánh răng","Cái cưa","Cả ba đều đúng"], correct:3},
+  {q:"Đi không dấu chân, ở không bóng hình, là gì?", opts:["Âm thanh","Bóng tối","Gió","Nước"], correct:0},
+  {q:"Cái gì luôn đi lên mà không bao giờ đi xuống?", opts:["Thang máy","Tuổi tác","Khói","Mặt trời"], correct:1},
+  {q:"Kho báu nào không bao giờ cạn dù lấy bao nhiêu?", opts:["Vàng","Kiến thức","Nước","Thời gian"], correct:1},
+  {q:"Cánh cửa nào mở ra mà không cần chìa khoá?", opts:["Cửa sổ tâm hồn","Cửa gỗ","Cửa kính","Cửa sắt"], correct:0},
+];
+const DOOR_LETTERS = ['A','B','C','D','F'];
+let questionCursor = 0;
+function nextQuestion(rngPickOrder){
+  const item = QUESTION_BANK[questionCursor % QUESTION_BANK.length];
+  questionCursor++;
+  return item;
+}
+
+// Build one level: a (cw x ch) perfect maze with `doorCount` puzzle doors,
+// `jumpCount` quick-jump gates ('J') and `timedCount` timed gates ('K'),
+// all placed on evenly spaced points of the single S->E route.
+function buildLevel(name, cw, ch, doorCount, jumpCount, timedCount, seed){
+  const rng = mulberry32(seed);
+  const {grid, W, H} = carveMaze(cw, ch, rng);
+
+  const start = {x:1, y:1};
+  const fromStart = bfsFrom(grid, W, H, start.x, start.y);
+  // exit = farthest reachable point from start (guarantees a long, winding route)
+  const exit = {x: fromStart.far[0], y: fromStart.far[1]};
+
+  // reconstruct the unique path start -> exit
+  const path = [];
+  let cur = [exit.x, exit.y];
+  while(cur){
+    path.push(cur);
+    const p = fromStart.parent[cur[1]][cur[0]];
+    cur = p;
+  }
+  path.reverse(); // path[0] === start, path[last] === exit
+
+  // gate-able points: interior path steps that sit on a single-tile
+  // "wall opening" (exactly one of x,y even) — these only ever connect the
+  // two path cells on either side of them, so gating them is always safe.
+  const gateIdx = [];
+  for(let i=1;i<path.length-1;i++){
+    const [x,y] = path[i];
+    const connector = (x%2===0) !== (y%2===0); // exactly one coord even
+    if(connector) gateIdx.push(i);
+  }
+
+  const totalGates = doorCount + jumpCount + timedCount;
+  const picks = [];
+  if(totalGates > 0 && gateIdx.length > 0){
+    // evenly spaced indices along the usable interior, keeping gates away
+    // from being adjacent to one another
+    const margin = Math.max(1, Math.floor(gateIdx.length * 0.08));
+    const usable = gateIdx.slice(margin, gateIdx.length - margin);
+    const pool = usable.length >= totalGates ? usable : gateIdx;
+    for(let k=0;k<totalGates;k++){
+      const t = (k+1)/(totalGates+1);
+      const idx = Math.min(pool.length-1, Math.floor(t*pool.length));
+      picks.push(pool[idx]);
+    }
+  }
+
+  const doors = {};
+  let letterIdx = 0;
+  const kinds = [
+    ...Array(doorCount).fill('door'),
+    ...Array(jumpCount).fill('jump'),
+    ...Array(timedCount).fill('timed'),
+  ];
+  picks.forEach((pathIdx, i)=>{
+    const [x,y] = path[pathIdx];
+    const kind = kinds[i] || 'jump';
+    if(kind === 'door'){
+      const letter = DOOR_LETTERS[letterIdx++];
+      grid[y][x] = letter;
+      doors[letter] = nextQuestion();
+    } else if(kind === 'jump'){
+      grid[y][x] = 'J';
+    } else {
+      grid[y][x] = 'K';
+    }
+  });
+
+  grid[start.y][start.x] = 'S';
+  grid[exit.y][exit.x] = 'E';
+
+  return {
+    name,
+    map: grid.map(row=>row.join('')),
+    doors
+  };
+}
+
+const LEVELS = [
+  buildLevel("Hành Lang Đá",        6, 6, 1, 1, 0, 101),
+  buildLevel("Hầm Mộ Cổ",            7, 7, 2, 1, 1, 202),
+  buildLevel("Lối Đi Sụp Đổ",        8, 8, 1, 2, 1, 303),
+  buildLevel("Vương Cung Bóng Tối",  9, 9, 2, 2, 2, 404),
+];
+
+/* ============== STATE ============== */
+let levelIdx = 0;
+let grid = [];
+let rows=0, cols=0;
+let doorSolved = {}; // id -> true
+let doorsOpenedCount = 0;
+let px=1.5, py=1.5, pa=0; // player x,y,angle
+let lastJumpTime = -9999;
+let moveF=0, moveS=0, turn=0; // forward, strafe, turn inputs (-1..1)
+let gameStarted = false;
+let levelStartTime = 0;
+let totalElapsed = 0;
+let activePuzzleDoor = null;
+let mapVisible = true;
+let keys = {};
+const JUMP_WINDOW = 480; // ms you remain "jumping" after pressing space
+const TIMED_PERIOD = 1400; // ms cycle for K barrier
+
+function loadLevel(i){
+  const lvl = LEVELS[i];
+  grid = lvl.map.map(r=>r.split(""));
+  rows = grid.length; cols = grid[0].length;
+  doorSolved = {};
+  doorsOpenedCount = 0;
+  for(let y=0;y<rows;y++) for(let x=0;x<cols;x++){
+    if(grid[y][x]==='S'){ px=x+0.5; py=y+0.5; grid[y][x]='.'; }
+  }
+  pa = 0;
+  levelStartTime = performance.now();
+  document.getElementById('levelTag').textContent = `Màn ${i+1} · ${lvl.name}`;
+}
+
+function cellAt(x,y){
+  const cx = Math.floor(x), cy=Math.floor(y);
+  if(cy<0||cy>=rows||cx<0||cx>=cols) return '#';
+  return grid[cy][cx];
+}
+
+function timedOpen(now){
+  // open during first half of cycle
+  return (now % TIMED_PERIOD) < TIMED_PERIOD*0.55;
+}
+
+function isJumping(now){
+  return (now - lastJumpTime) < JUMP_WINDOW;
+}
+
+// returns true if the tile blocks movement right now
+function isBlocking(tile, now){
+  if(tile==='#') return true;
+  if(tile==='.'||tile==='E') return false;
+  if(tile>='A' && tile<='F'){
+    return !doorSolved[tile];
+  }
+  if(tile==='J'){
+    return !isJumping(now);
+  }
+  if(tile==='K'){
+    return !(timedOpen(now) && isJumping(now));
+  }
+  return false;
+}
+
+/* ============== INPUT ============== */
+const canvas = document.getElementById('view');
+let pointerLocked = false;
+
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  document.getElementById('tapHint').style.display='none';
+  gameStarted = true;
+  levelStartTime = performance.now();
+  if(!('ontouchstart' in window)){
+    canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
+  } else {
+    document.getElementById('touchControls').classList.add('active');
+  }
+});
+
+canvas.addEventListener('click', ()=>{
+  if(gameStarted && !('ontouchstart' in window) && canvas.requestPointerLock){
+    canvas.requestPointerLock();
+  }
+});
+document.addEventListener('pointerlockchange', ()=>{
+  pointerLocked = document.pointerLockElement === canvas;
+});
+document.addEventListener('mousemove', (e)=>{
+  if(pointerLocked){
+    pa += e.movementX * 0.0025;
+  }
+});
+
+window.addEventListener('keydown', e=>{
+  keys[e.code]=true;
+  if(e.code==='Space'){ lastJumpTime = performance.now(); e.preventDefault(); }
+  if(e.code==='KeyM'){ toggleMap(); }
+});
+window.addEventListener('keyup', e=>{ keys[e.code]=false; });
+
+function toggleMap(){
+  mapVisible = !mapVisible;
+  document.getElementById('mapWrap').style.display = mapVisible ? 'block':'none';
+}
+document.getElementById('tc-map').addEventListener('click', toggleMap);
+
+// touch jump
+document.getElementById('tc-jump').addEventListener('touchstart', (e)=>{
+  e.preventDefault(); lastJumpTime = performance.now();
+}, {passive:false});
+document.getElementById('tc-jump').addEventListener('click', ()=>{ lastJumpTime = performance.now(); });
+
+// virtual stick (left = move/strafe, drag angle = turn component simplified: horizontal = turn, vertical = forward)
+(function(){
+  const stick = document.getElementById('tc-stick');
+  const knob = stick.querySelector('.knob');
+  let active=false, cx=0, cy=0;
+  function start(e){
+    active=true;
+    const r = stick.getBoundingClientRect();
+    cx = r.left+r.width/2; cy = r.top+r.height/2;
+  }
+  function move(e){
+    if(!active) return;
+    const t = e.touches? e.touches[0] : e;
+    let dx = t.clientX-cx, dy=t.clientY-cy;
+    const max=42;
+    const d = Math.hypot(dx,dy);
+    if(d>max){ dx=dx/d*max; dy=dy/d*max; }
+    knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    moveF = -dy/max;
+    turn = dx/max;
+  }
+  function end(){
+    active=false; moveF=0; turn=0;
+    knob.style.transform='translate(-50%,-50%)';
+  }
+  stick.addEventListener('touchstart', e=>{e.preventDefault();start(e);move(e);}, {passive:false});
+  stick.addEventListener('touchmove', e=>{e.preventDefault();move(e);}, {passive:false});
+  stick.addEventListener('touchend', e=>{e.preventDefault();end();}, {passive:false});
+})();
+
+/* ============== PUZZLE UI ============== */
+function openPuzzle(doorId){
+  if(activePuzzleDoor) return;
+  activePuzzleDoor = doorId;
+  const lvl = LEVELS[levelIdx];
+  const data = lvl.doors[doorId];
+  document.getElementById('puzzleQ').textContent = data.q;
+  const optsWrap = document.getElementById('puzzleOpts');
+  optsWrap.innerHTML='';
+  document.getElementById('puzzleFeedback').textContent='';
+  data.opts.forEach((opt, idx)=>{
+    const b = document.createElement('button');
+    b.className='opt';
+    b.textContent = opt;
+    b.addEventListener('click', ()=>{
+      if(idx === data.correct){
+        b.classList.add('correct');
+        document.getElementById('puzzleFeedback').textContent = 'Chính xác! Cánh cửa mở ra...';
+        doorSolved[doorId] = true;
+        doorsOpenedCount++;
+        setTimeout(closePuzzle, 650);
+      } else {
+        b.classList.add('wrong');
+        document.getElementById('puzzleFeedback').textContent = 'Sai rồi, thử lại.';
+        setTimeout(()=>b.classList.remove('wrong'), 500);
+      }
+    });
+    optsWrap.appendChild(b);
+  });
+  document.getElementById('puzzleOverlay').classList.add('show');
+}
+function closePuzzle(){
+  document.getElementById('puzzleOverlay').classList.remove('show');
+  activePuzzleDoor = null;
+}
+
+/* ============== LEVEL TRANSITION ============== */
+function fmtTime(ms){
+  const s = Math.floor(ms/1000);
+  const m = Math.floor(s/60);
+  const ss = (s%60).toString().padStart(2,'0');
+  return `${m.toString().padStart(2,'0')}:${ss}`;
+}
+
+function completeLevel(){
+  const elapsed = performance.now() - levelStartTime;
+  totalElapsed += elapsed;
+  document.getElementById('loTitle').textContent = `Màn ${levelIdx+1} hoàn tất!`;
+  document.getElementById('loTime').textContent = fmtTime(elapsed);
+  document.getElementById('loDoors').textContent = doorsOpenedCount;
+  document.getElementById('levelOverlay').classList.add('show');
+  gameStarted = false;
+}
+document.getElementById('loNext').addEventListener('click', ()=>{
+  document.getElementById('levelOverlay').classList.remove('show');
+  levelIdx++;
+  if(levelIdx >= LEVELS.length){
+    document.getElementById('finalTime').textContent = fmtTime(totalElapsed);
+    document.getElementById('finalLevels').textContent = LEVELS.length;
+    document.getElementById('winOverlay').classList.add('show');
+    return;
+  }
+  loadLevel(levelIdx);
+  gameStarted = true;
+});
+document.getElementById('restartBtn').addEventListener('click', ()=>{
+  document.getElementById('winOverlay').classList.remove('show');
+  levelIdx = 0; totalElapsed = 0;
+  loadLevel(0);
+  gameStarted = true;
+});
+
+/* ============== UPDATE / MOVE ============== */
+function tryMove(nx, ny, now){
+  const margin = 0.2;
+  // check against a small bounding box so player doesn't clip corners
+  const checks = [
+    [nx+margin, ny+margin],[nx-margin, ny+margin],
+    [nx+margin, ny-margin],[nx-margin, ny-margin]
+  ];
+  for(const [cx,cy] of checks){
+    if(isBlocking(cellAt(cx,cy), now)) return false;
+  }
+  return true;
+}
+
+let lastPromptTile = null;
+function update(dt, now){
+  if(!gameStarted) return;
+
+  // keyboard input combine with touch stick
+  let kf = (keys['KeyW']?1:0) - (keys['KeyS']?1:0);
+  let ks = (keys['KeyD']?1:0) - (keys['KeyA']?1:0);
+  let kt = (keys['ArrowRight']?1:0) - (keys['ArrowLeft']?1:0);
+
+  const f = kf !== 0 ? kf : moveF;
+  const s = ks;
+  const t = kt !== 0 ? kt*0.045 : turn*0.045;
+
+  pa += t;
+
+  const speed = 2.2 * dt;
+  const dx = Math.cos(pa)*f*speed + Math.cos(pa+Math.PI/2)*s*speed;
+  const dy = Math.sin(pa)*f*speed + Math.sin(pa+Math.PI/2)*s*speed;
+
+  const nx = px+dx, ny = py+dy;
+
+  // check door proximity -> open puzzle
+  const aheadTile = cellAt(Math.floor(px+Math.cos(pa)*0.6), Math.floor(py+Math.sin(pa)*0.6));
+
+  if(tryMove(nx, py, now)) px = nx;
+  if(tryMove(px, ny, now)) py = ny;
+
+  const curTile = cellAt(px,py);
+
+  // prompt logic: look at tile directly in front within short range
+  const fx = Math.floor(px+Math.cos(pa)*0.9), fy = Math.floor(py+Math.sin(pa)*0.9);
+  const frontTile = (fy>=0&&fy<rows&&fx>=0&&fx<cols) ? grid[fy][fx] : '#';
+  const prompt = document.getElementById('promptBar');
+  if(frontTile>='A' && frontTile<='F' && !doorSolved[frontTile]){
+    prompt.textContent = 'Lại gần cánh cửa để giải câu đố';
+    prompt.classList.add('show'); prompt.classList.remove('danger');
+    const dist = Math.hypot(fx+0.5-px, fy+0.5-py);
+    if(dist < 1.0) openPuzzle(frontTile);
+  } else if(frontTile==='J'){
+    prompt.textContent = isJumping(now) ? 'Nhảy! Tiến lên nào' : 'Bấm NHẢY (Space) rồi tiến lên';
+    prompt.classList.add('show');
+    prompt.classList.toggle('danger', !isJumping(now));
+  } else if(frontTile==='K'){
+    const open = timedOpen(now);
+    prompt.textContent = open ? 'Cổng đang MỞ — Nhảy ngay!' : 'Chờ cổng mở rồi bấm NHẢY';
+    prompt.classList.add('show');
+    prompt.classList.toggle('danger', !open);
+  } else {
+    prompt.classList.remove('show');
+  }
+
+  if(curTile === 'E'){
+    completeLevel();
+  }
+}
+
+/* ============== RAYCAST RENDER ============== */
+const ctx = canvas.getContext('2d');
+let W=360, H=640;
+function resize(){
+  const rect = document.getElementById('stage').getBoundingClientRect();
+  W = Math.max(240, Math.floor(rect.width));
+  H = Math.max(320, Math.floor(rect.height));
+  canvas.width = W*0.6; canvas.height = H*0.6; // internal low-res for perf + retro feel
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+const FOV = Math.PI/3;
+
+function wallColor(tile, side, dist, now){
+  let r,g,b;
+  if(tile>='A'&&tile<='F'){ r=200;g=150;b=70; } // door - golden
+  else if(tile==='J'){ // jump barrier pulsing cyan-ish
+    const pulse = isJumping(now) ? 1 : 0.5+0.3*Math.sin(now/180);
+    r=70*pulse; g=190*pulse; b=170*pulse;
+    if(isJumping(now)){ r=90;g=230;b=120; }
+  }
+  else if(tile==='K'){
+    const open = timedOpen(now);
+    if(open){ r=90;g=220;b=120; } else { r=210;g=70;b=80; }
+  }
+  else { r=120;g=90;b=150; } // plain stone wall - muted violet-grey
+  if(side===1){ r*=0.72; g*=0.72; b*=0.72; }
+  const fog = Math.max(0.25, 1 - dist/11);
+  r*=fog; g*=fog; b*=fog;
+  return `rgb(${r|0},${g|0},${b|0})`;
+}
+
+function render(now){
+  const w = canvas.width, h = canvas.height;
+  // ceiling
+  ctx.fillStyle = '#121622';
+  ctx.fillRect(0,0,w,h/2);
+  // floor
+  const floorGrad = ctx.createLinearGradient(0,h/2,0,h);
+  floorGrad.addColorStop(0,'#1a1410');
+  floorGrad.addColorStop(1,'#0a0806');
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0,h/2,w,h/2);
+
+  const numRays = w;
+  for(let i=0;i<numRays;i++){
+    const camX = 2*i/numRays - 1;
+    const rayAngle = pa + camX*(FOV/2);
+    const rdx = Math.cos(rayAngle), rdy = Math.sin(rayAngle);
+
+    let mapX = Math.floor(px), mapY = Math.floor(py);
+    const deltaDistX = Math.abs(1/rdx);
+    const deltaDistY = Math.abs(1/rdy);
+    let stepX, stepY, sideDistX, sideDistY;
+    if(rdx<0){ stepX=-1; sideDistX=(px-mapX)*deltaDistX; } else { stepX=1; sideDistX=(mapX+1-px)*deltaDistX; }
+    if(rdy<0){ stepY=-1; sideDistY=(py-mapY)*deltaDistY; } else { stepY=1; sideDistY=(mapY+1-py)*deltaDistY; }
+
+    let hit=false, side=0, tile='#', steps=0;
+    while(!hit && steps<64){
+      if(sideDistX < sideDistY){ sideDistX+=deltaDistX; mapX+=stepX; side=0; }
+      else { sideDistY+=deltaDistY; mapY+=stepY; side=1; }
+      steps++;
+      const t = (mapY>=0&&mapY<rows&&mapX>=0&&mapX<cols) ? grid[mapY][mapX] : '#';
+      if(isBlocking(t, now)){ hit=true; tile=t; }
+    }
+    let perpDist = side===0 ? (sideDistX-deltaDistX) : (sideDistY-deltaDistY);
+    perpDist = Math.max(0.0001, perpDist);
+    const lineH = Math.floor(h/perpDist);
+    const drawStart = Math.max(0, -lineH/2 + h/2);
+    const drawEnd = Math.min(h, lineH/2 + h/2);
+
+    ctx.fillStyle = wallColor(tile, side, perpDist, now);
+    ctx.fillRect(i, drawStart, 1, drawEnd-drawStart);
+  }
+
+  renderMinimap(now);
+}
+
+function renderMinimap(now){
+  const mc = document.getElementById('mapCanvas');
+  const mctx = mc.getContext('2d');
+  const size = 160;
+  mc.width = size; mc.height=size;
+  mctx.fillStyle = 'rgba(10,13,20,0)';
+  mctx.clearRect(0,0,size,size);
+  const cell = size/13;
+  const ox = Math.floor(px) - 6, oy = Math.floor(py)-6;
+  for(let y=0;y<13;y++) for(let x=0;x<13;x++){
+    const gx=ox+x, gy=oy+y;
+    if(gy<0||gy>=rows||gx<0||gx>=cols) continue;
+    const t = grid[gy][gx];
+    let col = 'transparent';
+    if(t==='#') col='#3a3450';
+    else if(t>='A'&&t<='F') col = doorSolved[t] ? '#3a3450' : '#c89646';
+    else if(t==='J') col = isJumping(now) ? '#5ae07a' : '#3f8d8a';
+    else if(t==='K') col = timedOpen(now)? '#5ae07a':'#d9636c';
+    else if(t==='E') col='#e0a94c';
+    if(col!=='transparent'){ mctx.fillStyle=col; mctx.fillRect(x*cell,y*cell,cell,cell); }
+  }
+  // player
+  mctx.fillStyle='#e8ecf2';
+  mctx.beginPath();
+  mctx.arc(6*cell+cell/2, 6*cell+cell/2, cell*0.3, 0, 7);
+  mctx.fill();
+  mctx.strokeStyle='#e8ecf2'; mctx.lineWidth=1.5;
+  mctx.beginPath();
+  mctx.moveTo(6*cell+cell/2, 6*cell+cell/2);
+  mctx.lineTo(6*cell+cell/2+Math.cos(pa)*cell*0.9, 6*cell+cell/2+Math.sin(pa)*cell*0.9);
+  mctx.stroke();
+}
+
+/* ============== MAIN LOOP ============== */
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now-last)/1000);
+  last = now;
+  update(dt, now);
+  render(now);
+  if(gameStarted){
+    const el = performance.now() - levelStartTime;
+    document.getElementById('timerTxt').textContent = fmtTime(el);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ============== HOT-RELOAD / INIT ============== */
+function start(savedState){
+  loadLevel(levelIdx);
+  if('ontouchstart' in window){
+    document.getElementById('touchControls').classList.add('active');
+  }
+  requestAnimationFrame(frame);
+}
+
+if(window.claude?.hot){
+  window.claude.hot.snapshot(()=>({levelIdx, totalElapsed}));
+  window.claude.hot.ready ? window.claude.hot.ready(()=>{
+    const d = window.claude.hot.data;
+    if(d && typeof d.levelIdx === 'number'){ levelIdx = d.levelIdx; totalElapsed = d.totalElapsed||0; }
+    start();
+  }) : start(window.claude.hot.data);
+} else {
+  start();
+}
+
+})();
+</script>
+
+</body></html>

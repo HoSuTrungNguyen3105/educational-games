@@ -212,7 +212,7 @@ function authHeader() {
 
 async function call(path, options = {}) {
   // API_BASE đã chứa sẵn hậu tố /api (xem services/api.js)
-  const res = await fetch(`${API_BASE}/users/me/pet${path}`, {
+  const res = await fetch(`${API_BASE}/api/users/me/pet${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",

@@ -42,6 +42,12 @@ export default defineConfig({
         changeOrigin: true,
         cookieDomainRewrite: 'localhost',
       },
+// Proxy /educational-games/api to BFF (no "bff" in URL)
+      '/educational-games/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
+      },
     },
   },
   plugins: [

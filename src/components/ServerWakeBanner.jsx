@@ -31,7 +31,7 @@ async function ping(requestTimeoutMs = REQUEST_TIMEOUT_MS) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), requestTimeoutMs);
     try {
-        const res = await fetch(`${API_BASE}/health`, {
+        const res = await fetch(`${API_BASE}/api/health`, {
             cache: "no-store",
             signal: ctrl.signal,
         });

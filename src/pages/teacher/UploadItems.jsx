@@ -12,7 +12,7 @@ async function uploadImage(blob, filename) {
   const token = getAuthToken();
   const fd = new FormData();
   fd.append('file', blob, filename);
-  const res = await fetch(`${API_BASE}/avatar/upload`, {
+  const res = await fetch(`${API_BASE}/api/avatar/upload`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: fd,
@@ -115,7 +115,7 @@ export default function UploadItems({ showToast }) {
   const loadExisting = useCallback(async () => {
     setExistingInfo('Đang tải...');
     try {
-      const res = await fetch(`${API_BASE}/avatar/items?from=1&to=${FULL_LIST_TO}`);
+      const res = await fetch(`${API_BASE}/api/avatar/items?from=1&to=${FULL_LIST_TO}`);
       const json = await res.json();
       if (json.status) {
         // Có from/to → data là MẢNG items đã cắt (không còn bọc { items, ... }).
@@ -252,7 +252,7 @@ export default function UploadItems({ showToast }) {
         }
 
         if (item.mode === 'update' && item.assignTo) {
-          const res = await fetch(`${API_BASE}/avatar/admin/items/${item.assignTo}`, {
+          const res = await fetch(`${API_BASE}/api/avatar/admin/items/${item.assignTo}`, {
             method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ name: item.name, price: item.price, default: item.isDefault, ...(imageUrl ? { image: imageUrl } : {}) }),
           });
@@ -260,7 +260,7 @@ export default function UploadItems({ showToast }) {
           if (!json.status) throw new Error(json.msg || 'Update failed');
           updated++;
         } else {
-          const res = await fetch(`${API_BASE}/avatar/admin/items`, {
+          const res = await fetch(`${API_BASE}/api/avatar/admin/items`, {
             method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ name: item.name, price: item.price, default: item.isDefault, image: imageUrl }),
           });

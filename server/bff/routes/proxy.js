@@ -9,48 +9,35 @@ const router = Router();
  */
 async function proxyMiddleware(req, res, next) {
   const sessionId = req.cookies?.[config.sessionCookieName];
-  if (!sessionId) {
-    return res.status(401).json({ status: false, code: 401, msg: "Chưa đăng nhập" });
+  
+  if (sessionId) {
+    const session = await getSession(sessionId);
+    if (session && !session.revoked) {
+      req.bffAccessToken = session.accessToken;
+      req.bffSession = session;
+    }
   }
   
-  const session = await getSession(sessionId);
-  if (!session || session.revoked) {
-    res.clearCookie(config.sessionCookieName, {
-      httpOnly: true,
-      secure: config.sessionCookieSecure,
-      sameSite: config.sessionCookieSameSite,
-      path: config.sessionCookiePath,
-    });
-    res.clearCookie(config.csrfCookieName, {
-      httpOnly: true,
-      secure: config.sessionCookieSecure,
-      sameSite: config.sessionCookieSameSite,
-      path: config.sessionCookiePath,
-    });
-    return res.status(401).json({ status: false, code: 401, msg: "Phiên đã hết hạn" });
-  }
-  
-  // Attach access token to request for proxy
-  req.bffAccessToken = session.accessToken;
-  req.bffSession = session;
   next();
 }
 
 /**
  * Proxy request to backend API
  */
-router.all("/api/*", proxyMiddleware, async (req, res) => {
+router.all("/*", proxyMiddleware, async (req, res) => {
   try {
     // Extract the path after /bff/api/
     const apiPath = req.path.replace(/^\/api/, "") || "/";
     const url = `${config.backendUrl}${apiPath}${req.url.includes("?") ? req.url.substring(req.path.length) : ""}`;
     
     const method = req.method;
-    const headers = {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${req.bffAccessToken}`,
-      "x-bff-internal-token": config.backendInternalToken,
-    };
+const headers = {
+  "Content-Type": "application/json",
+  "x-bff-internal-token": config.backendInternalToken,
+};
+if (req.bffAccessToken) {
+  headers["Authorization"] = `Bearer ${req.bffAccessToken}`;
+}
     
     // Forward query string
     const queryString = req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : "";
