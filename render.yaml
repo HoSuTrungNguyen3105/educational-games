@@ -14,6 +14,10 @@ services:
         value: https://hosutrungnguyen3105.github.io,http://localhost:5173
       - key: REFRESH_ALLOWED_ORIGINS
         value: https://hosutrungnguyen3105.github.io,http://localhost:5173
+      # Secret dùng chung BFF <-> API (header x-bff-internal-token).
+      # Phải đặt CÙNG MỘT giá trị ở cả hai service API và BFF.
+      - key: BFF_BACKEND_TOKEN
+        sync: false
       - key: MONGODB_DB
         value: educational_games
       - key: JWT_SECRET
@@ -32,3 +36,34 @@ services:
         generateValue: true
       - key: AI_BACKEND_TIMEOUT_MS
         value: 120000
+  # ── BFF (Backend for Frontend) ──────────────────────────────────────
+  # Frontend trên GitHub Pages gọi thẳng BFF này (VITE_BFF_BASE trong
+  # .env.production ở gốc repo). BFF giữ session bằng HttpOnly cookie rồi
+  # proxy sang API kèm header x-bff-internal-token. Thiếu service này thì
+  # mọi request /bff/* và /api/* của frontend đều 404 trên Pages.
+  - type: web
+    name: edu-games-bff
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: node bff/index.js
+    healthCheckPath: /educational-games/bff/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: BACKEND_URL
+        value: https://educational-games-lp4z.onrender.com/api
+      - key: BFF_BASE_PATH
+        value: /educational-games
+      # Cookie phải gửi được cross-site (Pages -> Render) nên SameSite=None
+      - key: BFF_COOKIE_SAMESITE
+        value: none
+      - key: FRONTEND_ORIGINS
+        value: https://hosutrungnguyen3105.github.io,http://localhost:5173
+      - key: MONGODB_DB
+        value: educational_games
+      - key: MONGODB_URI
+        sync: false
+      - key: BFF_BACKEND_TOKEN
+        sync: false

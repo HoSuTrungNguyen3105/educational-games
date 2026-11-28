@@ -10,6 +10,15 @@ export const BFF_BASE =
 // Backward compatibility: old code uses API_BASE
 export const API_BASE = BFF_BASE;
 
+// Gốc cho MỌI lời gọi API (không có đuôi /bff) — suy ra từ BFF_BASE:
+// - Dev (Vite proxy) / deploy sau reverse proxy cùng origin: "/educational-games"
+// - Production GitHub Pages: VITE_BFF_BASE trỏ thẳng tới BFF trên Render nên
+//   APP_BASE = "https://<bff>.onrender.com/educational-games".
+// Để cứng cùng origin "/educational-games" là gốc lỗi 404 toàn bộ API trên
+// Pages (bản deploy sau commit BFF 2026-11-23): Pages là hosting tĩnh,
+// không có BFF/proxy nào chạy cùng origin để nhận các request này.
+export const APP_BASE = BFF_BASE.replace(/\/bff\/?$/, "");
+
 export const uid = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
 // ── Auth State ───────────────────────────────────────────────────────────────
@@ -112,7 +121,7 @@ export async function apiFetch(path, options = {}) {
     path = `/api${path.startsWith("/") ? "" : "/"}${path}`;
   }
   // Auth calls go through BFF; API calls go through /api (no "bff" in URL)
-  const base = path.startsWith("/auth/") ? BFF_BASE : "/educational-games";
+  const base = path.startsWith("/auth/") ? BFF_BASE : APP_BASE;
   const url = `${base}${path}`;
   const method = (options.method || "GET").toUpperCase();
   
@@ -607,7 +616,7 @@ export const imageService = {
     const form = new FormData();
     form.append("file", file);
     form.append("folder", folder);
-    const res = await fetch(`/educational-games/api/images/upload`, {
+    const res = await fetch(`${APP_BASE}/api/images/upload`, {
       method: "POST",
       credentials: "include",
       body: form,
@@ -620,7 +629,7 @@ export const imageService = {
     const form = new FormData();
     files.forEach(f => form.append("files", f));
     form.append("folder", folder);
-    const res = await fetch(`/educational-games/api/images/upload-multiple`, {
+    const res = await fetch(`${APP_BASE}/api/images/upload-multiple`, {
       method: "POST",
       credentials: "include",
       body: form,
