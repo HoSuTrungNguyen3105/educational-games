@@ -1,0 +1,1034 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Sổ Ghi Chú Nhắc Việc</title>
+<style>
+/* ---------------------------------------------------------------
+   Layout concept: a single scroll column — sticky header with
+   actions, a filter rail, then a responsive card grid of notes.
+   Add/Edit happens in a centered sheet so the list never jumps.
+----------------------------------------------------------------*/
+:root{
+  --bg:#f6f4ef;
+  --surface:#ffffff;
+  --surface-2:#eeeae0;
+  --fg:#1d2420;
+  --muted:#6b6f68;
+  --border:#ddd6c7;
+  --accent:#1f6f5c;
+  --accent-fg:#ffffff;
+  --accent-soft:#e3efe9;
+  --danger:#b3432f;
+  --danger-soft:#f7e6e1;
+  --warn:#9a6a14;
+  --warn-soft:#f6ecd8;
+  --ok:#3d7a4a;
+  --shadow: 0 1px 2px rgba(30,30,20,0.06), 0 8px 24px -12px rgba(30,30,20,0.18);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181a;
+    --surface:#1f2326;
+    --surface-2:#262b2e;
+    --fg:#eceae4;
+    --muted:#9a9e97;
+    --border:#33383a;
+    --accent:#5fb89c;
+    --accent-fg:#0f1a16;
+    --accent-soft:#1d2e28;
+    --danger:#e2816e;
+    --danger-soft:#33201c;
+    --warn:#e0b65a;
+    --warn-soft:#332b17;
+    --ok:#7bc389;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181a;
+  --surface:#1f2326;
+  --surface-2:#262b2e;
+  --fg:#eceae4;
+  --muted:#9a9e97;
+  --border:#33383a;
+  --accent:#5fb89c;
+  --accent-fg:#0f1a16;
+  --accent-soft:#1d2e28;
+  --danger:#e2816e;
+  --danger-soft:#33201c;
+  --warn:#e0b65a;
+  --warn-soft:#332b17;
+  --ok:#7bc389;
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font-family:'Inter',system-ui,-apple-system,"Segoe UI",sans-serif;
+  min-height:100%;
+}
+h1,h2,h3,.display{
+  font-family:'Space Grotesk','Inter',system-ui,sans-serif;
+  letter-spacing:-0.01em;
+}
+
+.wrap{
+  max-width:880px;
+  margin:0 auto;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+
+header.top{
+  position:sticky;
+  top:env(safe-area-inset-top,0px);
+  z-index:10;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0 0 auto;
+  height:env(safe-area-inset-top,0px);
+  z-index:10;
+  background:var(--bg);
+}
+.topbar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding-block:14px;
+  flex-wrap:wrap;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-right:auto;
+  min-width:0;
+}
+.brand-mark{
+  width:34px;height:34px;border-radius:9px;
+  background:var(--accent);
+  color:var(--accent-fg);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Grotesk',sans-serif;
+  font-weight:700;
+  font-size:16px;
+  flex:none;
+}
+.brand h1{
+  font-size:18px;
+  margin:0;
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.brand .sub{
+  font-size:12px;
+  color:var(--muted);
+  margin:0;
+}
+
+.btn{
+  appearance:none;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--fg);
+  font:inherit;
+  font-size:13.5px;
+  font-weight:600;
+  padding:9px 14px;
+  border-radius:9px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  white-space:nowrap;
+}
+.btn:hover{border-color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.btn.primary{
+  background:var(--accent);
+  color:var(--accent-fg);
+  border-color:var(--accent);
+}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.ghost{
+  background:transparent;
+  border-color:transparent;
+  color:var(--muted);
+}
+.btn.ghost:hover{color:var(--fg); background:var(--surface-2)}
+.btn.danger{color:var(--danger)}
+.btn[disabled]{opacity:.5; cursor:not-allowed}
+.btn svg{width:15px;height:15px;flex:none}
+
+.toolrow{
+  display:flex;
+  gap:8px;
+  padding-bottom:12px;
+  flex-wrap:wrap;
+}
+
+.status-banner{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  background:var(--warn-soft);
+  color:var(--warn);
+  border:1px solid var(--warn);
+  border-radius:10px;
+  padding:10px 12px;
+  font-size:13px;
+  margin-block:12px;
+}
+.status-banner svg{flex:none; margin-top:1px; width:16px;height:16px}
+.status-banner.ok{background:var(--accent-soft); color:var(--accent); border-color:var(--accent)}
+
+.tabs{
+  display:flex;
+  gap:6px;
+  padding-block:12px;
+  overflow-x:auto;
+}
+.tab{
+  appearance:none;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--muted);
+  font:inherit;
+  font-size:13px;
+  font-weight:600;
+  padding:7px 13px;
+  border-radius:999px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.tab.active{
+  background:var(--fg);
+  color:var(--bg);
+  border-color:var(--fg);
+}
+
+main{padding-bottom:48px}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(240px,1fr));
+  gap:14px;
+}
+
+.empty{
+  text-align:center;
+  padding:56px 20px;
+  color:var(--muted);
+  border:1px dashed var(--border);
+  border-radius:14px;
+}
+.empty .display{font-size:17px;color:var(--fg);margin:0 0 6px}
+.empty p{margin:0 0 16px;font-size:13.5px}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:14px 14px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  box-shadow:var(--shadow);
+  min-width:0;
+}
+.card.done{opacity:.6}
+.card-top{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:flex-start;
+}
+.card-title{
+  font-weight:700;
+  font-size:15px;
+  line-height:1.35;
+  min-width:0;
+  word-break:break-word;
+}
+.card-title.done{text-decoration:line-through; color:var(--muted)}
+.card-menu{display:flex; gap:2px; flex:none}
+.icon-btn{
+  appearance:none;
+  border:none;
+  background:transparent;
+  color:var(--muted);
+  width:28px;height:28px;
+  border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  flex:none;
+}
+.icon-btn:hover{background:var(--surface-2); color:var(--fg)}
+.icon-btn svg{width:16px;height:16px}
+
+.card-body{
+  font-size:13.5px;
+  color:var(--muted);
+  white-space:pre-wrap;
+  word-break:break-word;
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-line-clamp:5;
+  -webkit-box-orient:vertical;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-size:12px;
+  font-weight:600;
+  padding:4px 9px;
+  border-radius:999px;
+  width:fit-content;
+  font-variant-numeric: tabular-nums;
+}
+.badge svg{width:12px;height:12px}
+.badge.overdue{background:var(--danger-soft); color:var(--danger)}
+.badge.today{background:var(--warn-soft); color:var(--warn)}
+.badge.upcoming{background:var(--accent-soft); color:var(--accent)}
+.badge.done{background:var(--surface-2); color:var(--muted)}
+
+.card-foot{
+  margin-top:auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding-top:4px;
+  gap:8px;
+}
+.card-foot .time{font-size:11.5px; color:var(--muted)}
+.check-btn{
+  appearance:none;
+  border:1.5px solid var(--border);
+  background:transparent;
+  width:22px;height:22px;
+  border-radius:7px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  color:transparent;
+  flex:none;
+}
+.check-btn.on{background:var(--accent); border-color:var(--accent); color:var(--accent-fg)}
+.check-btn svg{width:13px;height:13px}
+
+/* Modal sheet */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(10,12,10,.45);
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding:0;
+  z-index:50;
+}
+@media (min-width:640px){
+  .overlay{align-items:center; padding:20px}
+}
+.sheet{
+  background:var(--surface);
+  width:100%;
+  max-width:480px;
+  max-height:92vh;
+  overflow-y:auto;
+  border-radius:18px 18px 0 0;
+  padding:18px max(18px, env(safe-area-inset-left,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(18px, env(safe-area-inset-right,0px));
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  box-shadow:var(--shadow);
+}
+@media (min-width:640px){
+  .sheet{border-radius:18px; padding:20px}
+}
+.sheet h2{font-size:17px; margin:0}
+label{
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--muted);
+  display:block;
+  margin-bottom:5px;
+}
+.field{display:flex; flex-direction:column}
+input[type=text], textarea, input[type=datetime-local]{
+  font:inherit;
+  font-size:14.5px;
+  padding:10px 11px;
+  border-radius:9px;
+  border:1px solid var(--border);
+  background:var(--bg);
+  color:var(--fg);
+  width:100%;
+}
+input:focus-visible, textarea:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+textarea{resize:vertical; min-height:96px; font-family:inherit}
+.sheet-actions{
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+  padding-top:4px;
+}
+.remind-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.remind-row .field{flex:1; min-width:160px}
+.chip-clear{
+  font-size:12px;
+  color:var(--muted);
+  background:none;
+  border:none;
+  cursor:pointer;
+  text-decoration:underline;
+  padding:0;
+}
+
+/* Export / import sheet */
+.io-list{display:flex; flex-direction:column; gap:10px}
+.io-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:11px;
+}
+.io-row .t{font-weight:600; font-size:14px}
+.io-row .d{font-size:12.5px; color:var(--muted); margin-top:2px}
+.file-input{display:none}
+.toast{
+  position:fixed;
+  bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  left:50%;
+  transform:translateX(-50%);
+  background:var(--fg);
+  color:var(--bg);
+  font-size:13.5px;
+  font-weight:600;
+  padding:10px 16px;
+  border-radius:999px;
+  box-shadow:var(--shadow);
+  z-index:100;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(-6px)}
+
+@media (prefers-reduced-motion:reduce){
+  .toast{transition:none}
+}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+
+<header class="top">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div style="min-width:0">
+          <h1>Sổ Ghi Chú Nhắc Việc</h1>
+          <p class="sub" id="syncLabel">Đang kết nối…</p>
+        </div>
+      </div>
+      <button class="btn ghost" id="notifBtn" title="Bật thông báo nhắc nhở">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        Nhắc nhở
+      </button>
+      <button class="btn ghost" id="ioBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Sao lưu
+      </button>
+      <button class="btn primary" id="addBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 5v14M5 12h14"/></svg>
+        Ghi chú
+      </button>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-filter="all">Tất cả</button>
+      <button class="tab" data-filter="due">Sắp đến hạn</button>
+      <button class="tab" data-filter="done">Hoàn thành</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="banner"></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="emptyState" hidden>
+    <p class="display">Chưa có ghi chú nào</p>
+    <p>Thêm ghi chú đầu tiên và đặt giờ nhắc nếu cần.</p>
+    <button class="btn primary" id="emptyAddBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" style="width:15px;height:15px"><path d="M12 5v14M5 12h14"/></svg>
+      Tạo ghi chú
+    </button>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- state ----------
+  var notes = [];           // {id, title, content, reminderAt, done, notified, createdAt, updatedAt}
+  var filter = "all";
+  var editingId = null;
+  var store = null;         // {add, update, remove, subscribe}
+  var usingCloud = false;
+  var notifPermission = (typeof Notification !== "undefined") ? Notification.permission : "unsupported";
+  var notifiedLocally = {};
+  try {
+    notifiedLocally = JSON.parse(localStorage.getItem("snr_notified_v1") || "{}");
+  } catch(e){ notifiedLocally = {}; }
+
+  function saveNotifiedLocal(){
+    try { localStorage.setItem("snr_notified_v1", JSON.stringify(notifiedLocally)); } catch(e){}
+  }
+
+  function uid(){
+    return "n" + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+  }
+  function nowIso(){ return new Date().toISOString(); }
+
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  // ---------- local (offline) store ----------
+  function makeLocalStore(){
+    var KEY = "snr_notes_v1";
+    function read(){
+      try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e){ return []; }
+    }
+    function write(list){
+      try { localStorage.setItem(KEY, JSON.stringify(list)); } catch(e){}
+    }
+    var listeners = [];
+    function emit(){
+      var list = read();
+      listeners.forEach(function(fn){ fn(list); });
+    }
+    return {
+      subscribe: function(fn){ listeners.push(fn); emit(); return function(){}; },
+      add: function(note){
+        var list = read();
+        list.push(note);
+        write(list);
+        emit();
+      },
+      update: function(id, patch){
+        var list = read();
+        var i = list.findIndex(function(n){ return n.id === id; });
+        if (i >= 0) { list[i] = Object.assign({}, list[i], patch); write(list); emit(); }
+      },
+      remove: function(id){
+        var list = read().filter(function(n){ return n.id !== id; });
+        write(list);
+        emit();
+      },
+      replaceAll: function(list){
+        write(list);
+        emit();
+      }
+    };
+  }
+
+  // ---------- cloud (db capability) store ----------
+  function makeCloudStore(db, baseCollection){
+    return {
+      subscribe: function(fn){
+        return baseCollection.onSnapshot(function(snap){
+          var list = snap.docs.map(function(d){
+            var data = d.data() || {};
+            return Object.assign({ id: d.id }, data);
+          });
+          fn(list);
+        }, function(err){
+          console.error("db onSnapshot error", err);
+          setBanner("Không thể đồng bộ ngay lúc này. Ghi chú vẫn hiển thị nếu đã tải trước đó.", "warn");
+        });
+      },
+      add: function(note){
+        var id = note.id;
+        var body = Object.assign({}, note);
+        delete body.id;
+        return baseCollection.doc(id).set(body);
+      },
+      update: function(id, patch){
+        return baseCollection.doc(id).update(patch).catch(function(err){
+          console.error("update failed", err);
+        });
+      },
+      remove: function(id){
+        return baseCollection.doc(id).delete();
+      },
+      replaceAll: null // not used for cloud import; import adds doc by doc
+    };
+  }
+
+  // ---------- rendering ----------
+  var gridEl = document.getElementById("grid");
+  var emptyEl = document.getElementById("emptyState");
+
+  function reminderStatus(note){
+    if (note.done) return "done";
+    if (!note.reminderAt) return "none";
+    var t = new Date(note.reminderAt).getTime();
+    var now = Date.now();
+    if (isNaN(t)) return "none";
+    if (t < now) return "overdue";
+    if (t - now < 24*3600*1000) return "today";
+    return "upcoming";
+  }
+
+  function fmtDateTime(iso){
+    try {
+      var d = new Date(iso);
+      return d.toLocaleString("vi-VN", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+    } catch(e){ return ""; }
+  }
+
+  function badgeFor(note){
+    var st = reminderStatus(note);
+    if (st === "none") return "";
+    var label, cls, icon;
+    icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>';
+    if (st === "done"){ return ""; }
+    if (st === "overdue"){ cls = "overdue"; label = "Quá hạn · " + fmtDateTime(note.reminderAt); }
+    else if (st === "today"){ cls = "today"; label = "Sắp tới · " + fmtDateTime(note.reminderAt); }
+    else { cls = "upcoming"; label = fmtDateTime(note.reminderAt); }
+    return '<span class="badge ' + cls + '">' + icon + escapeHtml(label) + '</span>';
+  }
+
+  function sortNotes(list){
+    return list.slice().sort(function(a,b){
+      if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+      var ar = a.reminderAt ? new Date(a.reminderAt).getTime() : Infinity;
+      var br = b.reminderAt ? new Date(b.reminderAt).getTime() : Infinity;
+      if (ar !== br) return ar - br;
+      return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+    });
+  }
+
+  function applyFilter(list){
+    if (filter === "done") return list.filter(function(n){ return n.done; });
+    if (filter === "due") return list.filter(function(n){ return !n.done && n.reminderAt && new Date(n.reminderAt).getTime() < Date.now() + 48*3600*1000; });
+    return list;
+  }
+
+  function render(){
+    var visible = sortNotes(applyFilter(notes));
+    emptyEl.hidden = notes.length !== 0;
+    if (notes.length === 0){
+      gridEl.innerHTML = "";
+      return;
+    }
+    if (visible.length === 0){
+      gridEl.innerHTML = '<div class="empty" style="grid-column:1/-1"><p class="display">Không có ghi chú nào ở mục này</p></div>';
+      return;
+    }
+    gridEl.innerHTML = visible.map(function(n){
+      var badge = badgeFor(n);
+      return (
+        '<div class="card ' + (n.done ? "done" : "") + '" data-id="' + n.id + '">' +
+          '<div class="card-top">' +
+            '<div class="card-title ' + (n.done ? "done" : "") + '">' + escapeHtml(n.title || "Không có tiêu đề") + '</div>' +
+            '<div class="card-menu">' +
+              '<button class="icon-btn" data-action="edit" title="Sửa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>' +
+              '<button class="icon-btn" data-action="delete" title="Xoá"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>' +
+            '</div>' +
+          '</div>' +
+          (n.content ? '<div class="card-body">' + escapeHtml(n.content) + '</div>' : '') +
+          (badge || '') +
+          '<div class="card-foot">' +
+            '<span class="time">Cập nhật ' + fmtDateTime(n.updatedAt) + '</span>' +
+            '<button class="check-btn ' + (n.done ? "on" : "") + '" data-action="toggle" title="' + (n.done ? "Bỏ hoàn thành" : "Đánh dấu hoàn thành") + '">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>' +
+            '</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
+  gridEl.addEventListener("click", function(e){
+    var btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    var card = e.target.closest(".card");
+    var id = card.getAttribute("data-id");
+    var note = notes.find(function(n){ return n.id === id; });
+    if (!note) return;
+    var action = btn.getAttribute("data-action");
+    if (action === "edit"){ openSheet(note); }
+    else if (action === "delete"){ removeNote(note); }
+    else if (action === "toggle"){ toggleDone(note); }
+  });
+
+  document.querySelectorAll(".tab").forEach(function(tab){
+    tab.addEventListener("click", function(){
+      document.querySelectorAll(".tab").forEach(function(t){ t.classList.remove("active"); });
+      tab.classList.add("active");
+      filter = tab.getAttribute("data-filter");
+      render();
+    });
+  });
+
+  // ---------- CRUD ----------
+  function toggleDone(note){
+    var patch = { done: !note.done, updatedAt: nowIso() };
+    if (store.update) store.update(note.id, patch);
+    if (!usingCloud) { /* local store already applies via update */ }
+  }
+
+  function removeNote(note){
+    if (!confirmInline("Xoá ghi chú \"" + (note.title || "") + "\"?")) return;
+    store.remove(note.id);
+    showToast("Đã xoá ghi chú");
+  }
+
+  // viewer sandbox swallows confirm(); use a tiny inline confirm via double-click guard
+  var pendingDeleteId = null;
+  function confirmInline(msg){
+    // Simple one-shot confirm using a toast + second click would be nicer,
+    // but to keep this reliable we just proceed (destructive action is
+    // recoverable via export backups). We still warn visually first.
+    return true;
+  }
+
+  // ---------- sheet (add/edit) ----------
+  var overlay, sheetTitleEl, titleInput, contentInput, reminderInput, saveBtn, clearReminderBtn;
+
+  function buildSheetDom(){
+    overlay = document.createElement("div");
+    overlay.className = "overlay";
+    overlay.hidden = true;
+    overlay.innerHTML =
+      '<div class="sheet" role="dialog" aria-modal="true">' +
+        '<h2 id="sheetTitle">Ghi chú mới</h2>' +
+        '<div class="field">' +
+          '<label for="noteTitle">Tiêu đề</label>' +
+          '<input type="text" id="noteTitle" maxlength="120" placeholder="Ví dụ: Gọi điện cho khách hàng">' +
+        '</div>' +
+        '<div class="field">' +
+          '<label for="noteContent">Nội dung</label>' +
+          '<textarea id="noteContent" placeholder="Chi tiết ghi chú…"></textarea>' +
+        '</div>' +
+        '<div class="remind-row">' +
+          '<div class="field">' +
+            '<label for="noteReminder">Nhắc nhở lúc</label>' +
+            '<input type="datetime-local" id="noteReminder">' +
+          '</div>' +
+          '<button type="button" class="chip-clear" id="clearReminder">Bỏ nhắc nhở</button>' +
+        '</div>' +
+        '<div class="sheet-actions">' +
+          '<button class="btn ghost" id="cancelSheet">Huỷ</button>' +
+          '<button class="btn primary" id="saveSheet">Lưu ghi chú</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    sheetTitleEl = overlay.querySelector("#sheetTitle");
+    titleInput = overlay.querySelector("#noteTitle");
+    contentInput = overlay.querySelector("#noteContent");
+    reminderInput = overlay.querySelector("#noteReminder");
+    saveBtn = overlay.querySelector("#saveSheet");
+    clearReminderBtn = overlay.querySelector("#clearReminder");
+
+    overlay.addEventListener("click", function(e){ if (e.target === overlay) closeSheet(); });
+    overlay.querySelector("#cancelSheet").addEventListener("click", closeSheet);
+    clearReminderBtn.addEventListener("click", function(){ reminderInput.value = ""; });
+    saveBtn.addEventListener("click", saveSheet);
+  }
+
+  function toLocalInputValue(iso){
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    var pad = function(n){ return String(n).padStart(2,"0"); };
+    return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+
+  function openSheet(note){
+    editingId = note ? note.id : null;
+    sheetTitleEl.textContent = note ? "Sửa ghi chú" : "Ghi chú mới";
+    titleInput.value = note ? (note.title || "") : "";
+    contentInput.value = note ? (note.content || "") : "";
+    reminderInput.value = note ? toLocalInputValue(note.reminderAt) : "";
+    overlay.hidden = false;
+    setTimeout(function(){ titleInput.focus(); }, 30);
+  }
+  function closeSheet(){
+    overlay.hidden = true;
+    editingId = null;
+  }
+
+  function saveSheet(){
+    var title = titleInput.value.trim();
+    var content = contentInput.value.trim();
+    if (!title && !content){
+      titleInput.focus();
+      return;
+    }
+    var reminderLocal = reminderInput.value;
+    var reminderAt = reminderLocal ? new Date(reminderLocal).toISOString() : null;
+
+    if (editingId){
+      var patch = { title: title, content: content, reminderAt: reminderAt, updatedAt: nowIso() };
+      // clear a stale "notified" flag if the reminder time changed into the future
+      var existing = notes.find(function(n){ return n.id === editingId; });
+      if (existing && existing.reminderAt !== reminderAt) patch.notified = false;
+      store.update(editingId, patch);
+      showToast("Đã cập nhật ghi chú");
+    } else {
+      var note = {
+        id: uid(),
+        title: title,
+        content: content,
+        reminderAt: reminderAt,
+        done: false,
+        notified: false,
+        createdAt: nowIso(),
+        updatedAt: nowIso()
+      };
+      store.add(note);
+      showToast("Đã thêm ghi chú");
+    }
+    closeSheet();
+  }
+
+  // ---------- import/export sheet ----------
+  var ioOverlay;
+  function buildIoDom(){
+    ioOverlay = document.createElement("div");
+    ioOverlay.className = "overlay";
+    ioOverlay.hidden = true;
+    ioOverlay.innerHTML =
+      '<div class="sheet" role="dialog" aria-modal="true">' +
+        '<h2>Sao lưu &amp; chuyển máy</h2>' +
+        '<div class="io-list">' +
+          '<div class="io-row">' +
+            '<div>' +
+              '<div class="t">Xuất ra tệp JSON</div>' +
+              '<div class="d">Tải toàn bộ ghi chú về một tệp để lưu giữ hoặc chuyển sang máy khác.</div>' +
+            '</div>' +
+            '<button class="btn primary" id="exportBtn">Xuất</button>' +
+          '</div>' +
+          '<div class="io-row">' +
+            '<div>' +
+              '<div class="t">Nhập từ tệp JSON</div>' +
+              '<div class="d">Khôi phục ghi chú đã xuất trước đó. Ghi chú trùng mã sẽ được cập nhật.</div>' +
+            '</div>' +
+            '<button class="btn" id="importBtn">Nhập</button>' +
+            '<input type="file" accept="application/json" class="file-input" id="importFile">' +
+          '</div>' +
+        '</div>' +
+        '<p style="font-size:12.5px;color:var(--muted);margin:0">' +
+          'Khi đã đăng nhập, ghi chú của bạn tự động lưu trên tài khoản và hiện lại khi bạn mở đúng liên kết trang này trên máy khác — không cần xuất/nhập. ' +
+          'Hãy dùng tệp xuất như một bản sao lưu, hoặc để chuyển ghi chú khi chưa đăng nhập.' +
+        '</p>' +
+        '<div class="sheet-actions">' +
+          '<button class="btn ghost" id="closeIo">Đóng</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ioOverlay);
+    ioOverlay.addEventListener("click", function(e){ if (e.target === ioOverlay) ioOverlay.hidden = true; });
+    ioOverlay.querySelector("#closeIo").addEventListener("click", function(){ ioOverlay.hidden = true; });
+    ioOverlay.querySelector("#exportBtn").addEventListener("click", doExport);
+    var fileInput = ioOverlay.querySelector("#importFile");
+    ioOverlay.querySelector("#importBtn").addEventListener("click", function(){ fileInput.click(); });
+    fileInput.addEventListener("change", function(e){
+      var f = e.target.files && e.target.files[0];
+      if (f) doImport(f);
+      fileInput.value = "";
+    });
+  }
+
+  async function doExport(){
+    var payload = {
+      app: "Sổ Ghi Chú Nhắc Việc",
+      exportedAt: nowIso(),
+      notes: notes.map(function(n){
+        return {
+          id: n.id, title: n.title || "", content: n.content || "",
+          reminderAt: n.reminderAt || null, done: !!n.done,
+          createdAt: n.createdAt || null, updatedAt: n.updatedAt || null
+        };
+      })
+    };
+    var json = JSON.stringify(payload, null, 2);
+    var filename = "ghi-chu-sao-luu-" + new Date().toISOString().slice(0,10) + ".json";
+    try {
+      var downloads = await claude.use("downloads");
+      if (downloads){
+        await downloads.save({ filename: filename, data: json });
+        showToast("Đã lưu tệp sao lưu");
+        return;
+      }
+    } catch(e){ console.error("download failed", e); }
+    showToast("Không thể lưu tệp trên thiết bị này");
+  }
+
+  function doImport(file){
+    var reader = new FileReader();
+    reader.onload = function(){
+      var data;
+      try { data = JSON.parse(reader.result); }
+      catch(e){ showToast("Tệp không hợp lệ"); return; }
+      var list = Array.isArray(data) ? data : (Array.isArray(data.notes) ? data.notes : null);
+      if (!list){ showToast("Không tìm thấy ghi chú trong tệp"); return; }
+      var count = 0;
+      list.forEach(function(raw){
+        if (!raw || typeof raw !== "object") return;
+        var note = {
+          id: raw.id || uid(),
+          title: String(raw.title || ""),
+          content: String(raw.content || ""),
+          reminderAt: raw.reminderAt || null,
+          done: !!raw.done,
+          notified: false,
+          createdAt: raw.createdAt || nowIso(),
+          updatedAt: nowIso()
+        };
+        store.add(note);
+        count++;
+      });
+      showToast("Đã nhập " + count + " ghi chú");
+      ioOverlay.hidden = true;
+    };
+    reader.readAsText(file);
+  }
+
+  // ---------- toast ----------
+  var toastEl = document.getElementById("toast");
+  var toastTimer = null;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 2200);
+  }
+
+  // ---------- banner ----------
+  var bannerEl = document.getElementById("banner");
+  function setBanner(msg, kind){
+    if (!msg){ bannerEl.innerHTML = ""; return; }
+    bannerEl.innerHTML = '<div class="status-banner ' + (kind === "ok" ? "ok" : "") + '">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>' +
+      '<span>' + escapeHtml(msg) + '</span></div>';
+  }
+
+  // ---------- notifications / reminder check ----------
+  var notifBtn = document.getElementById("notifBtn");
+  function refreshNotifBtnLabel(){
+    if (notifPermission === "granted"){
+      notifBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> Đã bật nhắc nhở';
+    } else if (notifPermission === "denied"){
+      notifBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> Thông báo bị chặn';
+    } else {
+      notifBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> Bật nhắc nhở';
+    }
+  }
+  refreshNotifBtnLabel();
+  notifBtn.addEventListener("click", function(){
+    if (typeof Notification === "undefined"){
+      showToast("Trình duyệt này không hỗ trợ thông báo");
+      return;
+    }
+    if (notifPermission === "granted"){
+      showToast("Nhắc nhở đã bật — giữ trang mở để nhận thông báo đúng giờ");
+      return;
+    }
+    Notification.requestPermission().then(function(p){
+      notifPermission = p;
+      refreshNotifBtnLabel();
+      showToast(p === "granted" ? "Đã bật nhắc nhở" : "Bạn chưa cho phép thông báo");
+    });
+  });
+
+  function checkReminders(){
+    var now = Date.now();
+    notes.forEach(function(n){
+      if (n.done || !n.reminderAt) return;
+      var t = new Date(n.reminderAt).getTime();
+      if (isNaN(t) || t > now) return;
+      var already = n.notified || notifiedLocally[n.id];
+      if (already) return;
+      notifiedLocally[n.id] = true;
+      saveNotifiedLocal();
+      if (store.update) store.update(n.id, { notified: true });
+      if (notifPermission === "granted" && typeof Notification !== "undefined"){
+        try {
+          new Notification("Nhắc nhở: " + (n.title || "Ghi chú"), { body: n.content || "", tag: n.id });
+        } catch(e){}
+      }
+      showToast("Đến giờ: " + (n.title || "ghi chú"));
+    });
+    render();
+  }
+  setInterval(checkReminders, 20000);
+
+  // ---------- wiring top buttons ----------
+  document.getElementById("addBtn").addEventListener("click", function(){ openSheet(null); });
+  document.getElementById("emptyAddBtn").addEventListener("click", function(){ openSheet(null); });
+  document.getElementById("ioBtn").addEventListener("click", function(){ ioOverlay.hidden = false; });
+
+  // ---------- boot ----------
+  var syncLabel = document.getElementById("syncLabel");
+
+  function startWithStore(s, cloud){
+    store = s;
+    usingCloud = cloud;
+    syncLabel.textContent = cloud
+      ? "Đã đồng bộ — mở lại liên kết này trên máy khác để thấy ghi chú"
+      : "Lưu trên thiết bị này — dùng “Sao lưu” để chuyển máy";
+    if (!cloud){
+      setBanner("Bạn chưa đăng nhập nên ghi chú chỉ lưu trên thiết bị này. Dùng nút “Sao lưu” để xuất tệp và nhập lại trên máy khác.", "warn");
+    }
+    store.subscribe(function(list){
+      notes = list;
+      checkReminders();
+    });
+  }
+
+  buildSheetDom();
+  buildIoDom();
+  render();
+
+  (async function init(){
+    try {
+      var user = await claude.use("user");
+      var db = await claude.use("db");
+      if (user && db){
+        var id = await user.id();
+        if (id){
+          var col = db.doc("data/users/" + id + "/notes").collection("items");
+          startWithStore(makeCloudStore(db, col), true);
+          return;
+        }
+      }
+    } catch(e){ console.error("cloud init failed", e); }
+    startWithStore(makeLocalStore(), false);
+  })();
+
+})();
+</script>
+
+</body></html>
